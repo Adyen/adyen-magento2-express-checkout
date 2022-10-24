@@ -1,0 +1,30 @@
+<?xml version="1.0"?>
+<!--
+/**
+ *
+ * Adyen ExpressCheckout Module (https://www.adyen.com/)
+ *
+ * Copyright (c) 2015 Adyen BV (https://www.adyen.com/)
+ * See LICENSE.txt for license details.
+ *
+ * Author: Adyen <magento@adyen.com>
+ */
+-->
+<include xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Config:etc/system_include.xsd">
+    <group id="adyen_hpp">
+        <group id="adyen_hpp_express" translate="label" showInDefault="1" showInWebsite="1" showInStore="1" sortOrder="200">
+            <label>Express Payments</label>
+            <frontend_model>Magento\Config\Block\System\Config\Form\Fieldset</frontend_model>
+            <field id="show_google_pay_on" translate="label" type="multiselect" sortOrder="10" showInDefault="1" showInWebsite="1" showInStore="1">
+                <label>Show GooglePay on</label>
+                <source_model>Adyen\ExpressCheckout\Model\Config\Source\ShortcutAreas</source_model>
+                <config_path>payment/adyen_hpp/show_google_pay_on</config_path>
+            </field>
+            <field id="show_apple_pay_on" translate="label" type="multiselect" sortOrder="30" showInDefault="1" showInWebsite="1" showInStore="1">
+                <label>Show ApplePay on</label>
+                <source_model>Adyen\ExpressCheckout\Model\Config\Source\ShortcutAreas</source_model>
+                <config_path>payment/adyen_hpp/show_apple_pay_on</config_path>
+            </field>
+        </group>
+    </group>
+</include>

@@ -1,0 +1,7 @@
+<?xml version="1.0"?>
+<schema xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:framework:Setup/Declaration/Schema/etc/schema.xsd">
+    <table name="quote">
+        <column name="adyen_express_pdp" xsi:type="smallint" nullable="false" default="0" comment="Flag whether Quote is from Adyen Express on the PDP" />
+        <column name="adyen_og_quote_id" xsi:type="int" nullable="false" comment="Store Original Qoute ID for switching back" />
+    </table>
+</schema>

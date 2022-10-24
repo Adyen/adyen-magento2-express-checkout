@@ -1,0 +1,15 @@
+<?xml version="1.0"?>
+<page xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:framework:View/Layout/etc/page_configuration.xsd">
+    <head>
+        <css src="Adyen_Payment::css/adyen.css"/>
+    </head>
+    <body>
+        <referenceContainer name="content">
+            <block name="checkout.config" as="checkoutConfig" template="Adyen_ExpressCheckout::checkout-config.phtml" after="checkout.config">
+                <arguments>
+                    <argument name="checkoutConfigViewModel" xsi:type="object">Adyen\ExpressCheckout\ViewModel\CheckoutConfig</argument>
+                </arguments>
+            </block>
+        </referenceContainer>
+    </body>
+</page>

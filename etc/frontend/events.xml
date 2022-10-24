@@ -1,0 +1,18 @@
+<?xml version="1.0"?>
+<!--
+/**
+ *
+ * Adyen ExpressCheckout Module (https://www.adyen.com/)
+ *
+ * Copyright (c) 2015 Adyen BV (https://www.adyen.com/)
+ * See LICENSE.txt for license details.
+ *
+ * Author: Adyen <magento@adyen.com>
+ */
+-->
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:framework:Event/etc/events.xsd">
+    <event name="shortcut_buttons_container">
+        <observer name="adyen_applepay_shortcuts" instance="Adyen\ExpressCheckout\Observer\AddApplePayShortcuts" />
+        <observer name="adyen_googlepay_shortcuts" instance="Adyen\ExpressCheckout\Observer\AddGooglePayShortcuts" />
+    </event>
+</config>

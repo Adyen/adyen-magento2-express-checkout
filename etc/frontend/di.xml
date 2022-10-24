@@ -1,0 +1,44 @@
+<?xml version="1.0"?>
+<!--
+/**
+ *
+ * Adyen ExpressCheckout Module (https://www.adyen.com/)
+ *
+ * Copyright (c) 2015 Adyen BV (https://www.adyen.com/)
+ * See LICENSE.txt for license details.
+ *
+ * Author: Adyen <magento@adyen.com>
+ */
+-->
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:framework:ObjectManager/etc/config.xsd">
+    <type name="Adyen\ExpressCheckout\Block\ApplePay\Shortcut\Button">
+        <arguments>
+            <argument name="data" xsi:type="array">
+                <item name="template" xsi:type="string">Adyen_ExpressCheckout::applepay/shortcut.phtml</item>
+                <item name="alias" xsi:type="string">adyen.applepay.mini-cart</item>
+                <item name="button_id" xsi:type="string">adyen-applepay-mini-cart</item>
+            </argument>
+            <argument name="payment" xsi:type="object">AdyenPaymentHppFacade</argument>
+        </arguments>
+    </type>
+    <type name="Adyen\ExpressCheckout\Block\GooglePay\Shortcut\Button">
+        <arguments>
+            <argument name="data" xsi:type="array">
+                <item name="template" xsi:type="string">Adyen_ExpressCheckout::googlepay/shortcut.phtml</item>
+                <item name="alias" xsi:type="string">adyen.googlepay.mini-cart</item>
+                <item name="button_id" xsi:type="string">adyen-googlepay-mini-cart</item>
+            </argument>
+            <argument name="payment" xsi:type="object">AdyenPaymentHppFacade</argument>
+        </arguments>
+    </type>
+    <type name="Magento\Customer\CustomerData\SectionPoolInterface">
+        <arguments>
+            <argument name="sectionSourceMap" xsi:type="array">
+                <item name="adyen-express-pdp" xsi:type="string">Adyen\ExpressCheckout\CustomerData\AdyenExpress</item>
+            </argument>
+        </arguments>
+    </type>
+    <type name="Magento\Checkout\Controller\Cart\Add">
+        <plugin name="setCorrectQuote" type="Adyen\ExpressCheckout\Plugin\Checkout\Controller\Cart\Add" />
+    </type>
+</config>

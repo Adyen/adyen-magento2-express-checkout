@@ -1,0 +1,28 @@
+{
+  "name": "adyen/module-express-checkout",
+  "description": "Official Adyen Magento2 Plugin to add Express payment method shortcuts.",
+  "type": "magento2-module",
+  "version": "1.0.0",
+  "repositories": [
+    {
+      "type": "composer",
+      "url": "https://repo.magento.com/"
+    }
+  ],
+  "require": {
+    "adyen/module-payment": "^8"
+  },
+  "require-dev": {
+    "phpunit/phpunit": "*",
+    "magento/magento-coding-standard": "*",
+    "squizlabs/php_codesniffer": "*"
+  },
+  "autoload": {
+    "files": [
+      "registration.php"
+    ],
+    "psr-4": {
+      "Adyen\\ExpressCheckout\\": ""
+    }
+  }
+}

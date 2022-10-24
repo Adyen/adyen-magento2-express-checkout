@@ -1,0 +1,13 @@
+<?php /** @var $block \Magento\Framework\View\Element\Template */ ?>
+<?php /** @var \Magento\Framework\View\Helper\SecureHtmlRenderer $secureRenderer */ ?>
+<?php /** @var $viewModel \Adyen\ExpressCheckout\ViewModel\CheckoutConfig */ ?>
+<?php $viewModel = /* @noEscape */ $block->getData('checkoutConfigViewModel'); ?>
+<?php $serializedCheckoutConfig = /* @noEscape */ $viewModel->getSerializedCheckoutConfig();
+
+$checkoutConfig = __('window.checkoutConfig = %1;', $serializedCheckoutConfig);
+?>
+<script>
+    <?=$checkoutConfig?>
+    window.customerData = window.checkoutConfig.customerData;
+    window.isCustomerLoggedIn = window.checkoutConfig.isCustomerLoggedIn;
+</script>
