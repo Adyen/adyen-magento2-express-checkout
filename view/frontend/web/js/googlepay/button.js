@@ -285,7 +285,7 @@ define([
                                         totalPriceStatus: 'FINAL',
                                         totalPrice: totals.base_grand_total.toString(),
                                         totalPriceLabel: 'Total',
-                                        countryCode: data.shippingAddress.countryCode
+                                        countryCode: configModel().getConfig().countryCode
                                     }
                                 };
 
