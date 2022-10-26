@@ -74,10 +74,12 @@ define([
                         'googlePayAllowed'
                     ]);
 
-                let googlePaymentMethod = await getPaymentMethod('paywithgoogle');
+
+                this.isProductView = config.isProductView;
+                let googlePaymentMethod = await getPaymentMethod('paywithgoogle', this.isProductView);
 
                 // If express methods is not set then set it.
-                if (config.isProductView) {
+                if (this.isProductView) {
                     const response = await getExpressMethods().getRequest(element);
                     const cart = customerData.get('cart');
 
@@ -105,18 +107,16 @@ define([
                             });
                     }.bind(this));
 
-                    googlePaymentMethod = await getPaymentMethod('paywithgoogle');
+                    googlePaymentMethod = await getPaymentMethod('paywithgoogle', true);
                     this.initialiseGooglePayComponent(googlePaymentMethod, element);
-                }
-
-                if (!isConfigSet(googlePaymentMethod, ['gateway_merchant_id', 'merchant_id'])) {
+                    if (!isConfigSet(googlePaymentMethod, ['gateway_merchant_id', 'merchant_id'])) {
+                        return;
+                    }
+                } else if (!isConfigSet(googlePaymentMethod, ['gatewayMerchantId', 'merchantId'])) {
                     return;
                 }
-
                 configModel().setConfig(config);
                 countriesModel();
-
-                this.isProductView = config.isProductView;
 
                 this.initialiseGooglePayComponent(googlePaymentMethod, element);
             },
@@ -153,7 +153,7 @@ define([
             },
 
             reloadGooglePayButton: async function (element) {
-                const googlePaymentMethod = await getPaymentMethod('paywithgoogle');
+                const googlePaymentMethod = await getPaymentMethod('paywithgoogle', this.isProductView);
                 const pdpResponse = await getExpressMethods().getRequest(element);
 
                 setExpressMethods(pdpResponse);

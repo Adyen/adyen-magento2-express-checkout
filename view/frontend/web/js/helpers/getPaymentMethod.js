@@ -1,25 +1,46 @@
 define(['Magento_Customer/js/customer-data'], function (customerData) {
     'use strict';
 
-    return function (paymentType) {
+    return function (paymentType, isPdp) {
+        function getPaymentMethodsFromAdyen() {
+            const adyenPaymentMethods = customerData.get('adyen-express-pdp');
+            const adyenMethods = adyenPaymentMethods();
 
-        function getPaymentMethod(paymentMethods, type) {
-            if (!paymentMethods.payment_methods
-                || !paymentMethods.payment_methods.paymentMethodsResponse) {
+            if (!adyenMethods.payment_methods
+                || !adyenMethods.payment_methods.paymentMethodsResponse) {
                 return null;
             }
+            return adyenMethods.payment_methods.paymentMethodsResponse;
+        }
 
-            return paymentMethods.payment_methods.paymentMethodsResponse.find(function (paymentMethod) {
+        function getPaymentMethodsFromCart() {
+            const adyenPaymentMethods = customerData.get('cart');
+            const adyenMethods = adyenPaymentMethods()['adyen_payment_methods'];
+
+            if (!adyenMethods.paymentMethodsResponse
+                || !adyenMethods.paymentMethodsResponse.paymentMethods) {
+                return null;
+            }
+            return adyenMethods.paymentMethodsResponse.paymentMethods;
+        }
+
+        function findPaymentMethod(paymentMethods, type) {
+            return paymentMethods.find(function (paymentMethod) {
                 return paymentMethod.type === type;
             });
         }
 
         return customerData.getInitCustomerData()
             .then(function () {
-                const adyenPaymentMethods = customerData.get('adyen-express-pdp');
-                const paymentMethods = adyenPaymentMethods();
+                const paymentMethods = isPdp
+                    ? getPaymentMethodsFromAdyen()
+                    : getPaymentMethodsFromCart();
 
-                return getPaymentMethod(paymentMethods, paymentType);
+                if (!paymentMethods) {
+                    return null;
+                }
+
+                return findPaymentMethod(paymentMethods, paymentType);
             });
 
     };
