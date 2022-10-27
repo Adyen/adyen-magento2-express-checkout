@@ -70,10 +70,11 @@ define([
             initialize: async function (config, element) {
                 this._super();
 
-                let applePaymentMethod = await getPaymentMethod('applepay');
+                this.isProductView = config.isProductView;
+                let applePaymentMethod = await getPaymentMethod('applepay', this.isProductView);
 
                 // If express methods is not set then set it.
-                if (config.isProductView) {
+                if (this.isProductView) {
                     const response = await getExpressMethods().getRequest(element);
                     const cart = customerData.get('cart');
 
@@ -103,16 +104,16 @@ define([
 
                     applePaymentMethod = await getPaymentMethod('applepay');
                     this.initialiseApplePayComponent(applePaymentMethod, element);
-                }
 
-                if (!isConfigSet(applePaymentMethod, ['merchant_id', 'merchant_name'])) {
+                    if (!isConfigSet(applePaymentMethod, ['merchant_id', 'merchant_name'])) {
+                        return;
+                    }
+                } else if (!isConfigSet(applePaymentMethod, ['merchantId', 'merchantName'])) {
                     return;
                 }
 
                 configModel().setConfig(config);
                 countriesModel();
-
-                this.isProductView = config.isProductView;
 
                 this.initialiseApplePayComponent(applePaymentMethod, element);
             },
