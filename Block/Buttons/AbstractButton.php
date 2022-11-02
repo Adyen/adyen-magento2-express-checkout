@@ -34,7 +34,6 @@ abstract class AbstractButton extends Template
     public const ALIAS_ELEMENT_INDEX = 'alias';
     public const BUTTON_ELEMENT_INDEX = 'button_id';
     public const COUNTRY_CODE_PATH = 'general/country/default';
-    public const PRODUCTION = 'production';
 
     /**
      * @var Session
