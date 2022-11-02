@@ -238,10 +238,7 @@ abstract class AbstractButton extends Template
     public function getCheckoutEnvironment(): string
     {
         $storeId = $this->storeManager->getStore()->getId();
-        if ($this->adyenConfigHelper->isDemoMode($storeId)) {
-            return AdyenHelper::TEST;
-        }
-        return self::PRODUCTION;
+        return $this->adyenHelper->getCheckoutEnvironment($storeId);
     }
 
     /**
