@@ -102,12 +102,13 @@ define([
                             });
                     }.bind(this));
 
-                    applePaymentMethod = await getPaymentMethod('applepay');
-                    this.initialiseApplePayComponent(applePaymentMethod, element);
+                    applePaymentMethod = await getPaymentMethod('applepay', this.isProductView);
 
-                    if (!isConfigSet(applePaymentMethod, ['merchant_id', 'merchant_name'])) {
+                    if (!isConfigSet(applePaymentMethod, ['merchantId', 'merchantName'])) {
                         return;
                     }
+
+                    this.initialiseApplePayComponent(applePaymentMethod, element);
                 } else if (!isConfigSet(applePaymentMethod, ['merchantId', 'merchantName'])) {
                     return;
                 }
@@ -152,15 +153,15 @@ define([
             },
 
             reloadApplePayButton: async function (element) {
+                const applePaymentMethod = await getPaymentMethod('applepay', this.isProductView);
                 const pdpResponse = await getExpressMethods().getRequest(element);
-                const applePaymentMethod = await getPaymentMethod('applepay');
 
                 setExpressMethods(pdpResponse);
                 totalsModel().setTotal(pdpResponse.totals.grand_total);
 
                 this.unmountApplePay();
 
-                if (!isConfigSet(applePaymentMethod, ['merchant_id', 'merchant_name'])) {
+                if (!isConfigSet(applePaymentMethod, ['merchantId', 'merchantName'])) {
                     return;
                 }
 
@@ -179,8 +180,8 @@ define([
                     totalPriceLabel: $t('Grand Total'),
                     configuration: {
                         domainName: window.location.hostname,
-                        merchantId: applePaymentMethod.configuration.merchant_id,
-                        merchantName: applePaymentMethod.configuration.merchant_name
+                        merchantId: applePaymentMethod.configuration.merchantId,
+                        merchantName: applePaymentMethod.configuration.merchantName
                     },
                     amount: {
                         value: this.isProductView

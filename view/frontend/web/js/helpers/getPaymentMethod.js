@@ -1,4 +1,7 @@
-define(['Magento_Customer/js/customer-data'], function (customerData) {
+define([
+    'Magento_Customer/js/customer-data',
+    'Adyen_ExpressCheckout/js/helpers/convertKeysToCamelCase'
+], function (customerData, convertKeysToCamelCase) {
     'use strict';
 
     return function (paymentType, isPdp) {
@@ -6,7 +9,7 @@ define(['Magento_Customer/js/customer-data'], function (customerData) {
             const adyenPaymentMethods = customerData.get('adyen-express-pdp');
             const adyenMethods = adyenPaymentMethods();
 
-            if (!adyenMethods.payment_methods
+            if (!adyenMethods || !adyenMethods.payment_methods
                 || !adyenMethods.payment_methods.paymentMethodsResponse) {
                 return null;
             }
@@ -17,7 +20,7 @@ define(['Magento_Customer/js/customer-data'], function (customerData) {
             const adyenPaymentMethods = customerData.get('cart');
             const adyenMethods = adyenPaymentMethods()['adyen_payment_methods'];
 
-            if (!adyenMethods.paymentMethodsResponse
+            if (!adyenMethods || !adyenMethods.paymentMethodsResponse
                 || !adyenMethods.paymentMethodsResponse.paymentMethods) {
                 return null;
             }
@@ -40,7 +43,10 @@ define(['Magento_Customer/js/customer-data'], function (customerData) {
                     return null;
                 }
 
-                return findPaymentMethod(paymentMethods, paymentType);
+                const foundMethods = findPaymentMethod(paymentMethods, paymentType);
+
+                foundMethods.configuration = convertKeysToCamelCase(foundMethods.configuration);
+                return foundMethods;
             });
 
     };

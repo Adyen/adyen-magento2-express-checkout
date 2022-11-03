@@ -14,7 +14,9 @@ define([
                 }
             };
 
-           customerData.set('adyen-express-pdp', methods);
+            customerData.getInitCustomerData().then(function () {
+                customerData.set('adyen-express-pdp', methods);
+            });
         }
 
         if (paymentMethods.masked_quote_id) {
