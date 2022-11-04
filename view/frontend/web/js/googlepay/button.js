@@ -107,14 +107,17 @@ define([
                             });
                     }.bind(this));
 
-                    googlePaymentMethod = await getPaymentMethod('paywithgoogle', true);
-                    this.initialiseGooglePayComponent(googlePaymentMethod, element);
-                    if (!isConfigSet(googlePaymentMethod, ['gateway_merchant_id', 'merchant_id'])) {
+                    googlePaymentMethod = await getPaymentMethod('paywithgoogle', this.isProductView);
+
+                    if (!isConfigSet(googlePaymentMethod, ['gatewayMerchantId', 'merchantId'])) {
                         return;
                     }
+
+                    this.initialiseGooglePayComponent(googlePaymentMethod, element);
                 } else if (!isConfigSet(googlePaymentMethod, ['gatewayMerchantId', 'merchantId'])) {
                     return;
                 }
+
                 configModel().setConfig(config);
                 countriesModel();
 
@@ -161,7 +164,7 @@ define([
 
                 this.unmountGooglePay();
 
-                if (!isConfigSet(googlePaymentMethod, ['gateway_merchant_id', 'merchant_id'])) {
+                if (!isConfigSet(googlePaymentMethod, ['gatewayMerchantId', 'merchantId'])) {
                     return;
                 }
 
@@ -203,8 +206,8 @@ define([
                     allowedPaymentMethods: ['CARD'],
                     phoneNumberRequired: true,
                     configuration: {
-                        gatewayMerchantId: googlePaymentMethod.configuration.gateway_merchant_id,
-                        merchantIdentifier: googlePaymentMethod.configuration.merchant_id,
+                        gatewayMerchantId: googlePaymentMethod.configuration.gatewayMerchantId,
+                        merchantIdentifier: googlePaymentMethod.configuration.merchantId,
                         merchantName: config.merchantAccount
                     },
                     onAuthorized: this.startPlaceOrder.bind(this),
