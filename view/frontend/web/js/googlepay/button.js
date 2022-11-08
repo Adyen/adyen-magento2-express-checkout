@@ -304,8 +304,6 @@ define([
             },
 
             startPlaceOrder: function (paymentData) {
-                debugger;
-
                 let self = this;
 
                 this.setShippingInformation(paymentData)
