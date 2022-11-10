@@ -76,8 +76,7 @@ define([
                     ]);
 
                 this.isProductView = config.isProductView;
-                let googlePaymentMethod = await getPaymentMethod('paywithgoogle', this.isProductView) ?? await getPaymentMethod('googlepay', this.isProductView);
-                this.googlePayTxVariant = googlePaymentMethod;
+                let googlePaymentMethod = await this.getGooglePayTxVariant();
 
                 // If express methods is not set then set it.
                 if (this.isProductView) {
@@ -108,8 +107,7 @@ define([
                             });
                     }.bind(this));
 
-                    let googlePaymentMethod = await getPaymentMethod('paywithgoogle', this.isProductView) ?? await getPaymentMethod('googlepay', this.isProductView);
-                    this.googlePayTxVariant = googlePaymentMethod;
+                    let googlePaymentMethod = await this.getGooglePayTxVariant();
 
                     if (!isConfigSet(googlePaymentMethod, ['gatewayMerchantId', 'merchantId'])) {
                         return;
@@ -158,8 +156,7 @@ define([
             },
 
             reloadGooglePayButton: async function (element) {
-                let googlePaymentMethod = await getPaymentMethod('paywithgoogle', this.isProductView) ?? await getPaymentMethod('googlepay', this.isProductView);
-                this.googlePayTxVariant = googlePaymentMethod;
+                let googlePaymentMethod = await this.getGooglePayTxVariant();
 
                 const pdpResponse = await getExpressMethods().getRequest(element);
 
@@ -220,6 +217,13 @@ define([
                     onError: () => cancelCart(this.isProductView),
                     ...googlePayStyles
                 };
+            },
+
+            getGooglePayTxVariant: async function () {
+                let googlePaymentMethod = await getPaymentMethod('paywithgoogle', this.isProductView) ?? await getPaymentMethod('googlepay', this.isProductView);
+                this.googlePayTxVariant = googlePaymentMethod;
+
+                return googlePaymentMethod;
             },
 
             onPaymentDataChanged: function (data) {
