@@ -6,7 +6,7 @@ namespace Adyen\ExpressCheckout\Api\Data\MethodResponse;
 interface ConfigurationInterface
 {
     public const MERCHANT_ID = 'merchant_id';
-    public const GATEWAY_MERCHANT_ID = 'gatewat_merchant_id';
+    public const GATEWAY_MERCHANT_ID = 'gateway_merchant_id';
     public const INTENT = 'intent';
     public const MERCHANT_NAME = 'merchant_name';
 

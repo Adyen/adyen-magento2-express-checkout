@@ -13,7 +13,7 @@ define(function () {
         const convertedObject = {};
 
         Object.keys(originalObject).forEach((key) => {
-            convertedObject[toCamel(key)] = toCamel(originalObject[key]);
+            convertedObject[toCamel(key)] = originalObject[key];
         });
 
         return convertedObject;
