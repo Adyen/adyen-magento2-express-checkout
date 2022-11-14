@@ -45,9 +45,12 @@ define([
 
                 const foundMethods = findPaymentMethod(paymentMethods, paymentType);
 
-                foundMethods.configuration = convertKeysToCamelCase(foundMethods.configuration);
-                return foundMethods;
-            });
+                if (!!foundMethods) {
+                    foundMethods.configuration = convertKeysToCamelCase(foundMethods.configuration);
+                    return foundMethods;
+                }
 
+                return null;
+            });
     };
 });
