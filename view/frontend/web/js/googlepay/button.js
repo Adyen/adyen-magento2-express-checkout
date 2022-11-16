@@ -64,7 +64,8 @@ define([
                 googlePayToken: null,
                 googlePayAllowed: null,
                 isProductView: false,
-                maskedId: null
+                maskedId: null,
+                googlePayTxVariant: null
             },
 
             initialize: async function (config, element) {
@@ -74,9 +75,8 @@ define([
                         'googlePayAllowed'
                     ]);
 
-
                 this.isProductView = config.isProductView;
-                let googlePaymentMethod = await getPaymentMethod('paywithgoogle', this.isProductView);
+                let googlePaymentMethod = await this.getGooglePayTxVariant();
 
                 // If express methods is not set then set it.
                 if (this.isProductView) {
@@ -107,14 +107,17 @@ define([
                             });
                     }.bind(this));
 
-                    googlePaymentMethod = await getPaymentMethod('paywithgoogle', true);
-                    this.initialiseGooglePayComponent(googlePaymentMethod, element);
-                    if (!isConfigSet(googlePaymentMethod, ['gateway_merchant_id', 'merchant_id'])) {
+                    let googlePaymentMethod = await this.getGooglePayTxVariant();
+
+                    if (!isConfigSet(googlePaymentMethod, ['gatewayMerchantId', 'merchantId'])) {
                         return;
                     }
+
+                    this.initialiseGooglePayComponent(googlePaymentMethod, element);
                 } else if (!isConfigSet(googlePaymentMethod, ['gatewayMerchantId', 'merchantId'])) {
                     return;
                 }
+
                 configModel().setConfig(config);
                 countriesModel();
 
@@ -133,7 +136,7 @@ define([
                 });
                 const googlePayConfig = this.getGooglePayConfig(googlePaymentMethod, element);
 
-                this.googlepay = checkoutComponent.create('paywithgoogle', googlePayConfig);
+                this.googlepay = checkoutComponent.create(googlePaymentMethod, googlePayConfig);
 
                 this.googlepay.isAvailable()
                     .then(function () {
@@ -153,7 +156,8 @@ define([
             },
 
             reloadGooglePayButton: async function (element) {
-                const googlePaymentMethod = await getPaymentMethod('paywithgoogle', this.isProductView);
+                let googlePaymentMethod = await this.getGooglePayTxVariant();
+
                 const pdpResponse = await getExpressMethods().getRequest(element);
 
                 setExpressMethods(pdpResponse);
@@ -161,7 +165,7 @@ define([
 
                 this.unmountGooglePay();
 
-                if (!isConfigSet(googlePaymentMethod, ['gateway_merchant_id', 'merchant_id'])) {
+                if (!isConfigSet(googlePaymentMethod, ['gatewayMerchantId', 'merchantId'])) {
                     return;
                 }
 
@@ -203,8 +207,8 @@ define([
                     allowedPaymentMethods: ['CARD'],
                     phoneNumberRequired: true,
                     configuration: {
-                        gatewayMerchantId: googlePaymentMethod.configuration.gateway_merchant_id,
-                        merchantIdentifier: googlePaymentMethod.configuration.merchant_id,
+                        gatewayMerchantId: googlePaymentMethod.configuration.gatewayMerchantId,
+                        merchantIdentifier: googlePaymentMethod.configuration.merchantId,
                         merchantName: config.merchantAccount
                     },
                     onAuthorized: this.startPlaceOrder.bind(this),
@@ -213,6 +217,13 @@ define([
                     onError: () => cancelCart(this.isProductView),
                     ...googlePayStyles
                 };
+            },
+
+            getGooglePayTxVariant: async function () {
+                let googlePaymentMethod = await getPaymentMethod('paywithgoogle', this.isProductView) ?? await getPaymentMethod('googlepay', this.isProductView);
+                this.googlePayTxVariant = googlePaymentMethod;
+
+                return googlePaymentMethod;
             },
 
             onPaymentDataChanged: function (data) {
@@ -297,13 +308,15 @@ define([
             },
 
             startPlaceOrder: function (paymentData) {
+                let self = this;
+
                 this.setShippingInformation(paymentData)
                     .done(function () {
                         const stateData = JSON.stringify({
                             paymentMethod: {
                                 googlePayCardNetwork: paymentData.paymentMethodData.info.cardNetwork,
                                 googlePayToken: paymentData.paymentMethodData.tokenizationData.token,
-                                type: 'paywithgoogle'
+                                type: self.googlePayTxVariant.type
                             }
                         }),
                          payload = {
@@ -313,7 +326,7 @@ define([
                             paymentMethod: {
                                 method: 'adyen_hpp',
                                 additional_data: {
-                                    brand_code: 'paywithgoogle',
+                                    brand_code: self.googlePayTxVariant.type,
                                     stateData
                                 },
                                 extension_attributes: getExtensionAttributes(paymentData)
