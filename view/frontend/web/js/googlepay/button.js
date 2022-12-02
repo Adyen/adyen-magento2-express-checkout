@@ -65,6 +65,7 @@ define([
                 googlePayAllowed: null,
                 isProductView: false,
                 maskedId: null,
+                googlePayComponent: null,
                 googlePayTxVariant: null
             },
 
@@ -75,51 +76,65 @@ define([
                         'googlePayAllowed'
                     ]);
 
+                configModel().setConfig(config);
+                countriesModel();
+
                 this.isProductView = config.isProductView;
-                let googlePaymentMethod = await this.getGooglePayTxVariant();
 
                 // If express methods is not set then set it.
                 if (this.isProductView) {
-                    const response = await getExpressMethods().getRequest(element);
-                    const cart = customerData.get('cart');
+                    this.initializeOnPDP(config, element);
+                } else {
+                    let googlePaymentMethod = await getPaymentMethod('googlepay', this.isProductView);
 
-                    cart.subscribe(function () {
-                        this.reloadGooglePayButton(element);
-                    }.bind(this));
-
-                    setExpressMethods(response);
-                    totalsModel().setTotal(response.totals.grand_total);
-
-                    const $priceBox = getPdpPriceBox();
-                    const pdpForm = getPdpForm(element);
-
-                    $priceBox.on('priceUpdated', async function () {
-                        const isValid = new Promise((resolve, reject) => {
-                            return validatePdpForm(resolve, reject, pdpForm, true);
-                        });
-
-                        isValid
-                            .then(function () {
-                                this.reloadGooglePayButton(element);
-                            }.bind(this))
-                            .catch(function (error) {
-                                console.log(error);
-                            });
-                    }.bind(this));
-
-                    let googlePaymentMethod = await this.getGooglePayTxVariant();
-
-                    if (!isConfigSet(googlePaymentMethod, ['gatewayMerchantId', 'merchantId'])) {
-                        return;
+                    if (!googlePaymentMethod) {
+                        const cart = customerData.get('cart');
+                        cart.subscribe(function () {
+                            this.reloadGooglePayButton(element);
+                        }.bind(this));
+                    } else {
+                        if (!isConfigSet(googlePaymentMethod, ['gatewayMerchantId', 'merchantId'])) {
+                            console.log('Required configuration for Google Pay is missing.');
+                            return;
+                        }
+                        this.initialiseGooglePayComponent(googlePaymentMethod, element);
                     }
+                }
+            },
 
-                    this.initialiseGooglePayComponent(googlePaymentMethod, element);
-                } else if (!isConfigSet(googlePaymentMethod, ['gatewayMerchantId', 'merchantId'])) {
+            initializeOnPDP: async function (config, element) {
+                const response = await getExpressMethods().getRequest(element);
+                const cart = customerData.get('cart');
+
+                cart.subscribe(function () {
+                    this.reloadGooglePayButton(element);
+                }.bind(this));
+
+                setExpressMethods(response);
+                totalsModel().setTotal(response.totals.grand_total);
+
+                const $priceBox = getPdpPriceBox();
+                const pdpForm = getPdpForm(element);
+
+                $priceBox.on('priceUpdated', async function () {
+                    const isValid = new Promise((resolve, reject) => {
+                        return validatePdpForm(resolve, reject, pdpForm, true);
+                    });
+
+                    isValid
+                        .then(function () {
+                            this.reloadGooglePayButton(element);
+                        }.bind(this))
+                        .catch(function (error) {
+                            console.log(error);
+                        });
+                }.bind(this));
+
+                let googlePaymentMethod = await getPaymentMethod('googlepay', this.isProductView);
+
+                if (!isConfigSet(googlePaymentMethod, ['gatewayMerchantId', 'merchantId'])) {
                     return;
                 }
-
-                configModel().setConfig(config);
-                countriesModel();
 
                 this.initialiseGooglePayComponent(googlePaymentMethod, element);
             },
@@ -136,12 +151,12 @@ define([
                 });
                 const googlePayConfig = this.getGooglePayConfig(googlePaymentMethod, element);
 
-                this.googlepay = checkoutComponent.create(googlePaymentMethod, googlePayConfig);
+                this.googlePayComponent = checkoutComponent.create(googlePaymentMethod, googlePayConfig);
 
-                this.googlepay.isAvailable()
+                this.googlePayComponent.isAvailable()
                     .then(function () {
                         this.googlePayAllowed(true);
-                        this.googlepay.mount(element);
+                        this.googlePayComponent.mount(element);
                     }.bind(this))
                     .catch(function (error) {
                         console.log(error);
@@ -150,18 +165,20 @@ define([
             },
 
             unmountGooglePay: function () {
-                if (this.googlepay) {
-                    this.googlepay.unmount();
+                if (this.googlePayComponent) {
+                    this.googlePayComponent.unmount();
                 }
             },
 
             reloadGooglePayButton: async function (element) {
-                let googlePaymentMethod = await this.getGooglePayTxVariant();
+                let googlePaymentMethod = await getPaymentMethod('googlepay', this.isProductView);
 
-                const pdpResponse = await getExpressMethods().getRequest(element);
+                if (this.isProductView) {
+                    const pdpResponse = await getExpressMethods().getRequest(element);
 
-                setExpressMethods(pdpResponse);
-                totalsModel().setTotal(pdpResponse.totals.grand_total);
+                    setExpressMethods(pdpResponse);
+                    totalsModel().setTotal(pdpResponse.totals.grand_total);
+                }
 
                 this.unmountGooglePay();
 
@@ -217,13 +234,6 @@ define([
                     onError: () => cancelCart(this.isProductView),
                     ...googlePayStyles
                 };
-            },
-
-            getGooglePayTxVariant: async function () {
-                let googlePaymentMethod = await getPaymentMethod('paywithgoogle', this.isProductView) ?? await getPaymentMethod('googlepay', this.isProductView);
-                this.googlePayTxVariant = googlePaymentMethod;
-
-                return googlePaymentMethod;
             },
 
             onPaymentDataChanged: function (data) {
