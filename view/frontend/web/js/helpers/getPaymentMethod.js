@@ -28,9 +28,17 @@ define([
         }
 
         function findPaymentMethod(paymentMethods, type) {
-            return paymentMethods.find(function (paymentMethod) {
+            let found = paymentMethods.find(function (paymentMethod) {
                 return paymentMethod.type === type;
             });
+
+            if (!found && 'googlepay' === type) {
+                found = paymentMethods.find(function (paymentMethod) {
+                    return paymentMethod.type === 'paywithgoogle';
+                });
+            }
+
+            return found;
         }
 
         return customerData.getInitCustomerData()
