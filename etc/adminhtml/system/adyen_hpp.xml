@@ -18,11 +18,13 @@
             <field id="show_google_pay_on" translate="label" type="multiselect" sortOrder="10" showInDefault="1" showInWebsite="1" showInStore="1">
                 <label>Show GooglePay on</label>
                 <source_model>Adyen\ExpressCheckout\Model\Config\Source\ShortcutAreas</source_model>
+                <can_be_empty>1</can_be_empty>
                 <config_path>payment/adyen_hpp/show_google_pay_on</config_path>
             </field>
             <field id="show_apple_pay_on" translate="label" type="multiselect" sortOrder="30" showInDefault="1" showInWebsite="1" showInStore="1">
                 <label>Show ApplePay on</label>
                 <source_model>Adyen\ExpressCheckout\Model\Config\Source\ShortcutAreas</source_model>
+                <can_be_empty>1</can_be_empty>
                 <config_path>payment/adyen_hpp/show_apple_pay_on</config_path>
             </field>
         </group>
