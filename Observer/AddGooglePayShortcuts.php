@@ -50,7 +50,7 @@ class AddGooglePayShortcuts implements ObserverInterface
         $currentPageIdentifier = $this->getCurrentPageIdentifier($observer);
         if (!in_array(
             $currentPageIdentifier,
-            $this->configuration->getShowApplePayOn()
+            $this->configuration->getShowGooglePayOn()
         )) {
             return;
         }

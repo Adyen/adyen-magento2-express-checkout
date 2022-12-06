@@ -64,14 +64,17 @@ define([
             defaults: {
                 shippingMethods: {},
                 isProductView: false,
-                maskedId: null
+                maskedId: null,
+                applePayComponent: null
             },
 
             initialize: async function (config, element) {
                 this._super();
 
+                configModel().setConfig(config);
+                countriesModel();
+
                 this.isProductView = config.isProductView;
-                let applePaymentMethod = await getPaymentMethod('applepay', this.isProductView);
 
                 // If express methods is not set then set it.
                 if (this.isProductView) {
@@ -102,21 +105,28 @@ define([
                             });
                     }.bind(this));
 
-                    applePaymentMethod = await getPaymentMethod('applepay', this.isProductView);
+                    let applePaymentMethod = await getPaymentMethod('applepay', this.isProductView);
 
                     if (!isConfigSet(applePaymentMethod, ['merchantId', 'merchantName'])) {
                         return;
                     }
 
                     this.initialiseApplePayComponent(applePaymentMethod, element);
-                } else if (!isConfigSet(applePaymentMethod, ['merchantId', 'merchantName'])) {
-                    return;
+                } else {
+                    let applePaymentMethod = await getPaymentMethod('applepay', this.isProductView);
+                    if (!applePaymentMethod) {
+                        const cart = customerData.get('cart');
+                        cart.subscribe(function () {
+                            this.reloadApplePayButton(element);
+                        }.bind(this));
+                    } else {
+                        if (!isConfigSet(applePaymentMethod, ['merchantId', 'merchantName'])) {
+                            console.log('Required configuration for Apple Pay is missing.');
+                            return;
+                        }
+                        this.initialiseApplePayComponent(applePaymentMethod, element);
+                    }
                 }
-
-                configModel().setConfig(config);
-                countriesModel();
-
-                this.initialiseApplePayComponent(applePaymentMethod, element);
             },
 
             initialiseApplePayComponent: async function (applePaymentMethod, element) {
@@ -147,17 +157,20 @@ define([
             },
 
             unmountApplePay: function () {
-                if (this.applepay) {
-                    this.applepay.unmount();
+                if (this.applePayComponent) {
+                    this.applePayComponent.unmount();
                 }
             },
 
             reloadApplePayButton: async function (element) {
                 const applePaymentMethod = await getPaymentMethod('applepay', this.isProductView);
-                const pdpResponse = await getExpressMethods().getRequest(element);
 
-                setExpressMethods(pdpResponse);
-                totalsModel().setTotal(pdpResponse.totals.grand_total);
+                if (this.isProductView) {
+                    const pdpResponse = await getExpressMethods().getRequest(element);
+
+                    setExpressMethods(pdpResponse);
+                    totalsModel().setTotal(pdpResponse.totals.grand_total);
+                }
 
                 this.unmountApplePay();
 
