@@ -15,7 +15,7 @@ This plugin supports
 ## Installation
 You can install our plugin through Composer:
 ```
-composer require adyen/adyen-magento2-express-checkout
+composer require adyen/adyen-magento2-expresscheckout
 bin/magento module:enable Adyen_ExpressCheckout
 bin/magento setup:upgrade
 bin/magento cache:clean
