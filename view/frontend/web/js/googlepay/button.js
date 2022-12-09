@@ -225,7 +225,7 @@ define([
                     phoneNumberRequired: true,
                     configuration: {
                         gatewayMerchantId: googlePaymentMethod.configuration.gatewayMerchantId,
-                        merchantIdentifier: googlePaymentMethod.configuration.merchantId,
+                        merchantId: googlePaymentMethod.configuration.merchantId,
                         merchantName: config.merchantAccount
                     },
                     onAuthorized: this.startPlaceOrder.bind(this),
