@@ -65,8 +65,7 @@ define([
                 googlePayAllowed: null,
                 isProductView: false,
                 maskedId: null,
-                googlePayComponent: null,
-                googlePayTxVariant: null
+                googlePayComponent: null
             },
 
             initialize: async function (config, element) {
@@ -326,7 +325,7 @@ define([
                             paymentMethod: {
                                 googlePayCardNetwork: paymentData.paymentMethodData.info.cardNetwork,
                                 googlePayToken: paymentData.paymentMethodData.tokenizationData.token,
-                                type: self.googlePayTxVariant.type
+                                type: self.googlePayComponent.props.type
                             }
                         }),
                          payload = {
@@ -336,7 +335,7 @@ define([
                             paymentMethod: {
                                 method: 'adyen_hpp',
                                 additional_data: {
-                                    brand_code: self.googlePayTxVariant.type,
+                                    brand_code: self.googlePayComponent.props.type,
                                     stateData
                                 },
                                 extension_attributes: getExtensionAttributes(paymentData)
