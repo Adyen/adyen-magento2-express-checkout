@@ -153,6 +153,10 @@ define([
                 });
                 const googlePayConfig = this.getGooglePayConfig(googlePaymentMethod, element);
 
+                if (this.isProductView) {
+                    googlePayConfig.transactionInfo.currencyCode = currencyModel().getCurrency();
+                }
+
                 this.googlePayComponent = checkoutComponent.create(googlePaymentMethod, googlePayConfig);
 
                 this.googlePayComponent.isAvailable()
@@ -195,6 +199,16 @@ define([
                 const googlePayStyles = getGooglePayStyles();
                 const config = configModel().getConfig();
                 const pdpForm = getPdpForm(element);
+                let currency;
+
+                if (this.isProductView) {
+                    currency = config.currency;
+                } else {
+                    const cartData =  customerData.get('cart');
+                    const adyenMethods = cartData()['adyen_payment_methods'];
+                    const paymentMethodExtraDetails = adyenMethods.paymentMethodsExtraDetails[googlePaymentMethod.type];
+                    currency = paymentMethodExtraDetails.configuration.amount.currency;
+                }
 
                 return {
                     showPayButton: true,
@@ -218,7 +232,8 @@ define([
                         totalPrice: this.isProductView
                             ? formatAmount(totalsModel().getTotal())
                             : formatAmount(getCartSubtotal()),
-                        currencyCode: currencyModel.getCurrency()
+                        // currencyCode: paymentMethodExtraDetails.configuration.amount.currency
+                        currencyCode: currency
                     },
                     paymentDataCallbacks: {
                     onPaymentDataChanged: this.onPaymentDataChanged.bind(this)
@@ -257,18 +272,6 @@ define([
                             return;
                         }
 
-                        const shippingMethods = response.map((shippingMethod) => {
-                            const label = shippingMethod.price_incl_tax
-                                ? formatCurrency(shippingMethod.price_incl_tax) + ' - ' + shippingMethod.method_title
-                                : shippingMethod.method_title;
-
-                            return {
-                                id: shippingMethod.method_code,
-                                label: label,
-                                description: shippingMethod.carrier_title
-                            };
-                        });
-
                         this.shippingMethods = response;
                         const selectedShipping = data.shippingOptionData.id === 'shipping_option_unselected'
                             ? response[0]
@@ -290,6 +293,18 @@ define([
 
                         setTotalsInfo(totalsPayload, this.isProductView)
                             .done(function (totals) {
+                                const shippingMethods = response.map((shippingMethod) => {
+                                    const label = shippingMethod.price_incl_tax
+                                        ? formatCurrency(shippingMethod.price_incl_tax, totals.quote_currency_code) + ' - ' + shippingMethod.method_title
+                                        : shippingMethod.method_title;
+
+                                    return {
+                                        id: shippingMethod.method_code,
+                                        label: label,
+                                        description: shippingMethod.carrier_title
+                                    };
+                                });
+
                                 const paymentDataRequestUpdate = {
                                     newShippingOptionParameters: {
                                         defaultSelectedOptionId: selectedShipping.method_code,

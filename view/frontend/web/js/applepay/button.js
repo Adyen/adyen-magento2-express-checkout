@@ -145,6 +145,11 @@ define([
                 });
                 const applePayConfiguration = this.getApplePayConfiguration(applePaymentMethod, element);
 
+                if (this.isProductView) {
+                    applePayConfiguration.currencyCode = currencyModel().getCurrency();
+                    applePayConfiguration.amount.currency = currencyModel().getCurrency();
+                }
+
                 this.applePayComponent = adyenCheckoutComponent.create(
                     'applepay',
                     applePayConfiguration
@@ -189,10 +194,20 @@ define([
                 const config = configModel().getConfig();
                 const countryCode = config.countryCode === 'UK' ? 'GB' :  config.countryCode;
                 const pdpForm = getPdpForm(element);
+                let currency;
+
+                if (this.isProductView) {
+                    currency = config.currency;
+                } else {
+                    const cartData =  customerData.get('cart');
+                    const adyenMethods = cartData()['adyen_payment_methods'];
+                    const paymentMethodExtraDetails = adyenMethods.paymentMethodsExtraDetails[applePaymentMethod.type];
+                    currency = paymentMethodExtraDetails.configuration.amount.currency;
+                }
 
                 return {
                     countryCode: countryCode,
-                    currencyCode: currencyModel.getCurrency(),
+                    currencyCode: currencyModel().getCurrency(),
                     totalPriceLabel: $t('Grand Total'),
                     configuration: {
                         domainName: window.location.hostname,
@@ -203,7 +218,7 @@ define([
                         value: this.isProductView
                             ? formatAmount(totalsModel().getTotal() * 100)
                             : formatAmount(getCartSubtotal() * 100),
-                        currency: currencyModel.getCurrency()
+                        currency: currency
                     },
                     supportedNetworks: getSupportedNetworks(),
                     merchantCapabilities: ['supports3DS'],
@@ -335,7 +350,7 @@ define([
                         applePayShippingMethodUpdate.newTotal = {
                             type: 'final',
                             label: $t('Grand Total'),
-                            amount: response.base_grand_total.toString()
+                            amount: response.grand_total.toString()
                         };
                         applePayShippingMethodUpdate.newLineItems = [
                             {

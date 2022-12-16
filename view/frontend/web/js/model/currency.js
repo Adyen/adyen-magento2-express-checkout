@@ -9,7 +9,7 @@ define([
         },
 
         getCurrency: function () {
-            return this.total();
+            return this.currency();
         },
 
         setCurrency: function (currency) {
