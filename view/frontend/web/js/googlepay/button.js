@@ -25,7 +25,8 @@ define([
     'Adyen_ExpressCheckout/js/helpers/validatePdpForm',
     'Adyen_ExpressCheckout/js/model/config',
     'Adyen_ExpressCheckout/js/model/countries',
-    'Adyen_ExpressCheckout/js/model/totals'
+    'Adyen_ExpressCheckout/js/model/totals',
+    'Adyen_ExpressCheckout/js/model/currency'
 ],
     function (
         Component,
@@ -54,7 +55,8 @@ define([
         validatePdpForm,
         configModel,
         countriesModel,
-        totalsModel
+        totalsModel,
+        currencyModel
     ) {
         'use strict';
 
@@ -111,6 +113,7 @@ define([
 
                 setExpressMethods(response);
                 totalsModel().setTotal(response.totals.grand_total);
+                currencyModel().setCurrency(response.totals.quote_currency_code)
 
                 const $priceBox = getPdpPriceBox();
                 const pdpForm = getPdpForm(element);
@@ -215,7 +218,7 @@ define([
                         totalPrice: this.isProductView
                             ? formatAmount(totalsModel().getTotal())
                             : formatAmount(getCartSubtotal()),
-                        currencyCode: config.currency
+                        currencyCode: currencyModel.getCurrency()
                     },
                     paymentDataCallbacks: {
                     onPaymentDataChanged: this.onPaymentDataChanged.bind(this)
@@ -301,9 +304,9 @@ define([
                                                 status: 'FINAL'
                                             }
                                         ],
-                                        currencyCode: totals.base_currency_code,
+                                        currencyCode: totals.quote_currency_code,
                                         totalPriceStatus: 'FINAL',
-                                        totalPrice: totals.base_grand_total.toString(),
+                                        totalPrice: totals.grand_total.toString(),
                                         totalPriceLabel: 'Total',
                                         countryCode: configModel().getConfig().countryCode
                                     }

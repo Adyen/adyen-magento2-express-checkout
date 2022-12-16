@@ -26,7 +26,8 @@ define([
     'Adyen_ExpressCheckout/js/helpers/validatePdpForm',
     'Adyen_ExpressCheckout/js/model/config',
     'Adyen_ExpressCheckout/js/model/countries',
-    'Adyen_ExpressCheckout/js/model/totals'
+    'Adyen_ExpressCheckout/js/model/totals',
+    'Adyen_ExpressCheckout/js/model/currency'
 ],
     function (
         Component,
@@ -56,7 +57,8 @@ define([
         validatePdpForm,
         configModel,
         countriesModel,
-        totalsModel
+        totalsModel,
+        currencyModel
     ) {
         'use strict';
 
@@ -87,6 +89,7 @@ define([
 
                     setExpressMethods(response);
                     totalsModel().setTotal(response.totals.grand_total);
+                    currencyModel().setCurrency(response.totals.quote_currency_code)
 
                     const $priceBox = getPdpPriceBox();
                     const pdpForm = getPdpForm(element);
@@ -189,7 +192,7 @@ define([
 
                 return {
                     countryCode: countryCode,
-                    currencyCode: config.currency,
+                    currencyCode: currencyModel.getCurrency(),
                     totalPriceLabel: $t('Grand Total'),
                     configuration: {
                         domainName: window.location.hostname,
@@ -200,7 +203,7 @@ define([
                         value: this.isProductView
                             ? formatAmount(totalsModel().getTotal() * 100)
                             : formatAmount(getCartSubtotal() * 100),
-                        currency: config.currency
+                        currency: currencyModel.getCurrency()
                     },
                     supportedNetworks: getSupportedNetworks(),
                     merchantCapabilities: ['supports3DS'],
@@ -285,7 +288,7 @@ define([
                                 applePayShippingContactUpdate.newShippingMethods = shippingMethods;
                                 applePayShippingContactUpdate.newTotal = {
                                     label: $t('Grand Total'),
-                                    amount: response.base_grand_total.toString()
+                                    amount: response.grand_total.toString()
                                 };
                                 applePayShippingContactUpdate.newLineItems = [
                                     {
