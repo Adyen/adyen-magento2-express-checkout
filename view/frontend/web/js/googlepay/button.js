@@ -153,10 +153,6 @@ define([
                 });
                 const googlePayConfig = this.getGooglePayConfig(googlePaymentMethod, element);
 
-                if (this.isProductView) {
-                    googlePayConfig.transactionInfo.currencyCode = currencyModel().getCurrency();
-                }
-
                 this.googlePayComponent = checkoutComponent.create(googlePaymentMethod, googlePayConfig);
 
                 this.googlePayComponent.isAvailable()
@@ -202,7 +198,7 @@ define([
                 let currency;
 
                 if (this.isProductView) {
-                    currency = config.currency;
+                    currency = currencyModel().getCurrency();
                 } else {
                     const cartData =  customerData.get('cart');
                     const adyenMethods = cartData()['adyen_payment_methods'];
@@ -232,7 +228,6 @@ define([
                         totalPrice: this.isProductView
                             ? formatAmount(totalsModel().getTotal())
                             : formatAmount(getCartSubtotal()),
-                        // currencyCode: paymentMethodExtraDetails.configuration.amount.currency
                         currencyCode: currency
                     },
                     paymentDataCallbacks: {

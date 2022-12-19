@@ -197,7 +197,7 @@ define([
                 let currency;
 
                 if (this.isProductView) {
-                    currency = config.currency;
+                    currency = currencyModel().getCurrency();
                 } else {
                     const cartData =  customerData.get('cart');
                     const adyenMethods = cartData()['adyen_payment_methods'];
@@ -207,7 +207,7 @@ define([
 
                 return {
                     countryCode: countryCode,
-                    currencyCode: currencyModel().getCurrency(),
+                    currencyCode: currency,
                     totalPriceLabel: $t('Grand Total'),
                     configuration: {
                         domainName: window.location.hostname,
