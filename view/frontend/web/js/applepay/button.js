@@ -26,7 +26,8 @@ define([
     'Adyen_ExpressCheckout/js/helpers/validatePdpForm',
     'Adyen_ExpressCheckout/js/model/config',
     'Adyen_ExpressCheckout/js/model/countries',
-    'Adyen_ExpressCheckout/js/model/totals'
+    'Adyen_ExpressCheckout/js/model/totals',
+    'Adyen_ExpressCheckout/js/model/currency'
 ],
     function (
         Component,
@@ -56,7 +57,8 @@ define([
         validatePdpForm,
         configModel,
         countriesModel,
-        totalsModel
+        totalsModel,
+        currencyModel
     ) {
         'use strict';
 
@@ -87,6 +89,7 @@ define([
 
                     setExpressMethods(response);
                     totalsModel().setTotal(response.totals.grand_total);
+                    currencyModel().setCurrency(response.totals.quote_currency_code)
 
                     const $priceBox = getPdpPriceBox();
                     const pdpForm = getPdpForm(element);
@@ -142,6 +145,11 @@ define([
                 });
                 const applePayConfiguration = this.getApplePayConfiguration(applePaymentMethod, element);
 
+                if (this.isProductView) {
+                    applePayConfiguration.currencyCode = currencyModel().getCurrency();
+                    applePayConfiguration.amount.currency = currencyModel().getCurrency();
+                }
+
                 this.applePayComponent = adyenCheckoutComponent.create(
                     'applepay',
                     applePayConfiguration
@@ -186,10 +194,20 @@ define([
                 const config = configModel().getConfig();
                 const countryCode = config.countryCode === 'UK' ? 'GB' :  config.countryCode;
                 const pdpForm = getPdpForm(element);
+                let currency;
+
+                if (this.isProductView) {
+                    currency = currencyModel().getCurrency();
+                } else {
+                    const cartData =  customerData.get('cart');
+                    const adyenMethods = cartData()['adyen_payment_methods'];
+                    const paymentMethodExtraDetails = adyenMethods.paymentMethodsExtraDetails[applePaymentMethod.type];
+                    currency = paymentMethodExtraDetails.configuration.amount.currency;
+                }
 
                 return {
                     countryCode: countryCode,
-                    currencyCode: config.currency,
+                    currencyCode: currency,
                     totalPriceLabel: $t('Grand Total'),
                     configuration: {
                         domainName: window.location.hostname,
@@ -200,7 +218,7 @@ define([
                         value: this.isProductView
                             ? formatAmount(totalsModel().getTotal() * 100)
                             : formatAmount(getCartSubtotal() * 100),
-                        currency: config.currency
+                        currency: currency
                     },
                     supportedNetworks: getSupportedNetworks(),
                     merchantCapabilities: ['supports3DS'],
@@ -285,7 +303,7 @@ define([
                                 applePayShippingContactUpdate.newShippingMethods = shippingMethods;
                                 applePayShippingContactUpdate.newTotal = {
                                     label: $t('Grand Total'),
-                                    amount: response.base_grand_total.toString()
+                                    amount: response.grand_total.toString()
                                 };
                                 applePayShippingContactUpdate.newLineItems = [
                                     {
@@ -332,7 +350,7 @@ define([
                         applePayShippingMethodUpdate.newTotal = {
                             type: 'final',
                             label: $t('Grand Total'),
-                            amount: response.base_grand_total.toString()
+                            amount: response.grand_total.toString()
                         };
                         applePayShippingMethodUpdate.newLineItems = [
                             {
