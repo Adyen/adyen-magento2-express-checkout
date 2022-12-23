@@ -1,0 +1,11 @@
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE and local environment
+.vscode/
+.vagrant/
+.idea/
+
+# Packages
+vendor/

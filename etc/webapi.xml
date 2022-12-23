@@ -1,0 +1,62 @@
+<?xml version="1.0"?>
+<!--
+/**
+ *
+ * Adyen Payment module (https://www.adyen.com/)
+ *
+ * Copyright (c) 2015 Adyen BV (https://www.adyen.com/)
+ * See LICENSE.txt for license details.
+ *
+ * Author: Adyen <magento@adyen.com>
+ */
+-->
+<routes xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Webapi:etc/webapi.xsd">
+    <!-- Express Init Endpoint -->
+    <route url="/V1/adyen/express/init/mine" method="POST">
+        <service class="Adyen\ExpressCheckout\Api\ExpressInitInterface" method="execute"/>
+        <resources>
+            <resource ref="self"/>
+        </resources>
+        <data>
+            <parameter name="adyenCartId" force="true">%adyen_cart_id%</parameter>
+        </data>
+    </route>
+    <route url="/V1/adyen/express/init/guest" method="POST">
+        <service class="Adyen\ExpressCheckout\Api\GuestExpressInitInterface" method="execute"/>
+        <resources>
+            <resource ref="anonymous"/>
+        </resources>
+    </route>
+    <!-- Express Activate Endpoint -->
+    <route url="/V1/adyen/express/activate/mine" method="POST">
+        <service class="Adyen\ExpressCheckout\Api\ExpressActivateInterface" method="execute"/>
+        <resources>
+            <resource ref="self"/>
+        </resources>
+        <data>
+            <parameter name="adyenCartId" force="true">%adyen_cart_id%</parameter>
+        </data>
+    </route>
+    <route url="/V1/adyen/express/activate/guest" method="POST">
+        <service class="Adyen\ExpressCheckout\Api\GuestExpressActivateInterface" method="execute"/>
+        <resources>
+            <resource ref="anonymous"/>
+        </resources>
+    </route>
+    <!-- Express Cancel Endpoint -->
+    <route url="/V1/adyen/express/cancel/mine" method="POST">
+        <service class="Adyen\ExpressCheckout\Api\ExpressCancelInterface" method="execute"/>
+        <resources>
+            <resource ref="self"/>
+        </resources>
+        <data>
+            <parameter name="adyenCartId" force="true">%adyen_cart_id%</parameter>
+        </data>
+    </route>
+    <route url="/V1/adyen/express/cancel/guest" method="POST">
+        <service class="Adyen\ExpressCheckout\Api\GuestExpressCancelInterface" method="execute"/>
+        <resources>
+            <resource ref="anonymous"/>
+        </resources>
+    </route>
+</routes>

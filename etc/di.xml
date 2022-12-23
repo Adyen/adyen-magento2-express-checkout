@@ -1,0 +1,71 @@
+<?xml version="1.0"?>
+<!--
+/**
+ *
+ * Adyen ExpressCheckout Module (https://www.adyen.com/)
+ *
+ * Copyright (c) 2015 Adyen BV (https://www.adyen.com/)
+ * See LICENSE.txt for license details.
+ *
+ * Author: Adyen <magento@adyen.com>
+ */
+-->
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:framework:ObjectManager/etc/config.xsd">
+    <preference for="Adyen\ExpressCheckout\Api\ExpressActivateInterface" type="Adyen\ExpressCheckout\Model\ExpressActivate" />
+    <preference for="Adyen\ExpressCheckout\Api\GuestExpressActivateInterface" type="Adyen\ExpressCheckout\Model\GuestExpressActivate" />
+    <preference for="Adyen\ExpressCheckout\Api\ExpressCancelInterface" type="Adyen\ExpressCheckout\Model\ExpressCancel" />
+    <preference for="Adyen\ExpressCheckout\Api\GuestExpressCancelInterface" type="Adyen\ExpressCheckout\Model\GuestExpressCancel" />
+    <preference for="Adyen\ExpressCheckout\Api\ExpressInitInterface" type="Adyen\ExpressCheckout\Model\ExpressInit" />
+    <preference for="Adyen\ExpressCheckout\Api\GuestExpressInitInterface" type="Adyen\ExpressCheckout\Model\GuestExpressInit" />
+    <preference for="Adyen\ExpressCheckout\Api\Data\ExpressDataInterface" type="Adyen\ExpressCheckout\Model\ExpressData" />
+    <preference for="Adyen\ExpressCheckout\Api\Data\ExtraDetailInterface" type="Adyen\ExpressCheckout\Model\ExtraDetail" />
+    <preference for="Adyen\ExpressCheckout\Api\Data\ExtraDetail\AmountInterface" type="Adyen\ExpressCheckout\Model\ExtraDetail\Amount" />
+    <preference for="Adyen\ExpressCheckout\Api\Data\ExtraDetail\ConfigurationInterface" type="Adyen\ExpressCheckout\Model\ExtraDetail\Configuration" />
+    <preference for="Adyen\ExpressCheckout\Api\Data\ExtraDetail\IconInterface" type="Adyen\ExpressCheckout\Model\ExtraDetail\Icon" />
+    <preference for="Adyen\ExpressCheckout\Api\Data\MethodResponseInterface" type="Adyen\ExpressCheckout\Model\MethodResponse" />
+    <preference for="Adyen\ExpressCheckout\Api\Data\ProductCartParamsInterface" type="Adyen\ExpressCheckout\Model\ProductCartParams" />
+    <preference for="Adyen\ExpressCheckout\Api\Data\MethodResponse\ConfigurationInterface" type="Adyen\ExpressCheckout\Model\MethodResponse\Configuration" />
+    <preference for="Adyen\ExpressCheckout\Api\Data\AdyenPaymentMethodsInterface" type="Adyen\ExpressCheckout\Model\AdyenPaymentMethods" />
+    <preference for="Adyen\ExpressCheckout\Model\ConfigurationInterface" type="Adyen\ExpressCheckout\Model\Configuration" />
+    <preference for="Adyen\ExpressCheckout\Model\ExpressDataBuilderInterface" type="Adyen\ExpressCheckout\Model\ExpressDataBuilder" />
+    <preference for="Adyen\ExpressCheckout\Model\GetAdyenPaymentMethodsByProductInterface" type="Adyen\ExpressCheckout\Model\GetAdyenPaymentMethodsByProduct" />
+    <preference for="Adyen\ExpressCheckout\Model\IsExpressMethodResolverInterface" type="Adyen\ExpressCheckout\Model\IsExpressMethodResolver" />
+    <type name="Adyen\Payment\Gateway\Request\BrowserInfoDataBuilder">
+        <plugin name="AddLanguageToBrowserInfoForGooglePay" type="Adyen\ExpressCheckout\Plugin\Gateway\Request\BrowserInfoDataBuilder" />
+    </type>
+    <type name="Adyen\Payment\Gateway\Request\CheckoutDataBuilder">
+        <plugin name="addPaymentMethodToAdyenRequestBody" type="Adyen\ExpressCheckout\Plugin\Gateway\Request\CheckoutDataBuilder" />
+    </type>
+    <type name="Magento\Checkout\Block\Cart\Sidebar">
+        <plugin name="addAgreementsToMinicartConfig" type="Adyen\ExpressCheckout\Plugin\AddAgreementsToMinicartConfig"/>
+    </type>
+    <type name="Magento\Checkout\CustomerData\Cart">
+        <plugin name="addGuestMaskedIdToCartData" type="Adyen\ExpressCheckout\Plugin\CustomerData\Cart" />
+    </type>
+    <type name="Adyen\ExpressCheckout\ViewModel\CheckoutConfig">
+        <arguments>
+            <argument name="serializer" xsi:type="object">Magento\Framework\Serialize\Serializer\JsonHexTag</argument>
+        </arguments>
+    </type>
+    <type name="Adyen\ExpressCheckout\Model\ExpressDataBuilder">
+        <arguments>
+            <argument name="customerSession" xsi:type="object">Magento\Customer\Model\Session\Proxy</argument>
+        </arguments>
+    </type>
+    <type name="Adyen\ExpressCheckout\Model\IsExpressMethodResolver">
+        <arguments>
+            <argument name="expressMethodCodes" xsi:type="array">
+                <item name="applepay" xsi:type="string">applepay</item>
+                <item name="googlepay" xsi:type="string">googlepay</item>
+                <item name="googlepay_alt" xsi:type="string">paywithgoogle</item>
+            </argument>
+        </arguments>
+    </type>
+    <type name="Magento\Webapi\Controller\Rest\ParamsOverrider">
+        <arguments>
+            <argument name="paramOverriders" xsi:type="array">
+                <item name="%adyen_cart_id%" xsi:type="object">Adyen\ExpressCheckout\Model\Webapi\ParamOverrider\AdyenCartId\Proxy</item>
+            </argument>
+        </arguments>
+    </type>
+</config>

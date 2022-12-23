@@ -1,0 +1,20 @@
+<?xml version="1.0"?>
+<!--
+/**
+ *
+ * Adyen ExpressCheckout Module (https://www.adyen.com/)
+ *
+ * Copyright (c) 2015 Adyen BV (https://www.adyen.com/)
+ * See LICENSE.txt for license details.
+ *
+ * Author: Adyen <magento@adyen.com>
+ */
+-->
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:framework:Event/etc/events.xsd">
+    <event name="adyen_checkout_config_before_return">
+        <observer name="add_agreement_adyen_checkout_config" instance="Adyen\ExpressCheckout\Observer\AddAgreementsAdyenConfig"/>
+    </event>
+    <event name="checkout_onepage_controller_success_action">
+        <observer name="reinstateOriginalQuote" instance="Adyen\ExpressCheckout\Observer\ReinstateQuote" />
+    </event>
+</config>

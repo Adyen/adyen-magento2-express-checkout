@@ -1,0 +1,8 @@
+{
+    "quote": {
+        "column": {
+            "adyen_express_pdp": true,
+            "adyen_og_quote_id": true
+        }
+    }
+}
