@@ -88,7 +88,7 @@ define([
                             this.reloadAmazonPayButton(element);
                         }.bind(this));
                     } else {
-                        if (!isConfigSet(googlePaymentMethod, ['gatewayMerchantId', 'merchantId'])) {
+                        if (!isConfigSet(amazonPaymentMethod)) {
                             console.log('Required configuration for Amazon Pay is missing.');
                             return;
                         }
@@ -147,17 +147,9 @@ define([
                 });
                 const amazonPayConfig = this.getAmazonPayConfig(amazonPaymentMethod, element);
 
-                this.amazonPayComponent = checkoutComponent.create(amazonPaymentMethod, amazonPayConfig);
-
-                this.amazonPayComponent.isAvailable()
-                    .then(function () {
-                        this.googlePayAllowed(true);
-                        this.amazonPayComponent.mount(element);
-                    }.bind(this))
-                    .catch(function (error) {
-                        console.log(error);
-                        this.googlePayAllowed(false);
-                    }.bind(this));
+                this.amazonPayComponent = checkoutComponent
+                    .create(amazonPaymentMethod, amazonPayConfig)
+                    .mount(element);
             },
 
             unmountAmazonPay: function () {
