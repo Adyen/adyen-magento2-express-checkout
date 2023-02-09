@@ -31,6 +31,16 @@
             <argument name="payment" xsi:type="object">AdyenPaymentHppFacade</argument>
         </arguments>
     </type>
+    <type name="Adyen\ExpressCheckout\Block\AmazonPay\Shortcut\Button">
+        <arguments>
+            <argument name="data" xsi:type="array">
+                <item name="template" xsi:type="string">Adyen_ExpressCheckout::amazonpay/shortcut.phtml</item>
+                <item name="alias" xsi:type="string">adyen.amazonpay.mini-cart</item>
+                <item name="button_id" xsi:type="string">adyen-amazonpay-mini-cart</item>
+            </argument>
+            <argument name="payment" xsi:type="object">AdyenPaymentHppFacade</argument>
+        </arguments>
+    </type>
     <type name="Magento\Customer\CustomerData\SectionPoolInterface">
         <arguments>
             <argument name="sectionSourceMap" xsi:type="array">

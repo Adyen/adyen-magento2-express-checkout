@@ -27,6 +27,12 @@
                 <can_be_empty>1</can_be_empty>
                 <config_path>payment/adyen_hpp/show_apple_pay_on</config_path>
             </field>
+            <field id="show_amazon_pay_on" translate="label" type="multiselect" sortOrder="50" showInDefault="1" showInWebsite="1" showInStore="1">
+                <label>Show AmazonPay on</label>
+                <source_model>Adyen\ExpressCheckout\Model\Config\Source\ShortcutAreas</source_model>
+                <can_be_empty>1</can_be_empty>
+                <config_path>payment/adyen_hpp/show_amazon_pay_on</config_path>
+            </field>
         </group>
     </group>
 </include>

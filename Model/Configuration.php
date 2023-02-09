@@ -79,4 +79,27 @@ class Configuration implements ConfigurationInterface
                 $value
             ) : [];
     }
+
+    /**
+     * Returns configuration value for where to show amazon pay
+     *
+     * @param string $scopeType
+     * @param null|int|string $scopeCode
+     * @return array
+     */
+    public function getShowAmazonPayOn(
+        string $scopeType = ScopeInterface::SCOPE_STORE,
+               $scopeCode = null
+    ): array {
+        $value = $this->scopeConfig->getValue(
+            self::SHOW_AMAZON_PAY_ON_CONFIG_PATH,
+            $scopeType,
+            $scopeCode
+        );
+        return $value ?
+            explode(
+                ',',
+                $value
+            ) : [];
+    }
 }
