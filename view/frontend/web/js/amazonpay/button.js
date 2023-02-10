@@ -149,10 +149,15 @@ define([
                     clientKey: AdyenConfiguration.getClientKey(),
                 });
                 const amazonPayConfig = this.getAmazonPayConfig(amazonPaymentMethod, element);
+                const amazonPayFirstRedirectConfig = this.handleFirstRedirectConfig(amazonPaymentMethod, element);
 
                 this.amazonPayComponent = checkoutComponent
                     .create(amazonPaymentMethod, amazonPayConfig)
                     .mount(element);
+
+                this.amazonPayComponent = checkoutComponent
+                    .create(amazonPaymentMethod, amazonPayFirstRedirectConfig)
+                    .mount(element)
             },
 
             unmountAmazonPay: function () {
@@ -184,6 +189,7 @@ define([
                 const amazonPayStyles = getAmazonPayStyles();
                 const config = configModel().getConfig();
                 const pdpForm = getPdpForm(element);
+                let url = new URL(location.href);
                 let currency;
 
                 if (this.isProductView) {
@@ -193,12 +199,16 @@ define([
                     const adyenMethods = cartData()['adyen_payment_methods'];
                     const paymentMethodExtraDetails = adyenMethods.paymentMethodsExtraDetails[amazonPaymentMethod.type];
                     currency = paymentMethodExtraDetails.configuration.amount.currency;
-                }
+                };
+
+                url.searchParams.delete('amazonCheckoutSessionId');
 
                 return {
                     showPayButton:true,
+                    productType: 'PayAndShip',
                     currency: config.currency,
                     environment: config.checkoutenv.toUpperCase(),
+                    returnUrl: url.href,
                     configuration: {
                         // TODO -> obtain the values dinamically
                         merchantId: 'A1WI30W6FEGXWD',
@@ -210,6 +220,29 @@ define([
                     onError: () => cancelCart(this.isProductView),
                     ...amazonPayStyles
                 };
+            },
+
+            handleFirstRedirectConfig: function () {
+                const amazonPayStyles = getAmazonPayStyles();
+                const config = configModel().getConfig();
+                const pdpForm = getPdpForm(element);
+                const amazonSessionKey = 'amazonCheckoutSessionId';
+                let url = new URL(location.href);
+                let currency;
+
+                url.searchParams.delete('amazonCheckoutSessionId');
+
+                return {
+                    amount: {
+                        value: this.isProductView
+                            ? formatAmount(totalsModel().getTotal() * 100)
+                            : formatAmount(getCartSubtotal() * 100),
+                        currency: currency
+                    },
+                    amazonCheckoutSessionId: url.searchParams.get(amazonSessionKey),
+                    returnUrl: url.href,
+                    showChangePaymentDetailsButton: true
+                }
             }
         });
     }
