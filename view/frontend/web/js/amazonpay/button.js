@@ -2,6 +2,7 @@ define([
         'uiComponent',
         'mage/translate',
         'Magento_Customer/js/customer-data',
+        'Adyen_Payment/js/model/adyen-configuration',
         'Adyen_Payment/js/adyen',
         'Adyen_ExpressCheckout/js/actions/activateCart',
         'Adyen_ExpressCheckout/js/actions/cancelCart',
@@ -32,6 +33,7 @@ define([
         Component,
         $t,
         customerData,
+        AdyenConfiguration,
         AdyenCheckout,
         activateCart,
         cancelCart,
@@ -143,7 +145,8 @@ define([
                     environment: config.checkoutenv,
                     risk: {
                         enabled: false
-                    }
+                    },
+                    clientKey: AdyenConfiguration.getClientKey(),
                 });
                 const amazonPayConfig = this.getAmazonPayConfig(amazonPaymentMethod, element);
 
@@ -193,17 +196,15 @@ define([
                 }
 
                 return {
-                    showPayButton: true,
-                    countryCode: config.countryCode,
+                    showPayButton:true,
+                    currency: config.currency,
                     environment: config.checkoutenv.toUpperCase(),
-                    showButton: true,
                     configuration: {
                         // TODO -> obtain the values dinamically
                         merchantId: 'A1WI30W6FEGXWD',
                         publicKeyId: 'SANDBOX-AG7IJTK25RUCVKNHKQGBWHK7',
                         storeId: 'amzn1.application-oa2-client.c1175ec6e8f14a0497c486f4bd3a99f5'
                     },
-                    onAuthorized: this.startPlaceOrder.bind(this),
                     onClick: function (resolve, reject) {validatePdpForm(resolve, reject, pdpForm);},
                     onSubmit: function () {},
                     onError: () => cancelCart(this.isProductView),
