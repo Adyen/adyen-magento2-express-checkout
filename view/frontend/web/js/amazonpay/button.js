@@ -94,7 +94,14 @@ define([
                             console.log('Required configuration for Amazon Pay is missing.');
                             return;
                         }
-                        this.initialiseAmazonPayComponent(amazonPaymentMethod, element);
+                        const url = new URL(location.href);
+                        if (!url.searchParams.has('amazonCheckoutSessionId')) {
+                            this.initialiseAmazonPayButtonComponent(amazonPaymentMethod, element);
+                        } else {
+                            this.initialiseAmazonPayOrderComponent(amazonPaymentMethod, element);
+                        }
+                        // if yes amazon pay session id, mount 2nd component
+                        // if something, mount the third one
                     }
                 }
             },
@@ -134,10 +141,15 @@ define([
                     return;
                 }
 
-                this.initialiseAmazonPayComponent(amazonPaymentMethod, element);
+                const url = new URL(location.href);
+                if (!url.searchParams.has('amazonCheckoutSessionId')) {
+                    this.initialiseAmazonPayButtonComponent(amazonPaymentMethod, element);
+                } else {
+                    this.initialiseAmazonPayOrderComponent(amazonPaymentMethod, element);
+                }
             },
 
-            initialiseAmazonPayComponent: async function (amazonPaymentMethod, element) {
+            initialiseAmazonPayButtonComponent: async function (amazonPaymentMethod, element) {
                 const config = configModel().getConfig();
                 const checkoutComponent = await new AdyenCheckout({
                     locale: config.locale,
@@ -148,16 +160,29 @@ define([
                     },
                     clientKey: AdyenConfiguration.getClientKey(),
                 });
-                const amazonPayConfig = this.getAmazonPayConfig(amazonPaymentMethod, element);
-                const amazonPayFirstRedirectConfig = this.handleFirstRedirectConfig(amazonPaymentMethod, element);
+                const amazonPayButtonConfig = this.getAmazonPayButtonConfig(amazonPaymentMethod, element);
 
                 this.amazonPayComponent = checkoutComponent
-                    .create(amazonPaymentMethod, amazonPayConfig)
+                    .create(amazonPaymentMethod, amazonPayButtonConfig)
                     .mount(element);
+            },
+
+            initialiseAmazonPayOrderComponent: async function(amazonPaymentMethod, element) {
+                const config = configModel().getConfig;
+                const checkoutComponent = await new AdyenCheckout({
+                    locale: config.locale,
+                    originKey: config.originKey,
+                    environment: config.checkoutenv,
+                    risk: {
+                        enabled: false
+                    },
+                    clientKey: AdyenConfiguration.getClientKey(),
+                });
+                const amazonPayOrderConfig = this.getAmazonPayOrderConfig(amazonPaymentMethod, element);
 
                 this.amazonPayComponent = checkoutComponent
-                    .create(amazonPaymentMethod, amazonPayFirstRedirectConfig)
-                    .mount(element)
+                    .create(amazonPaymentMethod, element)
+                    .mount(element);
             },
 
             unmountAmazonPay: function () {
@@ -182,10 +207,15 @@ define([
                     return;
                 }
 
-                this.initialiseAmazonPayComponent(amazonPaymentMethod, element);
+                const url = new URL(location.href);
+                if (!url.searchParams.has('amazonCheckoutSessionId')) {
+                    this.initialiseAmazonPayButtonComponent(amazonPaymentMethod, element);
+                } else {
+                    this.initialiseAmazonPayOrderComponent(amazonPaymentMethod, element);
+                }
             },
 
-            getAmazonPayConfig: function (amazonPaymentMethod, element) {
+            getAmazonPayButtonConfig: function (amazonPaymentMethod, element) {
                 const amazonPayStyles = getAmazonPayStyles();
                 const config = configModel().getConfig();
                 const pdpForm = getPdpForm(element);
@@ -222,12 +252,13 @@ define([
                 };
             },
 
-            handleFirstRedirectConfig: function () {
+            getAmazonPayOrderConfig: function () {
                 const amazonPayStyles = getAmazonPayStyles();
                 const config = configModel().getConfig();
                 const pdpForm = getPdpForm(element);
                 const amazonSessionKey = 'amazonCheckoutSessionId';
-                let url = new URL(location.href);
+                const url = new URL(location.href);
+                const amazonPaySessionKey = url.searchParams.get(amazonSessionKey);
                 let currency;
 
                 url.searchParams.delete('amazonCheckoutSessionId');
@@ -239,8 +270,8 @@ define([
                             : formatAmount(getCartSubtotal() * 100),
                         currency: currency
                     },
-                    amazonCheckoutSessionId: url.searchParams.get(amazonSessionKey),
-                    returnUrl: url.href,
+                    amazonCheckoutSessionId: amazonPaySessionKey,
+                    returnUrl: url.href + 'checkout/cart',
                     showChangePaymentDetailsButton: true
                 }
             }
