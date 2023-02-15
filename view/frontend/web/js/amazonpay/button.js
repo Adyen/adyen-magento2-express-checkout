@@ -96,12 +96,10 @@ define([
                         }
                         const url = new URL(location.href);
                         if (!url.searchParams.has('amazonCheckoutSessionId')) {
-                            this.initialiseAmazonPayButtonComponent(amazonPaymentMethod, element);
+                            this.initialiseAmazonPayButtonComponent(amazonPaymentMethod, element, config);
                         } else {
-                            this.initialiseAmazonPayOrderComponent(amazonPaymentMethod, element);
+                            this.initialiseAmazonPayOrderComponent(amazonPaymentMethod, element, config);
                         }
-                        // if yes amazon pay session id, mount 2nd component
-                        // if something, mount the third one
                     }
                 }
             },
@@ -116,7 +114,7 @@ define([
 
                 setExpressMethods(response);
                 totalsModel().setTotal(response.totals.grand_total);
-                currencyModel().setCurrency(response.totals.quote_currency_code)
+                currencyModel().setCurrency(response.totals.quote_currency_code);
 
                 const $priceBox = getPdpPriceBox();
                 const pdpForm = getPdpForm(element);
@@ -145,12 +143,12 @@ define([
                 if (!url.searchParams.has('amazonCheckoutSessionId')) {
                     this.initialiseAmazonPayButtonComponent(amazonPaymentMethod, element);
                 } else {
+                    debugger;
                     this.initialiseAmazonPayOrderComponent(amazonPaymentMethod, element);
                 }
             },
 
-            initialiseAmazonPayButtonComponent: async function (amazonPaymentMethod, element) {
-                const config = configModel().getConfig();
+            initialiseAmazonPayButtonComponent: async function (amazonPaymentMethod, element, config) {
                 const checkoutComponent = await new AdyenCheckout({
                     locale: config.locale,
                     originKey: config.originkey,
@@ -167,11 +165,10 @@ define([
                     .mount(element);
             },
 
-            initialiseAmazonPayOrderComponent: async function(amazonPaymentMethod, element) {
-                const config = configModel().getConfig;
+            initialiseAmazonPayOrderComponent: async function(amazonPaymentMethod, element, config) {
                 const checkoutComponent = await new AdyenCheckout({
                     locale: config.locale,
-                    originKey: config.originKey,
+                    originKey: config.originkey,
                     environment: config.checkoutenv,
                     risk: {
                         enabled: false
@@ -181,7 +178,7 @@ define([
                 const amazonPayOrderConfig = this.getAmazonPayOrderConfig(amazonPaymentMethod, element);
 
                 this.amazonPayComponent = checkoutComponent
-                    .create(amazonPaymentMethod, element)
+                    .create(amazonPaymentMethod, amazonPayOrderConfig)
                     .mount(element);
             },
 
@@ -238,7 +235,7 @@ define([
                     productType: 'PayAndShip',
                     currency: config.currency,
                     environment: config.checkoutenv.toUpperCase(),
-                    returnUrl: url.href,
+                    returnUrl: url.href/* + '/checkout/cart'*/,
                     configuration: {
                         // TODO -> obtain the values dinamically
                         merchantId: 'A1WI30W6FEGXWD',
@@ -252,7 +249,7 @@ define([
                 };
             },
 
-            getAmazonPayOrderConfig: function () {
+            getAmazonPayOrderConfig: function (amazonPaymentMethod, element) {
                 const amazonPayStyles = getAmazonPayStyles();
                 const config = configModel().getConfig();
                 const pdpForm = getPdpForm(element);
@@ -261,7 +258,18 @@ define([
                 const amazonPaySessionKey = url.searchParams.get(amazonSessionKey);
                 let currency;
 
+                if (this.isProductView) {
+                    currency = currencyModel().getCurrency();
+                } else {
+                    const cartData =  customerData.get('cart');
+                    const adyenMethods = cartData()['adyen_payment_methods'];
+                    const paymentMethodExtraDetails = adyenMethods.paymentMethodsExtraDetails[amazonPaymentMethod.type];
+                    currency = paymentMethodExtraDetails.configuration.amount.currency;
+                };
+
                 url.searchParams.delete('amazonCheckoutSessionId');
+
+                const secondReturnUrl = url.href + '/checkout/cart/'
 
                 return {
                     amount: {
@@ -271,8 +279,12 @@ define([
                         currency: currency
                     },
                     amazonCheckoutSessionId: amazonPaySessionKey,
-                    returnUrl: url.href + 'checkout/cart',
-                    showChangePaymentDetailsButton: true
+                    returnUrl: secondReturnUrl,
+                    showChangePaymentDetailsButton: true,
+                    onClick: function (resolve, reject) {validatePdpForm(resolve, reject, pdpForm);},
+                    onSubmit: function () {},
+                    onError: () => cancelCart(this.isProductView),
+                    ...amazonPayStyles
                 }
             }
         });
