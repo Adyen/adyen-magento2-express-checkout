@@ -230,12 +230,14 @@ define([
 
                 url.searchParams.delete('amazonCheckoutSessionId');
 
+                const returnUrl = url.href + '/checkout/cart/'
+
                 return {
                     showPayButton:true,
                     productType: 'PayAndShip',
                     currency: config.currency,
                     environment: config.checkoutenv.toUpperCase(),
-                    returnUrl: url.href/* + '/checkout/cart'*/,
+                    returnUrl: returnUrl,
                     configuration: {
                         // TODO -> obtain the values dinamically
                         merchantId: 'A1WI30W6FEGXWD',
@@ -269,8 +271,6 @@ define([
 
                 url.searchParams.delete('amazonCheckoutSessionId');
 
-                const secondReturnUrl = url.href + '/checkout/cart/'
-
                 return {
                     amount: {
                         value: this.isProductView
@@ -279,7 +279,7 @@ define([
                         currency: currency
                     },
                     amazonCheckoutSessionId: amazonPaySessionKey,
-                    returnUrl: secondReturnUrl,
+                    returnUrl: url.href,
                     showChangePaymentDetailsButton: true,
                     onClick: function (resolve, reject) {validatePdpForm(resolve, reject, pdpForm);},
                     onSubmit: function () {},
