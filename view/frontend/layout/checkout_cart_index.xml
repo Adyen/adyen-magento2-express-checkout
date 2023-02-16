@@ -1,0 +1,13 @@
+<?xml version="1.0"?>
+<page xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:framework:View/Layout/etc/page_configuration.xsd"
+      layout="checkout">
+    <body>
+        <referenceContainer name="checkout.cart.container">
+            <block class="Adyen\ExpressCheckout\Block\Cart\OrderReview"
+                   name="amazonpay.order.review"
+                   template="Adyen_ExpressCheckout::amazonpay/cart/order_review.phtml"
+                   after="checkout.cart.summary.title"
+            />
+        </referenceContainer>
+    </body>
+</page>

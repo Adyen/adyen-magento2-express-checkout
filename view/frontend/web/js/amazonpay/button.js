@@ -180,6 +180,11 @@ define([
                 this.amazonPayComponent = checkoutComponent
                     .create(amazonPaymentMethod, amazonPayOrderConfig)
                     .mount(element);
+
+                this.amazonPayComponent.getShopperDetails()
+                    .then(details => {
+                        console.log('shopper details: ', details);
+                    })
             },
 
             unmountAmazonPay: function () {
@@ -230,7 +235,8 @@ define([
 
                 url.searchParams.delete('amazonCheckoutSessionId');
 
-                const returnUrl = url.href + '/checkout/cart/'
+                // TODO -> create a js helper where you use the magento url builder to build the return url
+                const returnUrl = url.href + 'checkout/cart/'
 
                 return {
                     showPayButton:true,
@@ -253,7 +259,6 @@ define([
 
             getAmazonPayOrderConfig: function (amazonPaymentMethod, element) {
                 const amazonPayStyles = getAmazonPayStyles();
-                const config = configModel().getConfig();
                 const pdpForm = getPdpForm(element);
                 const amazonSessionKey = 'amazonCheckoutSessionId';
                 const url = new URL(location.href);
