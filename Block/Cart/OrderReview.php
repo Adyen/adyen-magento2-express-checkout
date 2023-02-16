@@ -14,11 +14,23 @@ declare(strict_types=1);
 namespace Adyen\ExpressCheckout\Block\Cart;
 
 use \Magento\Framework\View\Element\Template;
+use Magento\Framework\App\Request\Http;
 
 class OrderReview extends Template
 {
-    public function getOrderReviewContent()
+     protected $request;
+
+    public function __construct(
+        Template\Context $context,
+        Http $request,
+        array $data = []
+    ) {
+        parent::__construct($context, $data);
+        $this->request = $request;
+    }
+
+    public function getOrderReviewDetails()
     {
-        return 'Rok was here';
+        return $this->request->getParam('shopperDetails');
     }
 }

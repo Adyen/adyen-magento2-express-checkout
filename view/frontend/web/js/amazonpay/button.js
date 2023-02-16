@@ -1,4 +1,5 @@
 define([
+        'jquery',
         'uiComponent',
         'mage/translate',
         'Magento_Customer/js/customer-data',
@@ -30,6 +31,7 @@ define([
         'Adyen_ExpressCheckout/js/model/currency'
     ],
     function (
+        $,
         Component,
         $t,
         customerData,
@@ -184,6 +186,14 @@ define([
                 this.amazonPayComponent.getShopperDetails()
                     .then(details => {
                         console.log('shopper details: ', details);
+                        $.ajax({
+                            url: '/Adyen_ExpressCheckout/Controller/OrderReviewController',
+                            method: 'POST',
+                            data: {shopperDetails: details},
+                            success: function (response) {
+                                console.log(response);
+                            }
+                        });
                     })
             },
 
