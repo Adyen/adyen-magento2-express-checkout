@@ -14,7 +14,6 @@ declare(strict_types=1);
 namespace Adyen\ExpressCheckout\Block\Cart;
 
 use \Magento\Framework\View\Element\Template;
-use Magento\Framework\App\Request\Http;
 
 class OrderReview extends Template
 {
@@ -22,15 +21,24 @@ class OrderReview extends Template
 
     public function __construct(
         Template\Context $context,
-        Http $request,
         array $data = []
     ) {
         parent::__construct($context, $data);
-        $this->request = $request;
     }
 
-    public function getOrderReviewDetails()
+    public function isVisible()
     {
-        return $this->request->getParam('shopperDetails');
+        $url = $this->getUrl('*/*/*', ['_current' => true, '_use_rewrite' => true]);
+        $url_parts = parse_url($url);
+
+        if (isset($url_parts['query'])) {
+            parse_str($url_parts['query'], $query);
+
+            if (isset($query['amazonCheckoutSessionId'])) {
+                return true;
+            } else {
+                return false;
+            }
+        }
     }
 }

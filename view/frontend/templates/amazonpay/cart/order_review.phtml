@@ -1,4 +1,11 @@
-<div class="cart-summary amazonpay_order_review">
-    <h2>Rok was here</h2>
-    <p>AmazonPay order review section</p>
-</div>
+<?php
+/**
+ * @var \Adyen\ExpressCheckout\Block\Cart\OrderReview $block
+ * @var \Magento\Framework\Escaper $escaper
+ */
+?>
+<?php if($block->isVisible()): ?>
+    <div class="amazonpay_order_review">
+        <p id="amazonpay_shopper_details"></p>
+    </div>
+<?php endif ?>

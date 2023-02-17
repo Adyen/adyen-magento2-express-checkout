@@ -186,14 +186,7 @@ define([
                 this.amazonPayComponent.getShopperDetails()
                     .then(details => {
                         console.log('shopper details: ', details);
-                        $.ajax({
-                            url: '/Adyen_ExpressCheckout/Controller/OrderReviewController',
-                            method: 'POST',
-                            data: {shopperDetails: details},
-                            success: function (response) {
-                                console.log(response);
-                            }
-                        });
+                        $("#amazonpay_shopper_details").html(JSON.stringify(details.paymentDescriptor));
                     })
             },
 
@@ -246,7 +239,7 @@ define([
                 url.searchParams.delete('amazonCheckoutSessionId');
 
                 // TODO -> create a js helper where you use the magento url builder to build the return url
-                const returnUrl = url.href + 'checkout/cart/'
+                const returnUrl = url.href + '/checkout/cart';
 
                 return {
                     showPayButton:true,
