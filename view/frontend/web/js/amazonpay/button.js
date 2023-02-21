@@ -17,6 +17,7 @@ define([
         'Adyen_ExpressCheckout/js/helpers/getCartSubtotal',
         'Adyen_ExpressCheckout/js/helpers/getExtensionAttributes',
         'Adyen_ExpressCheckout/js/helpers/getAmazonPayStyles',
+        'Adyen_ExpressCheckout/js/helpers/setOrderReviewStyles',
         'Adyen_ExpressCheckout/js/helpers/getPaymentMethod',
         'Adyen_ExpressCheckout/js/helpers/getPdpForm',
         'Adyen_ExpressCheckout/js/helpers/getPdpPriceBox',
@@ -49,6 +50,7 @@ define([
         getCartSubtotal,
         getExtensionAttributes,
         getAmazonPayStyles,
+        setOrderReviewStyles,
         getPaymentMethod,
         getPdpForm,
         getPdpPriceBox,
@@ -181,13 +183,55 @@ define([
 
                 this.amazonPayComponent = checkoutComponent
                     .create(amazonPaymentMethod, amazonPayOrderConfig)
-                    .mount(element);
+                    .mount(element)
 
                 this.amazonPayComponent.getShopperDetails()
                     .then(details => {
-                        console.log('shopper details: ', details);
-                        $("#amazonpay_shopper_details").html(JSON.stringify(details.paymentDescriptor));
-                    })
+                        let displayHtmlKeys = '';
+                        let displayHtmlValues = '';
+                        if (details.shippingAddress) {
+                            let shippingAddress = details.shippingAddress;
+                            console.log(shippingAddress);
+                            const keyMap = {
+                                name: 'Name',
+                                addressLine1: 'Address',
+                                addressLine2: 'Address',
+                                addressLine3: 'Address',
+                                city: 'City',
+                                countryCode: 'Country Code',
+                                district: 'District',
+                                stateOrRegion: 'State/Region',
+                                postalCode: 'Postal Code',
+                                phoneNumber: 'Phone Number'
+                            };
+                            const keys = Object.keys(shippingAddress);
+                            keys.forEach((key, index) => {
+                                if (shippingAddress[key] != null) {
+                                    let label = keyMap[key] || key;
+                                    displayHtmlKeys += `${label} <br>`;
+                                    displayHtmlValues += `${shippingAddress[key]} <br>`;
+                                }
+                            });
+                        }
+
+                        if (details.paymentDescriptor) {
+                            let paymentDescriptor = details.paymentDescriptor;
+                            displayHtmlKeys += `Payment Descriptor <br>`;
+                            displayHtmlValues += `${paymentDescriptor} <br>`;
+                        }
+
+                        $('#amazonpay_shopper_details_keys').html(displayHtmlKeys);
+                        $('#amazonpay_shopper_details_values').html(displayHtmlValues);
+                        setOrderReviewStyles({
+                            'display': 'flex',
+                            'flex-direction': 'row',
+                            'justify-content': 'space-between',
+                            'align-items': 'flex-start',
+                            'margin-left': '15px',
+                            'margin-right': '15px'
+                        });
+                    }
+                )
             },
 
             unmountAmazonPay: function () {
