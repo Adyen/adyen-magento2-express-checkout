@@ -17,7 +17,6 @@ define([
         'Adyen_ExpressCheckout/js/helpers/getCartSubtotal',
         'Adyen_ExpressCheckout/js/helpers/getExtensionAttributes',
         'Adyen_ExpressCheckout/js/helpers/getAmazonPayStyles',
-        'Adyen_ExpressCheckout/js/helpers/setOrderReviewStyles',
         'Adyen_ExpressCheckout/js/helpers/getPaymentMethod',
         'Adyen_ExpressCheckout/js/helpers/getPdpForm',
         'Adyen_ExpressCheckout/js/helpers/getPdpPriceBox',
@@ -50,7 +49,6 @@ define([
         getCartSubtotal,
         getExtensionAttributes,
         getAmazonPayStyles,
-        setOrderReviewStyles,
         getPaymentMethod,
         getPdpForm,
         getPdpPriceBox,
@@ -98,11 +96,17 @@ define([
                             console.log('Required configuration for Amazon Pay is missing.');
                             return;
                         }
+
                         const url = new URL(location.href);
+                        debugger;
                         if (!url.searchParams.has('amazonCheckoutSessionId')) {
                             this.initialiseAmazonPayButtonComponent(amazonPaymentMethod, element, config);
                         } else {
-                            this.initialiseAmazonPayOrderComponent(amazonPaymentMethod, element, config);
+                            if (!url.searchParams.has('amazonExpress')) {
+                                this.initialiseAmazonPayOrderComponent(amazonPaymentMethod, element, config);
+                            } else {
+                                this.initialiseAmazonPayPaymentComponent(amazonPaymentMethod, element, config);
+                            }
                         }
                     }
                 }
@@ -145,10 +149,13 @@ define([
 
                 const url = new URL(location.href);
                 if (!url.searchParams.has('amazonCheckoutSessionId')) {
-                    this.initialiseAmazonPayButtonComponent(amazonPaymentMethod, element);
+                    this.initialiseAmazonPayButtonComponent(amazonPaymentMethod, element, config);
                 } else {
-                    debugger;
-                    this.initialiseAmazonPayOrderComponent(amazonPaymentMethod, element);
+                    if (!url.searchParams.has('amazonExpress')) {
+                        this.initialiseAmazonPayOrderComponent(amazonPaymentMethod, element, config);
+                    } else {
+                        this.initialiseAmazonPayPaymentComponent(amazonPaymentMethod, element, config);
+                    }
                 }
             },
 
@@ -191,7 +198,6 @@ define([
                         let displayHtmlValues = '';
                         if (details.shippingAddress) {
                             let shippingAddress = details.shippingAddress;
-                            console.log(shippingAddress);
                             const keyMap = {
                                 name: 'Name',
                                 addressLine1: 'Address',
@@ -222,16 +228,31 @@ define([
 
                         $('#amazonpay_shopper_details_keys').html(displayHtmlKeys);
                         $('#amazonpay_shopper_details_values').html(displayHtmlValues);
-                        setOrderReviewStyles({
-                            'display': 'flex',
-                            'flex-direction': 'row',
-                            'justify-content': 'space-between',
-                            'align-items': 'flex-start',
-                            'margin-left': '15px',
-                            'margin-right': '15px'
-                        });
                     }
                 )
+
+            },
+
+            initialiseAmazonPayPaymentComponent: async function (amazonPaymentMethod, element, config) {
+                const checkoutComponent = await new AdyenCheckout({
+                    locale: config.locale,
+                    originKey: config.originkey,
+                    environment: config.checkoutenv,
+                    risk: {
+                        enabled: false
+                    },
+                    clientKey: AdyenConfiguration.getClientKey()
+                });
+
+                debugger;
+                const amazonPayPaymentConfig = this.getAmazonPayPaymentConfig(amazonPaymentMethod, element);
+
+                const amazonPayComponent = checkoutComponent
+                    .create(amazonPaymentMethod, amazonPayPaymentConfig)
+                    .mount(element);
+
+                amazonPayComponent.submit();
+
             },
 
             unmountAmazonPay: function () {
@@ -241,6 +262,7 @@ define([
             },
 
             reloadAmazonPayButton: async function (element) {
+                const config = configModel().getConfig();
                 let amazonPaymentMethod = await getPaymentMethod('amazonpay', this.isProductView);
 
                 if (this.isProductView) {
@@ -258,9 +280,13 @@ define([
 
                 const url = new URL(location.href);
                 if (!url.searchParams.has('amazonCheckoutSessionId')) {
-                    this.initialiseAmazonPayButtonComponent(amazonPaymentMethod, element);
+                    this.initialiseAmazonPayButtonComponent(amazonPaymentMethod, element, config);
                 } else {
-                    this.initialiseAmazonPayOrderComponent(amazonPaymentMethod, element);
+                    if (!url.searchParams.has('amazonExpress')) {
+                        this.initialiseAmazonPayOrderComponent(amazonPaymentMethod, element, config);
+                    } else {
+                        this.initialiseAmazonPayPaymentComponent(amazonPaymentMethod, element, config);
+                    }
                 }
             },
 
@@ -323,6 +349,44 @@ define([
 
                 url.searchParams.delete('amazonCheckoutSessionId');
 
+                const returnUrl = url.href + '/?amazonExpress=finalize';
+
+                return {
+                    amount: {
+                        value: this.isProductView
+                            ? formatAmount(totalsModel().getTotal() * 100)
+                            : formatAmount(getCartSubtotal() * 100),
+                        currency: currency
+                    },
+                    amazonCheckoutSessionId: amazonPaySessionKey,
+                    returnUrl: returnUrl,
+                    showChangePaymentDetailsButton: true,
+                    onClick: function (resolve, reject) {validatePdpForm(resolve, reject, pdpForm);},
+                    onSubmit: function () {},
+                    onError: () => cancelCart(this.isProductView),
+                    ...amazonPayStyles
+                }
+            },
+
+            getAmazonPayPaymentConfig: function (amazonPaymentMethod, element) {
+                const amazonPayStyles = getAmazonPayStyles();
+                const pdpForm = getPdpForm(element);
+                const amazonSessionKey = 'amazonCheckoutSessionId';
+                const url = new URL(location.href);
+                const amazonPaySessionKey = url.searchParams.get(amazonSessionKey);
+                let currency;
+
+                if (this.isProductView) {
+                    currency = currencyModel().getCurrency();
+                } else {
+                    const cartData =  customerData.get('cart');
+                    const adyenMethods = cartData()['adyen_payment_methods'];
+                    const paymentMethodExtraDetails = adyenMethods.paymentMethodsExtraDetails[amazonPaymentMethod.type];
+                    currency = paymentMethodExtraDetails.configuration.amount.currency;
+                };
+
+                url.searchParams.delete('amazonCheckoutSessionId');
+
                 return {
                     amount: {
                         value: this.isProductView
@@ -332,9 +396,12 @@ define([
                     },
                     amazonCheckoutSessionId: amazonPaySessionKey,
                     returnUrl: url.href,
-                    showChangePaymentDetailsButton: true,
+                    showOrderButton: false,
                     onClick: function (resolve, reject) {validatePdpForm(resolve, reject, pdpForm);},
-                    onSubmit: function () {},
+                    onSubmit: function (state, component) {
+                        console.log('state: ', state);
+                        console.log('component: ', component);
+                    },
                     onError: () => cancelCart(this.isProductView),
                     ...amazonPayStyles
                 }
