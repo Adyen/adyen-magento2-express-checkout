@@ -224,11 +224,8 @@ define([
                                 }
                         };
 
-                        console.log('payload: ', payload);
-
                         getShippingMethods(payload, this.isProductView)
                             .then((result) => {
-                                console.log('result', result);
                                 if (result.length === 0) {
                                     reject($t('There are no shipping methods available for you right now. ' +
                                         'Please try again or use an alternative payment method.'));
@@ -248,21 +245,24 @@ define([
                                     };
 
                                     shippingMethods.push(method);
-                                    console.log('shipping methods: ', shippingMethods[0]);
                                 }
 
-                                let streetAddress = details.shippingAddress.addressLine1.split(" "),
-                                    nameArr = details.buyer.name.split(" "),
-                                    firstname = nameArr[0],
-                                    lastname = nameArr.slice(1).join(" "),
-                                    payload2 = {
+                                let shippingStreetAddress = details.shippingAddress.addressLine1.split(" "),
+                                    shippingNameArr = details.shippingAddress.name.split(" "),
+                                    shippingFirstname = shippingNameArr[0],
+                                    shippingLastname = shippingNameArr.slice(1).join(" "),
+                                    billingStreetAddress = details.billingAddress.addressLine2.split(" "),
+                                    billingNameArr = details.billingAddress.name.split(" "),
+                                    billingFirstname = billingNameArr[0],
+                                    billingLastname = billingNameArr.slice(1).join(" "),
+                                    quotePayload = {
                                         'addressInformation': {
                                             'shipping_address': {
                                                 'email': details.buyer.email,
                                                 'telephone': details.buyer.phoneNumber,
-                                                'firstname': firstname,
-                                                'lastname': lastname,
-                                                'street': streetAddress,
+                                                'firstname': shippingFirstname,
+                                                'lastname': shippingLastname,
+                                                'street': shippingStreetAddress,
                                                 'city': details.shippingAddress.city.toLowerCase(),
                                                 'region': details.shippingAddress.stateOrRegion,
                                                 'region_id': getRegionId(details.shippingAddress.countryCode, details.shippingAddress.stateOrRegion),
@@ -273,19 +273,29 @@ define([
                                                 'customer_address_id': 0,
                                                 'save_in_address_book': 0
                                             },
+                                            'billing_address': {
+                                                'email': details.buyer.email,
+                                                'telephone': details.buyer.phoneNumber,
+                                                'firstname': billingFirstname,
+                                                'lastname': billingLastname,
+                                                'street': billingStreetAddress,
+                                                'city': details.billingAddress.city.toLowerCase(),
+                                                'region': details.billingAddress.stateOrRegion,
+                                                'region_id': getRegionId(details.billingAddress.countryCode, details.billingAddress.stateOrRegion),
+                                                'region_code': null,
+                                                'country_id': details.billingAddress.countryCode,
+                                                'postcode': details.billingAddress.postalCode,
+                                                'same_as_billing': 0,
+                                                'customer_address_id': 0,
+                                                'save_in_address_book': 0
+                                            },
                                             'shipping_method_code': shippingMethods[0].method_code,
                                             'shipping_carrier_code': shippingMethods[0].carrier_code,
                                         }
                                     };
 
-                                setShippingInformation(payload2, this.isProductView);
+                                setShippingInformation(quotePayload, this.isProductView);
                             })
-
-                        // TODO
-
-                        // 1. populate the express module FE with the shopper information coming from amazon, save it to the quote
-                        // 2. while creating the order with payment information you need to rely on the quote information
-
 
                         let displayHtmlKeys = '';
                         let displayHtmlValues = '';
@@ -488,12 +498,12 @@ define([
                     onClick: function (resolve, reject) {validatePdpForm(resolve, reject, pdpForm);},
                     onSubmit: function (state, component) {
                         component.setStatus('loading');
-                        const stateData = JSON.stringify({ paymentMethod: state.data.paymentMethod })
+                        const stateData = JSON.stringify({ paymentMethod: state.data.paymentMethod });
 
-                        // to get the email information, make a call here to /shipping-information endpoint
+                        console.log("quote: ", quote);
 
                         const payload = {
-                            email: 'rok.popovledinski@adyen.com',
+                            email: "rok.popovledinski@adyen.com",
                             paymentMethod: {
                                 method: 'adyen_hpp',
                                 additional_data: {
@@ -505,6 +515,7 @@ define([
 
                         createPayment(JSON.stringify(payload), false)
                             .then(response => {
+                                console.log('response: ', response);
                                 component.setStatus('ready');
                                 if (response.action) {
                                     console.log('action: ', response.action);
