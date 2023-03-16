@@ -3,6 +3,7 @@ define([
         'uiComponent',
         'mage/translate',
         'Magento_Customer/js/customer-data',
+        'Magento_Checkout/js/model/quote',
         'Adyen_Payment/js/model/adyen-configuration',
         'Adyen_Payment/js/adyen',
         'Adyen_ExpressCheckout/js/actions/activateCart',
@@ -35,6 +36,7 @@ define([
         Component,
         $t,
         customerData,
+        quote,
         AdyenConfiguration,
         AdyenCheckout,
         activateCart,
@@ -98,7 +100,7 @@ define([
                         }
 
                         const url = new URL(location.href);
-                        debugger;
+
                         if (!url.searchParams.has('amazonCheckoutSessionId')) {
                             this.initialiseAmazonPayButtonComponent(amazonPaymentMethod, element, config);
                         } else {
@@ -194,6 +196,88 @@ define([
 
                 this.amazonPayComponent.getShopperDetails()
                     .then(details => {
+                        console.log(details);
+
+                        let self = this,
+                            shippingAddress = details.shippingAddress,
+                            streetAddress = shippingAddress.addressLine1.split(" "),
+                            shippingMethods = [],
+                            buyer = details.buyer,
+                            payload = {
+                                // TODO - separate firstname and lastname
+                                address: {
+                                    city: shippingAddress.city.toLowerCase(),
+                                    country_id: shippingAddress.countryCode,
+                                    email: buyer.email,
+                                    firstname: buyer.name,
+                                    lastname: buyer.name,
+                                    postcode: shippingAddress.postalCode,
+                                    region: shippingAddress.stateOrRegion,
+                                    region_id: getRegionId(shippingAddress.countryCode, shippingAddress.stateOrRegion),
+                                    street: streetAddress,
+                                    telephone: buyer.phoneNumber,
+                                    save_in_address_book: 0
+                                }
+                        };
+
+                        getShippingMethods(payload, this.isProductView)
+                            .then((result) => {
+                                console.log('result', result);
+                                if (result.length === 0) {
+                                    reject($t('There are no shipping methods available for you right now. ' +
+                                        'Please try again or use an alternative payment method.'));
+                                }
+
+                                for (let i = 0; i < result.length; i++) {
+                                    if (typeof result[i].method_code !== 'string') {
+                                        continue;
+                                    }
+
+                                    let method = {
+                                        method_code: result[i].method_code,
+                                        method_title: result[i].method_title,
+                                        carrier_title: result[i].carrier_title ? result[i].carrier_title : '',
+                                        carrier_code: result[i].carrier_code ? result[i].carrier_code : '',
+                                        amount: parseFloat(result[i].amount).toFixed(2)
+                                    };
+
+                                    shippingMethods.push(method);
+                                    console.log('shipping methods: ', shippingMethods[0]);
+                                }
+
+                                let streetAddress = details.shippingAddress.addressLine1.split(" "),
+                                    payload2 = {
+                                        'addressInformation': {
+                                            'shipping_address': {
+                                                'email': details.buyer.email,
+                                                'telephone': details.buyer.phoneNumber,
+                                                'firstname': details.buyer.name,
+                                                'lastname': null,
+                                                'street': streetAddress,
+                                                'city': details.shippingAddress.city.toLowerCase(),
+                                                'region': details.shippingAddress.stateOrRegion,
+                                                'region_id': getRegionId(details.shippingAddress.countryCode, details.shippingAddress.stateOrRegion),
+                                                'region_code': null,
+                                                'country_id': details.shippingAddress.countryCode,
+                                                'postcode': details.shippingAddress.postalCode,
+                                                'same_as_billing': 0,
+                                                'customer_address_id': 0,
+                                                'save_in_address_book': 0
+                                            },
+                                            'shipping_method_code': shippingMethods[0].method_code,
+                                            'shipping_carrier_code': shippingMethods[0].carrier_code,
+                                        }
+                                    };
+
+                                setShippingInformation(payload2, this.isProductView);
+                            })
+
+                        // TODO
+
+                        // 1. populate the express module FE with the shopper information coming from amazon, save it to the quote
+                        // 2. while creating the order with payment information you need to rely on the quote information
+
+
                         let displayHtmlKeys = '';
                         let displayHtmlValues = '';
                         if (details.shippingAddress) {
@@ -244,7 +328,6 @@ define([
                     clientKey: AdyenConfiguration.getClientKey()
                 });
 
-                debugger;
                 const amazonPayPaymentConfig = this.getAmazonPayPaymentConfig(amazonPaymentMethod, element);
 
                 const amazonPayComponent = checkoutComponent
@@ -308,8 +391,8 @@ define([
 
                 url.searchParams.delete('amazonCheckoutSessionId');
 
-                // TODO -> create a js helper where you use the magento url builder to build the return url
-                const returnUrl = url.href + '/checkout/cart';
+                // TODO -> create a js helper where you use the magento url builder interface to build the return url
+                const returnUrl = url.origin + '/checkout/cart';
 
                 return {
                     showPayButton:true,
@@ -386,21 +469,40 @@ define([
                 };
 
                 url.searchParams.delete('amazonCheckoutSessionId');
+                url.searchParams.delete('amazonExpress');
+                let returnUrl = url.origin + '/checkout/onepage/success/'
 
                 return {
-                    amount: {
-                        value: this.isProductView
-                            ? formatAmount(totalsModel().getTotal() * 100)
-                            : formatAmount(getCartSubtotal() * 100),
-                        currency: currency
-                    },
                     amazonCheckoutSessionId: amazonPaySessionKey,
-                    returnUrl: url.href,
+                    returnUrl: returnUrl,
                     showOrderButton: false,
                     onClick: function (resolve, reject) {validatePdpForm(resolve, reject, pdpForm);},
                     onSubmit: function (state, component) {
-                        console.log('state: ', state);
-                        console.log('component: ', component);
+                        component.setStatus('loading');
+                        const stateData = JSON.stringify({ paymentMethod: state.data.paymentMethod })
+
+                        // to get the email information, make a call here to /shipping-information endpoint
+
+                        const payload = {
+                            email: 'rok.popovledinski@adyen.com',
+                            paymentMethod: {
+                                method: 'adyen_hpp',
+                                additional_data: {
+                                    brand_code: state.data.paymentMethod.type,
+                                    stateData
+                                }
+                            }
+                        }
+
+                        createPayment(JSON.stringify(payload), false)
+                            .then(response => {
+                                component.setStatus('ready');
+                                if (response.action) {
+                                    console.log('action: ', response.action);
+                                } else {
+                                    console.log('fail hihi');
+                                }
+                            })
                     },
                     onError: () => cancelCart(this.isProductView),
                     ...amazonPayStyles

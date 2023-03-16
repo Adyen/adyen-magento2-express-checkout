@@ -17,7 +17,7 @@ use \Magento\Framework\View\Element\Template;
 
 class OrderReview extends Template
 {
-     protected $request;
+    protected $request;
 
     public function __construct(
         Template\Context $context,
