@@ -198,19 +198,23 @@ define([
                     .then(details => {
                         console.log(details);
 
+
+
                         let self = this,
                             shippingAddress = details.shippingAddress,
-                            streetAddress = shippingAddress.addressLine1.split(" "),
-                            shippingMethods = [],
                             buyer = details.buyer,
+                            streetAddress = shippingAddress.addressLine1.split(" "),
+                            nameArr = buyer.name.split(" "),
+                            firstname = nameArr[0],
+                            lastname = nameArr.slice(1).join(" "),
+                            shippingMethods = [],
                             payload = {
-                                // TODO - separate firstname and lastname
                                 address: {
                                     city: shippingAddress.city.toLowerCase(),
                                     country_id: shippingAddress.countryCode,
                                     email: buyer.email,
-                                    firstname: buyer.name,
-                                    lastname: buyer.name,
+                                    firstname: firstname,
+                                    lastname: lastname,
                                     postcode: shippingAddress.postalCode,
                                     region: shippingAddress.stateOrRegion,
                                     region_id: getRegionId(shippingAddress.countryCode, shippingAddress.stateOrRegion),
@@ -219,6 +223,8 @@ define([
                                     save_in_address_book: 0
                                 }
                         };
+
+                        console.log('payload: ', payload);
 
                         getShippingMethods(payload, this.isProductView)
                             .then((result) => {
@@ -246,13 +252,16 @@ define([
                                 }
 
                                 let streetAddress = details.shippingAddress.addressLine1.split(" "),
+                                    nameArr = details.buyer.name.split(" "),
+                                    firstname = nameArr[0],
+                                    lastname = nameArr.slice(1).join(" "),
                                     payload2 = {
                                         'addressInformation': {
                                             'shipping_address': {
                                                 'email': details.buyer.email,
                                                 'telephone': details.buyer.phoneNumber,
-                                                'firstname': details.buyer.name,
-                                                'lastname': null,
+                                                'firstname': firstname,
+                                                'lastname': lastname,
                                                 'street': streetAddress,
                                                 'city': details.shippingAddress.city.toLowerCase(),
                                                 'region': details.shippingAddress.stateOrRegion,
