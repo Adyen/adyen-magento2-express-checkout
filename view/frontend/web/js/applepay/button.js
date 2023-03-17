@@ -422,12 +422,7 @@ define([
                     }
                 };
 
-                const stateData = {
-                    'paymentMethod': {
-                        'type': 'applepay',
-                        'applePayToken': btoa(JSON.stringify(event.payment.token.paymentData))
-                    }
-                };
+                let componentData = self.applePayComponent.data;
 
                 setShippingInformation(payload, this.isProductView).done(function () {
                     // Submit payment information
@@ -437,7 +432,7 @@ define([
                             method: 'adyen_hpp',
                             additional_data: {
                                 brand_code: 'applepay',
-                                stateData: JSON.stringify(stateData)
+                                stateData: JSON.stringify(componentData)
                             }
                         }
                     };
