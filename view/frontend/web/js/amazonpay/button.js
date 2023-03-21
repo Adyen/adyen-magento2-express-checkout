@@ -196,10 +196,7 @@ define([
 
                 this.amazonPayComponent.getShopperDetails()
                     .then(details => {
-                        console.log(details);
-
-
-
+                        console.log('shopper details: ', details);
                         let self = this,
                             shippingAddress = details.shippingAddress,
                             buyer = details.buyer,
@@ -276,15 +273,15 @@ define([
                                             'billing_address': {
                                                 'email': details.buyer.email,
                                                 'telephone': details.buyer.phoneNumber,
-                                                'firstname': billingFirstname,
-                                                'lastname': billingLastname,
-                                                'street': billingStreetAddress,
-                                                'city': details.billingAddress.city.toLowerCase(),
-                                                'region': details.billingAddress.stateOrRegion,
-                                                'region_id': getRegionId(details.billingAddress.countryCode, details.billingAddress.stateOrRegion),
+                                                'firstname': shippingFirstname,
+                                                'lastname': shippingLastname,
+                                                'street': shippingStreetAddress,
+                                                'city': details.shippingAddress.city.toLowerCase(),
+                                                'region': details.shippingAddress.stateOrRegion,
+                                                'region_id': getRegionId(details.shippingAddress.countryCode, details.shippingAddress.stateOrRegion),
                                                 'region_code': null,
-                                                'country_id': details.billingAddress.countryCode,
-                                                'postcode': details.billingAddress.postalCode,
+                                                'country_id': details.shippingAddress.countryCode,
+                                                'postcode': details.shippingAddress.postalCode,
                                                 'same_as_billing': 0,
                                                 'customer_address_id': 0,
                                                 'save_in_address_book': 0
@@ -295,6 +292,7 @@ define([
                                     };
 
                                 setShippingInformation(quotePayload, this.isProductView);
+                                console.log('quote updated');
                             })
 
                         let displayHtmlKeys = '';
@@ -478,6 +476,9 @@ define([
                 const amazonPaySessionKey = url.searchParams.get(amazonSessionKey);
                 let currency;
 
+                console.log('quote shipping address: ', quote.shippingAddress());
+
+
                 if (this.isProductView) {
                     currency = currencyModel().getCurrency();
                 } else {
@@ -500,7 +501,8 @@ define([
                         component.setStatus('loading');
                         const stateData = JSON.stringify({ paymentMethod: state.data.paymentMethod });
 
-                        console.log("quote: ", quote);
+                        console.log('quote: ', quote);
+                        console.log('quote shipping address: ', quote.shippingAddress());
 
                         const payload = {
                             email: "rok.popovledinski@adyen.com",
