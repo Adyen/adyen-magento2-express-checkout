@@ -331,17 +331,11 @@ define([
 
             startPlaceOrder: function (paymentData) {
                 let self = this;
+                let componentData = self.googlePayComponent.data;
 
                 this.setShippingInformation(paymentData)
                     .done(function () {
-                        const stateData = JSON.stringify({
-                            paymentMethod: {
-                                googlePayCardNetwork: paymentData.paymentMethodData.info.cardNetwork,
-                                googlePayToken: paymentData.paymentMethodData.tokenizationData.token,
-                                type: self.googlePayComponent.props.type
-                            }
-                        }),
-                         payload = {
+                        const payload = {
                             email: paymentData.email,
                             shippingAddress: this.mapAddress(paymentData.shippingAddress),
                             billingAddress: this.mapAddress(paymentData.paymentMethodData.info.billingAddress),
@@ -349,7 +343,7 @@ define([
                                 method: 'adyen_hpp',
                                 additional_data: {
                                     brand_code: self.googlePayComponent.props.type,
-                                    stateData
+                                    stateData: JSON.stringify(componentData)
                                 },
                                 extension_attributes: getExtensionAttributes(paymentData)
                             }
