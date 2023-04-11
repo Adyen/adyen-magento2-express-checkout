@@ -2,6 +2,7 @@ define([
         'jquery',
         'uiComponent',
         'mage/translate',
+        'mage/url',
         'Magento_Customer/js/customer-data',
         'Magento_Checkout/js/model/quote',
         'Adyen_Payment/js/model/adyen-configuration',
@@ -35,6 +36,7 @@ define([
         $,
         Component,
         $t,
+        urlBuilder,
         customerData,
         quote,
         AdyenConfiguration,
@@ -408,8 +410,7 @@ define([
 
                 url.searchParams.delete('amazonCheckoutSessionId');
 
-                // TODO -> create a js helper where you use the magento url builder interface to build the return url
-                const returnUrl = url.origin + '/checkout/cart';
+                const returnUrl = urlBuilder.build('checkout/cart/index');
 
                 return {
                     showPayButton:true,
@@ -449,7 +450,7 @@ define([
 
                 url.searchParams.delete('amazonCheckoutSessionId');
 
-                const returnUrl = url.href + '/?amazonExpress=finalize';
+                const returnUrl = urlBuilder.build('checkout/cart/index' + '?amazonExpress=finalize');
 
                 return {
                     amount: {
@@ -475,9 +476,7 @@ define([
                 const url = new URL(location.href);
                 const amazonPaySessionKey = url.searchParams.get(amazonSessionKey);
                 let currency;
-
-                console.log('quote shipping address: ', quote.shippingAddress());
-
+                let isProductView = this.isProductView;
 
                 if (this.isProductView) {
                     currency = currencyModel().getCurrency();
@@ -488,9 +487,9 @@ define([
                     currency = paymentMethodExtraDetails.configuration.amount.currency;
                 };
 
-                url.searchParams.delete('amazonCheckoutSessionId');
-                url.searchParams.delete('amazonExpress');
-                let returnUrl = url.origin + '/checkout/onepage/success/'
+                url.searchParams.delete('amazonCheckoutSessionId', 'amazonExpress');
+
+                const returnUrl = urlBuilder.build('checkout/onepage/success');
 
                 return {
                     amazonCheckoutSessionId: amazonPaySessionKey,
@@ -500,10 +499,7 @@ define([
                     onSubmit: function (state, component) {
                         component.setStatus('loading');
                         const stateData = JSON.stringify({ paymentMethod: state.data.paymentMethod });
-
-                        console.log('quote: ', quote);
-                        console.log('quote shipping address: ', quote.shippingAddress());
-
+                        
                         const payload = {
                             email: "rok.popovledinski@adyen.com",
                             paymentMethod: {
@@ -515,16 +511,21 @@ define([
                             }
                         }
 
-                        createPayment(JSON.stringify(payload), false)
-                            .then(response => {
-                                console.log('response: ', response);
-                                component.setStatus('ready');
-                                if (response.action) {
-                                    console.log('action: ', response.action);
-                                } else {
-                                    console.log('fail hihi');
-                                }
-                            })
+                        if (window.checkout && window.checkout.agreementIds) {
+                            postData.paymentMethod.extension_attributes = {
+                                agreement_ids: window.checkout.agreementIds
+                            };
+                        }
+
+                        createPayment(JSON.stringify(payload), isProductView)
+                            .done(function () {
+                                console.log('rok was here');
+                                debugger;
+                                redirectToSuccess();
+                            }).fail(function (r) {
+                            console.log('fail');
+                            console.error('Adyen AmazonPay Unable to take payment', r);
+                        });
                     },
                     onError: () => cancelCart(this.isProductView),
                     ...amazonPayStyles
