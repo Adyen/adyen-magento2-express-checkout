@@ -101,15 +101,20 @@ define([
                             return;
                         }
 
-                        const url = new URL(location.href);
+                        const urlParams = new URLSearchParams(window.location.search);
 
-                        if (!url.searchParams.has('amazonCheckoutSessionId')) {
+                        if (!urlParams.has('amazonCheckoutSessionId')) {
                             this.initialiseAmazonPayButtonComponent(amazonPaymentMethod, element, config);
                         } else {
-                            if (!url.searchParams.has('amazonExpress')) {
+                            if (!urlParams.has('amazonExpress')) {
                                 this.initialiseAmazonPayOrderComponent(amazonPaymentMethod, element, config);
                             } else {
-                                this.initialiseAmazonPayPaymentComponent(amazonPaymentMethod, element, config);
+                                if (urlParams.get('amazonExpress') === 'finalize') {
+                                    this.initialiseAmazonPayPaymentComponent(amazonPaymentMethod, element, config);
+                                } else if (urlParams.get('amazonExpress') === 'success') {
+                                    console.log('great success');
+                                    return;
+                                }
                             }
                         }
                     }
@@ -198,7 +203,6 @@ define([
 
                 this.amazonPayComponent.getShopperDetails()
                     .then(details => {
-                        console.log('shopper details: ', details);
                         let self = this,
                             shippingAddress = details.shippingAddress,
                             buyer = details.buyer,
@@ -209,6 +213,7 @@ define([
                             shippingMethods = [],
                             payload = {
                                 address: {
+                                    // TODO -> look into this
                                     city: shippingAddress.city.toLowerCase(),
                                     country_id: shippingAddress.countryCode,
                                     email: buyer.email,
@@ -258,7 +263,7 @@ define([
                                         'addressInformation': {
                                             'shipping_address': {
                                                 'email': details.buyer.email,
-                                                'telephone': details.buyer.phoneNumber,
+                                                'telephone': details.shippingAddress.phoneNumber,
                                                 'firstname': shippingFirstname,
                                                 'lastname': shippingLastname,
                                                 'street': shippingStreetAddress,
@@ -274,16 +279,16 @@ define([
                                             },
                                             'billing_address': {
                                                 'email': details.buyer.email,
-                                                'telephone': details.buyer.phoneNumber,
-                                                'firstname': shippingFirstname,
-                                                'lastname': shippingLastname,
-                                                'street': shippingStreetAddress,
-                                                'city': details.shippingAddress.city.toLowerCase(),
-                                                'region': details.shippingAddress.stateOrRegion,
-                                                'region_id': getRegionId(details.shippingAddress.countryCode, details.shippingAddress.stateOrRegion),
+                                                'telephone': details.billingAddress.phoneNumber,
+                                                'firstname': billingFirstname,
+                                                'lastname': billingLastname,
+                                                'street': billingStreetAddress,
+                                                'city': details.billingAddress.city.toLowerCase(),
+                                                'region': details.billingAddress.stateOrRegion,
+                                                'region_id': getRegionId(details.billingAddress.countryCode, details.billingAddress.stateOrRegion),
                                                 'region_code': null,
-                                                'country_id': details.shippingAddress.countryCode,
-                                                'postcode': details.shippingAddress.postalCode,
+                                                'country_id': details.billingAddress.countryCode,
+                                                'postcode': details.billingAddress.postalCode,
                                                 'same_as_billing': 0,
                                                 'customer_address_id': 0,
                                                 'save_in_address_book': 0
@@ -293,8 +298,8 @@ define([
                                         }
                                     };
 
+                                // debugger;
                                 setShippingInformation(quotePayload, this.isProductView);
-                                console.log('quote updated');
                             })
 
                         let displayHtmlKeys = '';
@@ -419,10 +424,10 @@ define([
                     environment: config.checkoutenv.toUpperCase(),
                     returnUrl: returnUrl,
                     configuration: {
-                        // TODO -> obtain the values dinamically
-                        merchantId: 'A1WI30W6FEGXWD',
-                        publicKeyId: 'SANDBOX-AG7IJTK25RUCVKNHKQGBWHK7',
-                        storeId: 'amzn1.application-oa2-client.c1175ec6e8f14a0497c486f4bd3a99f5'
+                        merchantId: amazonPaymentMethod.configuration.merchantId,
+                        publicKeyId: amazonPaymentMethod.configuration.publicKeyId,
+                        region: amazonPaymentMethod.configuration.region,
+                        storeId: amazonPaymentMethod.configuration.storeId
                     },
                     onClick: function (resolve, reject) {validatePdpForm(resolve, reject, pdpForm);},
                     onSubmit: function () {},
@@ -487,20 +492,27 @@ define([
                     currency = paymentMethodExtraDetails.configuration.amount.currency;
                 };
 
+                console.log('quote 1: ', quote.shippingAddress());
+
+                debugger;
+
                 url.searchParams.delete('amazonCheckoutSessionId', 'amazonExpress');
 
-                const returnUrl = urlBuilder.build('checkout/onepage/success');
+                const returnUrl = urlBuilder.build('checkout/onepage/success' + '?amazonExpress=success');
 
                 return {
                     amazonCheckoutSessionId: amazonPaySessionKey,
                     returnUrl: returnUrl,
                     showOrderButton: false,
                     onClick: function (resolve, reject) {validatePdpForm(resolve, reject, pdpForm);},
-                    onSubmit: function (state, component) {
+                    onSubmit: async function (state, component) {
                         component.setStatus('loading');
                         const stateData = JSON.stringify({ paymentMethod: state.data.paymentMethod });
-                        
+
+                        console.log('quote: ', quote.shippingAddress());
+
                         const payload = {
+                            // TODO obtain email dynamically, figure out how to solve the problem of the email information not being saved yet in the quote
                             email: "rok.popovledinski@adyen.com",
                             paymentMethod: {
                                 method: 'adyen_hpp',
@@ -517,15 +529,31 @@ define([
                             };
                         }
 
+
+                        // const response = await createPayment(JSON.stringify(payload), isProductView);
+
+                        // console.log('response: ', response);
+                        // console.log('result code', response.resultCode);
+                        console.log('isProductView: ', isProductView);
                         createPayment(JSON.stringify(payload), isProductView)
                             .done(function () {
-                                console.log('rok was here');
-                                debugger;
+                                console.log('great success here');
                                 redirectToSuccess();
-                            }).fail(function (r) {
-                            console.log('fail');
-                            console.error('Adyen AmazonPay Unable to take payment', r);
-                        });
+                            }).fail(function (e) {
+                                console.log('AmazonPay error: ', e);
+                            })
+
+                        console.log('quote 2: ', quote.shippingAddress())
+
+                            // .done(function () {
+                            //     console.log('rok was here');
+                            //     debugger;
+                            //     redirectToSuccess();
+                            // }).fail(function (r) {
+                            //     console.error('Adyen AmazonPay Unable to take payment', r);
+                            // });
+
+
                     },
                     onError: () => cancelCart(this.isProductView),
                     ...amazonPayStyles
