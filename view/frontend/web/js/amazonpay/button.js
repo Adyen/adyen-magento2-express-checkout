@@ -209,11 +209,11 @@ define([
                             streetAddress = shippingAddress.addressLine1.split(" "),
                             nameArr = buyer.name.split(" "),
                             firstname = nameArr[0],
+                            // TODO look into the logic for splitting the name
                             lastname = nameArr.slice(1).join(" "),
                             shippingMethods = [],
                             payload = {
                                 address: {
-                                    // TODO -> look into this
                                     city: shippingAddress.city.toLowerCase(),
                                     country_id: shippingAddress.countryCode,
                                     email: buyer.email,
@@ -298,7 +298,6 @@ define([
                                         }
                                     };
 
-                                // debugger;
                                 setShippingInformation(quotePayload, this.isProductView);
                             })
 
@@ -368,7 +367,7 @@ define([
                 }
             },
 
-            reloadAmazonPayButton: async function (element) {
+            AmazonPayButton: async function (element) {
                 const config = configModel().getConfig();
                 let amazonPaymentMethod = await getPaymentMethod('amazonpay', this.isProductView);
 
@@ -426,7 +425,6 @@ define([
                     configuration: {
                         merchantId: amazonPaymentMethod.configuration.merchantId,
                         publicKeyId: amazonPaymentMethod.configuration.publicKeyId,
-                        region: amazonPaymentMethod.configuration.region,
                         storeId: amazonPaymentMethod.configuration.storeId
                     },
                     onClick: function (resolve, reject) {validatePdpForm(resolve, reject, pdpForm);},
@@ -492,10 +490,6 @@ define([
                     currency = paymentMethodExtraDetails.configuration.amount.currency;
                 };
 
-                console.log('quote 1: ', quote.shippingAddress());
-
-                debugger;
-
                 url.searchParams.delete('amazonCheckoutSessionId', 'amazonExpress');
 
                 const returnUrl = urlBuilder.build('checkout/onepage/success' + '?amazonExpress=success');
@@ -512,7 +506,7 @@ define([
                         console.log('quote: ', quote.shippingAddress());
 
                         const payload = {
-                            // TODO obtain email dynamically, figure out how to solve the problem of the email information not being saved yet in the quote
+                            // TODO obtain email dynamically
                             email: "rok.popovledinski@adyen.com",
                             paymentMethod: {
                                 method: 'adyen_hpp',
@@ -529,31 +523,16 @@ define([
                             };
                         }
 
-
-                        // const response = await createPayment(JSON.stringify(payload), isProductView);
-
-                        // console.log('response: ', response);
-                        // console.log('result code', response.resultCode);
-                        console.log('isProductView: ', isProductView);
                         createPayment(JSON.stringify(payload), isProductView)
-                            .done(function () {
-                                console.log('great success here');
-                                redirectToSuccess();
-                            }).fail(function (e) {
-                                console.log('AmazonPay error: ', e);
+                            .done((response) => {
+                                debugger;
+                                    console.log('hoi');
+                                    console.log('response: ', response);
+                                    redirectToSuccess();
                             })
-
-                        console.log('quote 2: ', quote.shippingAddress())
-
-                            // .done(function () {
-                            //     console.log('rok was here');
-                            //     debugger;
-                            //     redirectToSuccess();
-                            // }).fail(function (r) {
-                            //     console.error('Adyen AmazonPay Unable to take payment', r);
-                            // });
-
-
+                            .fail((r) => {
+                            console.error('Adyen AmazonPay Unable to take payment', r);
+                        });
                     },
                     onError: () => cancelCart(this.isProductView),
                     ...amazonPayStyles
