@@ -112,10 +112,10 @@ define([
                                 this.initialiseAmazonPayOrderComponent(amazonPaymentMethod, element, config);
                             } else {
                                 if (urlParams.get('amazonExpress') === 'finalize') {
+                                    console.log('great success');
                                     this.initialiseAmazonPayPaymentComponent(amazonPaymentMethod, element, config);
                                 } else if (urlParams.get('amazonExpress') === 'success') {
                                     console.log('great success');
-                                    return;
                                 }
                             }
                         }
@@ -493,7 +493,11 @@ define([
                     currency = paymentMethodExtraDetails.configuration.amount.currency;
                 };
 
-                url.searchParams.delete('amazonCheckoutSessionId', 'amazonExpress');
+                debugger;
+
+                url.searchParams.delete('amazonCheckoutSessionId');
+                url.searchParams.delete('amazonExpress');
+
 
                 const returnUrl = urlBuilder.build('checkout/onepage/success' + '?amazonExpress=success');
 
@@ -528,14 +532,14 @@ define([
 
                         createPayment(JSON.stringify(payload), isProductView)
                             .done((response) => {
-                                    console.log('hoi');
+                                    console.log('HOI');
                                     console.log('response: ', response);
                                     redirectToSuccess();
                             })
                             .fail((r) => {
                                 console.log('REDIRECT TO FAIL');
                                 console.error('Adyen AmazonPay Unable to take payment', r);
-                                cancelCart(isProductView);
+                                amazonPayComponent.handleDeclineFlow();
                         });
                     },
                     onError: () => cancelCart(this.isProductView),
