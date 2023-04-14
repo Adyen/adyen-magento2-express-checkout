@@ -25,6 +25,7 @@ define([
         'Adyen_ExpressCheckout/js/helpers/getRegionId',
         'Adyen_ExpressCheckout/js/helpers/isConfigSet',
         'Adyen_ExpressCheckout/js/helpers/redirectToSuccess',
+        'Adyen_ExpressCheckout/js/helpers/redirectToFail',
         'Adyen_ExpressCheckout/js/helpers/setExpressMethods',
         'Adyen_ExpressCheckout/js/helpers/validatePdpForm',
         'Adyen_ExpressCheckout/js/model/config',
@@ -59,6 +60,7 @@ define([
         getRegionId,
         isConfigSet,
         redirectToSuccess,
+        redirectToFail,
         setExpressMethods,
         validatePdpForm,
         configModel,
@@ -473,6 +475,7 @@ define([
             },
 
             getAmazonPayPaymentConfig: function (amazonPaymentMethod, element) {
+                console.log('PAYMENT COMPONENT CONFIGURATION OBJECT');
                 const amazonPayStyles = getAmazonPayStyles();
                 const pdpForm = getPdpForm(element);
                 const amazonSessionKey = 'amazonCheckoutSessionId';
@@ -525,13 +528,14 @@ define([
 
                         createPayment(JSON.stringify(payload), isProductView)
                             .done((response) => {
-                                debugger;
                                     console.log('hoi');
                                     console.log('response: ', response);
                                     redirectToSuccess();
                             })
                             .fail((r) => {
-                            console.error('Adyen AmazonPay Unable to take payment', r);
+                                console.log('REDIRECT TO FAIL');
+                                console.error('Adyen AmazonPay Unable to take payment', r);
+                                cancelCart(isProductView);
                         });
                     },
                     onError: () => cancelCart(this.isProductView),
