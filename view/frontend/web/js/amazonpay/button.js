@@ -5,6 +5,7 @@ define([
         'mage/url',
         'Magento_Customer/js/customer-data',
         'Magento_Checkout/js/model/quote',
+        'Adyen_ExpressCheckout/js/helpers/getQuote',
         'Adyen_Payment/js/model/adyen-configuration',
         'Adyen_Payment/js/adyen',
         'Adyen_ExpressCheckout/js/actions/activateCart',
@@ -25,7 +26,6 @@ define([
         'Adyen_ExpressCheckout/js/helpers/getRegionId',
         'Adyen_ExpressCheckout/js/helpers/isConfigSet',
         'Adyen_ExpressCheckout/js/helpers/redirectToSuccess',
-        'Adyen_ExpressCheckout/js/helpers/redirectToFail',
         'Adyen_ExpressCheckout/js/helpers/setExpressMethods',
         'Adyen_ExpressCheckout/js/helpers/validatePdpForm',
         'Adyen_ExpressCheckout/js/model/config',
@@ -40,6 +40,7 @@ define([
         urlBuilder,
         customerData,
         quote,
+        getQuote,
         AdyenConfiguration,
         AdyenCheckout,
         activateCart,
@@ -60,7 +61,6 @@ define([
         getRegionId,
         isConfigSet,
         redirectToSuccess,
-        redirectToFail,
         setExpressMethods,
         validatePdpForm,
         configModel,
@@ -480,9 +480,7 @@ define([
             getAmazonPayPaymentConfig: function (amazonPaymentMethod, element) {
                 var self = this;
 
-                debugger;
-
-                console.log('quote can: ', quote);
+                // console.log('quote can: ', quote);
 
                 const amazonPayStyles = getAmazonPayStyles();
                 const pdpForm = getPdpForm(element);
@@ -514,14 +512,9 @@ define([
                     onClick: function (resolve, reject) {validatePdpForm(resolve, reject, pdpForm);},
                     onSubmit: async function (state, component) {
                         const stateData = JSON.stringify({ paymentMethod: state.data.paymentMethod });
-
-                        debugger;
-
-                        console.log('quote: ', quote.shippingAddress());
-
+                        const cartObject = await getQuote(isProductView);
                         const payload = {
-                            // TODO obtain email dynamically
-                            email: "rok.popovledinski@adyen.com",
+                            email: cartObject.billing_address.email,
                             paymentMethod: {
                                 method: 'adyen_hpp',
                                 additional_data: {
@@ -531,39 +524,28 @@ define([
                             }
                         }
 
+
                         if (window.checkout && window.checkout.agreementIds) {
                             payload.paymentMethod.extension_attributes = {
                                 agreement_ids: window.checkout.agreementIds
                             };
                         }
 
-                        // createPayment(JSON.stringify(payload), isProductView)
-                        //     .done((response) => {
-                        //         debugger;
-                        //         console.log('HOI');
-                        //         console.log('response: ', response);
-                        //         redirectToSuccess();
-                        //     })
-                        //     .fail((r) => {
-                        //         console.log('REDIRECT TO FAIL');
-                        //         console.error('Adyen AmazonPay Unable to take payment', r);
-                        // });
-
                         createPayment(JSON.stringify(payload), isProductView)
                             .done(function (response) {
-                                debugger;
+                                console.log('component: ', component);
+                                // debugger;
                                 // handle successful response
-                                console.log(self.amazonPayComponent);
                                 console.log('response: ', response);
                                 if (response) {
                                     redirectToSuccess();
                                 }
                                 // handle decline flow
                                 else {
-                                    self.amazonPayComponent.handleDeclineFlow()
+                                    component.handleDeclineFlow();
                                 }
                             }).fail(function (e) {
-                            console.error('Adyen AmazonPay Unable to take payment', r);
+                            console.error('Adyen AmazonPay Unable to take payment', e);
                         })
 
 
