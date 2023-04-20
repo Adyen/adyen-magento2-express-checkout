@@ -303,40 +303,64 @@ define([
                                 setShippingInformation(quotePayload, this.isProductView);
                             })
 
-                        let displayHtmlKeys = '';
-                        let displayHtmlValues = '';
+                        let displayHtmlValues = '',
+                            displayPaymentDescriptor = '',
+                            shippingInformationArr = [
+                                'name',
+                                'addressLine1',
+                                'addressLine2',
+                                'addressLine3',
+                                'city',
+                                'postalCode',
+                                'countryCode',
+                                'phoneNumber'
+                            ],
+                            shippingAddressLines = [
+                                'addressLine1',
+                                'addressLine2',
+                                'addressLine3',
+                                'city',
+                                'postalCode',
+                            ];
+
                         if (details.shippingAddress) {
                             let shippingAddress = details.shippingAddress;
-                            const keyMap = {
-                                name: 'Name',
-                                addressLine1: 'Address',
-                                addressLine2: 'Address',
-                                addressLine3: 'Address',
-                                city: 'City',
-                                countryCode: 'Country Code',
-                                district: 'District',
-                                stateOrRegion: 'State/Region',
-                                postalCode: 'Postal Code',
-                                phoneNumber: 'Phone Number'
-                            };
+                            console.log(shippingAddress);
                             const keys = Object.keys(shippingAddress);
-                            keys.forEach((key, index) => {
-                                if (shippingAddress[key] != null) {
-                                    let label = keyMap[key] || key;
-                                    displayHtmlKeys += `${label} <br>`;
-                                    displayHtmlValues += `${shippingAddress[key]} <br>`;
+
+                            shippingInformationArr.forEach((key, index) => {
+                                if (typeof shippingAddress[key] !== undefined && shippingAddress[key] != null) {
+                                    displayHtmlValues += `${shippingAddress[key]}`;
+
+                                    if (shippingAddressLines.includes(key)) {
+                                        displayHtmlValues += ' ';
+                                    }
+
+                                    if (!shippingAddressLines.includes(key) || key === shippingAddressLines[shippingAddressLines.length - 1]) {
+                                        displayHtmlValues += `<br>`;
+                                    }
                                 }
+
+                                // if (shippingAddress[key] != null && shippingAddress.some(el => el === key)) {
+                                //     displayHtmlValues +=
+                                //
+                                //     const formattedAddress = `${shippingAddress.addressLine1} ${shippingAddress.addressLine2} ${shippingAddress.addressLine3} ${shippingAddress.city}, ${shippingAddress.postalCode} <br>`;
+                                //     displayHtmlValues += `${shippingAddress[key]} <br>`;
+                                //     displayHtmlValues += `${formattedAddress} <br>`
+                                //     console.log('display html values: ', displayHtmlValues);
+                                // }
                             });
                         }
 
                         if (details.paymentDescriptor) {
                             let paymentDescriptor = details.paymentDescriptor;
-                            displayHtmlKeys += `Payment Descriptor <br>`;
-                            displayHtmlValues += `${paymentDescriptor} <br>`;
+                            displayPaymentDescriptor += `${paymentDescriptor} <br>`;
                         }
 
-                        $('#amazonpay_shopper_details_keys').html(displayHtmlKeys);
+
+
                         $('#amazonpay_shopper_details_values').html(displayHtmlValues);
+                        $('#amazonpay_payment_descriptor').html(displayPaymentDescriptor);
                     }
                 )
 
