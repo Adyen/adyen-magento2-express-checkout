@@ -1,10 +1,11 @@
 <?php
 /**
+ * @var
  * @var \Adyen\ExpressCheckout\Block\Cart\OrderReview $block
  * @var \Magento\Framework\Escaper $escaper
  */
 ?>
-<?php if($block->isVisible()): ?>
+<?php if($block->isVisible() && strpos($this->getRequest()->getPathInfo(), 'checkout/cart') !== false): ?>
     <div class="amazonpay_order_review">
         <strong>Ship To</strong>
         <div class="amazonpay_order_review_details">

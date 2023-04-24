@@ -301,7 +301,15 @@ define([
                                     };
 
                                 setShippingInformation(quotePayload, this.isProductView);
+                                getQuote(this.isProductView)
+                                    .done(res => {
+                                        var countryDropdown = $('#block-shipping').find('[name="country_id"]');
+                                        countryDropdown.val(res.billing_address.country_id);
+                                        countryDropdown.change();
+                                    })
                             })
+
+
 
                         let displayHtmlValues = '',
                             displayPaymentDescriptor = '',
@@ -325,7 +333,7 @@ define([
 
                         if (details.shippingAddress) {
                             let shippingAddress = details.shippingAddress;
-                            console.log(shippingAddress);
+
                             const keys = Object.keys(shippingAddress);
 
                             shippingInformationArr.forEach((key, index) => {
@@ -340,15 +348,6 @@ define([
                                         displayHtmlValues += `<br>`;
                                     }
                                 }
-
-                                // if (shippingAddress[key] != null && shippingAddress.some(el => el === key)) {
-                                //     displayHtmlValues +=
-                                //
-                                //     const formattedAddress = `${shippingAddress.addressLine1} ${shippingAddress.addressLine2} ${shippingAddress.addressLine3} ${shippingAddress.city}, ${shippingAddress.postalCode} <br>`;
-                                //     displayHtmlValues += `${shippingAddress[key]} <br>`;
-                                //     displayHtmlValues += `${formattedAddress} <br>`
-                                //     console.log('display html values: ', displayHtmlValues);
-                                // }
                             });
                         }
 
@@ -356,8 +355,6 @@ define([
                             let paymentDescriptor = details.paymentDescriptor;
                             displayPaymentDescriptor += `${paymentDescriptor} <br>`;
                         }
-
-
 
                         $('#amazonpay_shopper_details_values').html(displayHtmlValues);
                         $('#amazonpay_payment_descriptor').html(displayPaymentDescriptor);
@@ -504,8 +501,6 @@ define([
             getAmazonPayPaymentConfig: function (amazonPaymentMethod, element) {
                 var self = this;
 
-                // console.log('quote can: ', quote);
-
                 const amazonPayStyles = getAmazonPayStyles();
                 const pdpForm = getPdpForm(element);
                 const amazonSessionKey = 'amazonCheckoutSessionId';
@@ -557,15 +552,9 @@ define([
 
                         createPayment(JSON.stringify(payload), isProductView)
                             .done(function (response) {
-                                console.log('component: ', component);
-                                // debugger;
-                                // handle successful response
-                                console.log('response: ', response);
                                 if (response) {
                                     redirectToSuccess();
-                                }
-                                // handle decline flow
-                                else {
+                                } else {
                                     component.handleDeclineFlow();
                                 }
                             }).fail(function (e) {
