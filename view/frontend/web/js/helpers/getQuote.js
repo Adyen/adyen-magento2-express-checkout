@@ -14,10 +14,10 @@ define([
 
         const config = configModel().getConfig();
 
-        let endpoint =  isLoggedIn()
+        const uri =  isLoggedIn()
             ? 'rest/' + config.storeCode + '/V1/carts/mine/'
             : 'rest/' + config.storeCode + '/V1/guest-carts/' + maskedId ;
 
-        return storage.get(endpoint);
+        return storage.get(uri);
     };
 });
