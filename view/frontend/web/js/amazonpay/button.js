@@ -388,7 +388,7 @@ define([
                 }
             },
 
-            AmazonPayButton: async function (element) {
+            reloadAmazonPayButton: async function (element) {
                 const config = configModel().getConfig();
                 let amazonPaymentMethod = await getPaymentMethod('amazonpay', this.isProductView);
 
@@ -405,19 +405,21 @@ define([
                     return;
                 }
 
-                const urlParams = new URLSearchParams(window.location.search);
+                // const urlParams = new URLSearchParams(window.location.search);
 
-                if (!urlParams.has('amazonCheckoutSessionId')) {
-                    this.initialiseAmazonPayButtonComponent(amazonPaymentMethod, element, config);
-                } else {
-                    if (!urlParams.has('amazonExpress')) {
-                        this.initialiseAmazonPayOrderComponent(amazonPaymentMethod, element, config);
-                    } else {
-                        if (urlParams.get('amazonExpress') === 'finalize') {
-                            this.initialiseAmazonPayPaymentComponent(amazonPaymentMethod, element, config);
-                        }
-                    }
-                }
+                this.initialiseAmazonPayButtonComponent(amazonPaymentMethod, element, config);
+
+                // if (!urlParams.has('amazonCheckoutSessionId')) {
+                //     this.initialiseAmazonPayButtonComponent(amazonPaymentMethod, element, config);
+                // } else {
+                //     if (!urlParams.has('amazonExpress')) {
+                //         this.initialiseAmazonPayOrderComponent(amazonPaymentMethod, element, config);
+                //     } else {
+                //         if (urlParams.get('amazonExpress') === 'finalize') {
+                //             this.initialiseAmazonPayPaymentComponent(amazonPaymentMethod, element, config);
+                //         }
+                //     }
+                // }
             },
 
             getAmazonPayButtonConfig: function (amazonPaymentMethod, element) {
@@ -535,23 +537,12 @@ define([
                             };
                         }
 
-                        debugger;
-
                         createPayment(JSON.stringify(payload), self.isProductView)
                             .done(function (response) {
-                                debugger;
-                                // the component's value here is null since it has not been created locally and at this point, globally, it has no value
-                                console.log('can you access the component: ', self.amazonPayComponent);
                                 if (response) {
-                                    // the response is the order id, since the response from the /payments endpoint is filtered in module-payment
-                                    // so we are assuming, if there is a response (int) then we can safely redirect the shopper to success page
-                                    // maybe we can check what our plugin does with the response from the /payments endpoint, how does it handle the resultCode
                                     redirectToSuccess();
                                 } else {
-                                    // TODO
-                                    // wrongly referenced component, reference the created component instead of the param component passed to the onSubmit event
-
-                                    self.amazonPayComponent.handleDeclineFlow();
+                                    component.handleDeclineFlow();
                                 }
                             }).fail(function (e) {
                             console.error('Adyen AmazonPay Unable to take payment', e);

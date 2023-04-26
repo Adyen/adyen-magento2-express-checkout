@@ -30,6 +30,11 @@
                 <value id="google-static-styles" type="host">https://fonts.googleapis.com/</value>
             </values>
         </policy>
+        <policy id="connect-src">
+            <values>
+                <value id="amazon-payments-eu" type="host">https://payments-eu.amazon.com</value>
+            </values>
+        </policy>
     </policies>
 
 </csp_whitelist>
