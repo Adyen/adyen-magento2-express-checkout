@@ -230,7 +230,7 @@ define([
                                 }
                         };
 
-                        getShippingMethods(payload, this.isProductView)
+                        getShippingMethods(payload, self.isProductView)
                             .then((result) => {
                                 if (result.length === 0) {
                                     reject($t('There are no shipping methods available for you right now. ' +
@@ -333,8 +333,6 @@ define([
 
                         if (details.shippingAddress) {
                             let shippingAddress = details.shippingAddress;
-
-                            const keys = Object.keys(shippingAddress);
 
                             shippingInformationArr.forEach((key, index) => {
                                 if (typeof shippingAddress[key] !== undefined && shippingAddress[key] != null) {
@@ -445,7 +443,7 @@ define([
                 return {
                     showPayButton:true,
                     productType: 'PayAndShip',
-                    currency: config.currency,
+                    currency: currency,
                     environment: config.checkoutenv.toUpperCase(),
                     returnUrl: returnUrl,
                     configuration: {
@@ -506,21 +504,9 @@ define([
                 const amazonSessionKey = 'amazonCheckoutSessionId';
                 const url = new URL(location.href);
                 const amazonPaySessionKey = url.searchParams.get(amazonSessionKey);
-                let currency;
-                let isProductView = this.isProductView;
-
-                if (self.isProductView) {
-                    currency = currencyModel().getCurrency();
-                } else {
-                    const cartData =  customerData.get('cart');
-                    const adyenMethods = cartData()['adyen_payment_methods'];
-                    const paymentMethodExtraDetails = adyenMethods.paymentMethodsExtraDetails[amazonPaymentMethod.type];
-                    currency = paymentMethodExtraDetails.configuration.amount.currency;
-                };
 
                 url.searchParams.delete('amazonCheckoutSessionId');
                 url.searchParams.delete('amazonExpress');
-
 
                 const returnUrl = urlBuilder.build('checkout/onepage/success' + '?amazonExpress=success');
 
@@ -531,7 +517,7 @@ define([
                     onClick: function (resolve, reject) {validatePdpForm(resolve, reject, pdpForm);},
                     onSubmit: async function (state, component) {
                         const stateData = JSON.stringify({ paymentMethod: state.data.paymentMethod });
-                        const cartObject = await getQuote(isProductView);
+                        const cartObject = await getQuote(self.isProductView);
                         const payload = {
                             email: cartObject.billing_address.email,
                             paymentMethod: {
@@ -543,19 +529,29 @@ define([
                             }
                         }
 
-
                         if (window.checkout && window.checkout.agreementIds) {
                             payload.paymentMethod.extension_attributes = {
                                 agreement_ids: window.checkout.agreementIds
                             };
                         }
 
-                        createPayment(JSON.stringify(payload), isProductView)
+                        debugger;
+
+                        createPayment(JSON.stringify(payload), self.isProductView)
                             .done(function (response) {
+                                debugger;
+                                // the component's value here is null since it has not been created locally and at this point, globally, it has no value
+                                console.log('can you access the component: ', self.amazonPayComponent);
                                 if (response) {
+                                    // the response is the order id, since the response from the /payments endpoint is filtered in module-payment
+                                    // so we are assuming, if there is a response (int) then we can safely redirect the shopper to success page
+                                    // maybe we can check what our plugin does with the response from the /payments endpoint, how does it handle the resultCode
                                     redirectToSuccess();
                                 } else {
-                                    component.handleDeclineFlow();
+                                    // TODO
+                                    // wrongly referenced component, reference the created component instead of the param component passed to the onSubmit event
+
+                                    self.amazonPayComponent.handleDeclineFlow();
                                 }
                             }).fail(function (e) {
                             console.error('Adyen AmazonPay Unable to take payment', e);
