@@ -9,6 +9,8 @@ interface ConfigurationInterface
     public const GATEWAY_MERCHANT_ID = 'gateway_merchant_id';
     public const INTENT = 'intent';
     public const MERCHANT_NAME = 'merchant_name';
+    public const PUBLIC_KEY_ID = 'public_key_id';
+    public const STORE_ID = 'store_id';
 
     /**
      * Get Payment Method Merchant ID
@@ -76,5 +78,39 @@ interface ConfigurationInterface
      */
     public function setMerchantName(
         string $merchantName
+    ): void;
+
+    /**
+     * Get Payment Method Public Key ID
+     *
+     * @return string|null
+     */
+    public function getPublicKeyId(): ?string;
+
+    /**
+     * Set Payment Method Public Key ID
+     *
+     * @param string $publicKeyId
+     * @return void
+     */
+    public function setPublicKeyId(
+        string $publicKeyId
+    ): void;
+
+    /**
+     * Get Payment Method Store ID
+     *
+     * @return string|null
+     */
+    public function getStoreId(): ?string;
+
+    /**
+     * Set Payment Method Store ID
+     *
+     * @param string $storeId
+     * @return void
+     */
+    public function setStoreId(
+        string $storeId
     ): void;
 }

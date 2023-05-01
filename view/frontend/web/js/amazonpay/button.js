@@ -180,6 +180,7 @@ define([
                     },
                     clientKey: AdyenConfiguration.getClientKey(),
                 });
+
                 const amazonPayButtonConfig = this.getAmazonPayButtonConfig(amazonPaymentMethod, element);
 
                 this.amazonPayComponent = checkoutComponent
@@ -211,7 +212,6 @@ define([
                             streetAddress = shippingAddress.addressLine1.split(" "),
                             nameArr = buyer.name.split(" "),
                             firstname = nameArr[0],
-                            // TODO look into the logic for splitting the name
                             lastname = nameArr.slice(1).join(" "),
                             shippingMethods = [],
                             payload = {
@@ -301,15 +301,7 @@ define([
                                     };
 
                                 setShippingInformation(quotePayload, this.isProductView);
-                                getQuote(this.isProductView)
-                                    .done(res => {
-                                        var countryDropdown = $('#block-shipping').find('[name="country_id"]');
-                                        countryDropdown.val(res.billing_address.country_id);
-                                        countryDropdown.change();
-                                    })
                             })
-
-
 
                         let displayHtmlValues = '',
                             displayPaymentDescriptor = '',
@@ -359,6 +351,12 @@ define([
                     }
                 )
 
+                // WORK IN PROGRESS
+                // - identify which shipping method is selected on the page when the shopper first lands on it
+                // - when the shipping method changes, update the cart subtotal amount -> this is the value passed to the
+                //   amount obejct of the second amazon component configuration object when it's being mounted, so this one needs to be updated
+                // - unmount amazon pay component
+                // - remount amazon pay component with the updated amount
             },
 
             initialiseAmazonPayPaymentComponent: async function (amazonPaymentMethod, element, config) {
@@ -405,21 +403,19 @@ define([
                     return;
                 }
 
-                // const urlParams = new URLSearchParams(window.location.search);
+                const urlParams = new URLSearchParams(window.location.search);
 
-                this.initialiseAmazonPayButtonComponent(amazonPaymentMethod, element, config);
-
-                // if (!urlParams.has('amazonCheckoutSessionId')) {
-                //     this.initialiseAmazonPayButtonComponent(amazonPaymentMethod, element, config);
-                // } else {
-                //     if (!urlParams.has('amazonExpress')) {
-                //         this.initialiseAmazonPayOrderComponent(amazonPaymentMethod, element, config);
-                //     } else {
-                //         if (urlParams.get('amazonExpress') === 'finalize') {
-                //             this.initialiseAmazonPayPaymentComponent(amazonPaymentMethod, element, config);
-                //         }
-                //     }
-                // }
+                if (!urlParams.has('amazonCheckoutSessionId')) {
+                    this.initialiseAmazonPayButtonComponent(amazonPaymentMethod, element, config);
+                } else {
+                    if (!urlParams.has('amazonExpress')) {
+                        this.initialiseAmazonPayOrderComponent(amazonPaymentMethod, element, config);
+                    } else {
+                        if (urlParams.get('amazonExpress') === 'finalize') {
+                            this.initialiseAmazonPayPaymentComponent(amazonPaymentMethod, element, config);
+                        }
+                    }
+                }
             },
 
             getAmazonPayButtonConfig: function (amazonPaymentMethod, element) {
@@ -443,7 +439,7 @@ define([
                 const returnUrl = urlBuilder.build('checkout/cart/index');
 
                 return {
-                    showPayButton:true,
+                    showPayButton: true,
                     productType: 'PayAndShip',
                     currency: currency,
                     environment: config.checkoutenv.toUpperCase(),
@@ -538,17 +534,8 @@ define([
                         }
 
                         createPayment(JSON.stringify(payload), self.isProductView)
-                            .done(function (response) {
-                                if (response) {
-                                    redirectToSuccess();
-                                } else {
-                                    component.handleDeclineFlow();
-                                }
-                            }).fail(function (e) {
-                            console.error('Adyen AmazonPay Unable to take payment', e);
-                        })
-
-
+                            .done(redirectToSuccess())
+                            .fail(component.handleDeclineFlow())
                     },
                     onError: () => cancelCart(self.isProductView),
                     ...amazonPayStyles
