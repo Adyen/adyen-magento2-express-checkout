@@ -3,6 +3,7 @@ define([
         'uiComponent',
         'mage/translate',
         'mage/url',
+        'Magento_Checkout/js/action/select-shipping-method',
         'Magento_Customer/js/customer-data',
         'Magento_Checkout/js/model/quote',
         'Adyen_ExpressCheckout/js/helpers/getQuote',
@@ -38,6 +39,7 @@ define([
         Component,
         $t,
         urlBuilder,
+        selectShippingMethod,
         customerData,
         quote,
         getQuote,
@@ -198,6 +200,7 @@ define([
                     },
                     clientKey: AdyenConfiguration.getClientKey(),
                 });
+
                 const amazonPayOrderConfig = this.getAmazonPayOrderConfig(amazonPaymentMethod, element);
 
                 this.amazonPayComponent = checkoutComponent
@@ -351,12 +354,15 @@ define([
                     }
                 )
 
+                // call the mixin
+                this.shippingMethodMixin();
+
                 // WORK IN PROGRESS
-                // - identify which shipping method is selected on the page when the shopper first lands on it
-                // - when the shipping method changes, update the cart subtotal amount -> this is the value passed to the
+                // - [x] identify which shipping method is selected on the page when the shopper first lands on it
+                // - [ ] when the shipping method changes, update the cart subtotal amount -> this is the value passed to the
                 //   amount obejct of the second amazon component configuration object when it's being mounted, so this one needs to be updated
-                // - unmount amazon pay component
-                // - remount amazon pay component with the updated amount
+                // - [ ] unmount amazon pay component
+                // - [ ] remount amazon pay component with the updated amount
             },
 
             initialiseAmazonPayPaymentComponent: async function (amazonPaymentMethod, element, config) {
@@ -378,44 +384,6 @@ define([
 
                 amazonPayComponent.submit();
 
-            },
-
-            unmountAmazonPay: function () {
-                if (this.amazonPayComponent) {
-                    this.amazonPayComponent.unmount();
-                }
-            },
-
-            reloadAmazonPayButton: async function (element) {
-                const config = configModel().getConfig();
-                let amazonPaymentMethod = await getPaymentMethod('amazonpay', this.isProductView);
-
-                if (this.isProductView) {
-                    const pdpResponse = await getExpressMethods().getRequest(element);
-
-                    setExpressMethods(pdpResponse);
-                    totalsModel().setTotal(pdpResponse.totals.grand_total);
-                }
-
-                this.unmountAmazonPay();
-
-                if (!isConfigSet(amazonPaymentMethod)) {
-                    return;
-                }
-
-                const urlParams = new URLSearchParams(window.location.search);
-
-                if (!urlParams.has('amazonCheckoutSessionId')) {
-                    this.initialiseAmazonPayButtonComponent(amazonPaymentMethod, element, config);
-                } else {
-                    if (!urlParams.has('amazonExpress')) {
-                        this.initialiseAmazonPayOrderComponent(amazonPaymentMethod, element, config);
-                    } else {
-                        if (urlParams.get('amazonExpress') === 'finalize') {
-                            this.initialiseAmazonPayPaymentComponent(amazonPaymentMethod, element, config);
-                        }
-                    }
-                }
             },
 
             getAmazonPayButtonConfig: function (amazonPaymentMethod, element) {
@@ -540,6 +508,66 @@ define([
                     onError: () => cancelCart(self.isProductView),
                     ...amazonPayStyles
                 }
+            },
+
+            unmountAmazonPay: function () {
+                if (this.amazonPayComponent) {
+                    this.amazonPayComponent.unmount();
+                }
+            },
+
+            reloadAmazonPayButton: async function (element) {
+                const config = configModel().getConfig();
+                let amazonPaymentMethod = await getPaymentMethod('amazonpay', this.isProductView);
+
+                if (this.isProductView) {
+                    const pdpResponse = await getExpressMethods().getRequest(element);
+
+                    setExpressMethods(pdpResponse);
+                    totalsModel().setTotal(pdpResponse.totals.grand_total);
+                }
+
+                this.unmountAmazonPay();
+
+                if (!isConfigSet(amazonPaymentMethod)) {
+                    return;
+                }
+
+                const urlParams = new URLSearchParams(window.location.search);
+
+                if (!urlParams.has('amazonCheckoutSessionId')) {
+                    this.initialiseAmazonPayButtonComponent(amazonPaymentMethod, element, config);
+                } else {
+                    if (!urlParams.has('amazonExpress')) {
+                        this.initialiseAmazonPayOrderComponent(amazonPaymentMethod, element, config);
+                    } else {
+                        if (urlParams.get('amazonExpress') === 'finalize') {
+                            this.initialiseAmazonPayPaymentComponent(amazonPaymentMethod, element, config);
+                        }
+                    }
+                }
+            },
+
+            shippingMethodMixin: function () {
+                let mixinLogic = function (shippingMethod) {
+                    debugger;
+                    console.log('Shipping method selected:', shippingMethod);
+                };
+
+                // wrap the selectShippingMethod function with the mixin logic
+                selectShippingMethod = selectShippingMethod.wrap(
+                    mixinLogic, function (originalFunction, shippingMethod) {
+                        originalFunction(shippingMethod);
+                    }
+                );
+
+                $('#block-shipping').on('change', 'input[type=radio][class=radio]', function () {
+                    let shippingMethod = $(this).val();
+
+                    if (shippingMethod) {
+                        selectShippingMethod(shippingMethod);
+                    }
+                })
             }
         });
     }
