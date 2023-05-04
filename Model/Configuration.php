@@ -81,7 +81,7 @@ class Configuration implements ConfigurationInterface
     }
 
     /**
-     * Returns configuration value for where to show amazon pay
+     * Returns configuration value for where to show Amazon Pay
      *
      * @param string $scopeType
      * @param null|int|string $scopeCode

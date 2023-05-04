@@ -360,7 +360,7 @@ define([
                 // WORK IN PROGRESS
                 // - [x] identify which shipping method is selected on the page when the shopper first lands on it
                 // - [ ] when the shipping method changes, update the cart subtotal amount -> this is the value passed to the
-                //   amount obejct of the second amazon component configuration object when it's being mounted, so this one needs to be updated
+                //   amount object of the second amazon component configuration object when it's being mounted, so this one needs to be updated
                 // - [ ] unmount amazon pay component
                 // - [ ] remount amazon pay component with the updated amount
             },

@@ -26,7 +26,7 @@ class OrderReview extends Template
         parent::__construct($context, $data);
     }
 
-    public function isVisible()
+    public function isVisible(): bool
     {
         $url = $this->getUrl('*/*/*', ['_current' => true, '_use_rewrite' => true]);
         $url_parts = parse_url($url);
@@ -34,11 +34,9 @@ class OrderReview extends Template
         if (isset($url_parts['query'])) {
             parse_str($url_parts['query'], $query);
 
-            if (isset($query['amazonCheckoutSessionId'])) {
-                return true;
-            } else {
-                return false;
-            }
+            return isset($query['amazonCheckoutSessionId']);
         }
+
+        return false;
     }
 }
