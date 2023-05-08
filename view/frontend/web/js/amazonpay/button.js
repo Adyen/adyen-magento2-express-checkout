@@ -354,8 +354,10 @@ define([
                     }
                 )
 
+                debugger;
+
                 // call the mixin
-                this.shippingMethodMixin();
+                this.shippingMethodMixin(selectShippingMethod);
 
                 // WORK IN PROGRESS
                 // - [x] identify which shipping method is selected on the page when the shopper first lands on it
@@ -548,24 +550,24 @@ define([
                 }
             },
 
-            shippingMethodMixin: function () {
-                let mixinLogic = function (shippingMethod) {
-                    debugger;
-                    console.log('Shipping method selected:', shippingMethod);
-                };
-
-                // wrap the selectShippingMethod function with the mixin logic
-                selectShippingMethod = selectShippingMethod.wrap(
-                    mixinLogic, function (originalFunction, shippingMethod) {
-                        originalFunction(shippingMethod);
-                    }
-                );
-
+            shippingMethodMixin: function (selectShippingMethod) {
+                // let mixinLogic = function (shippingMethod) {
+                //     debugger;
+                //     console.log('Shipping method selected:', shippingMethod);
+                // };
+                //
+                // // wrap the selectShippingMethod function with the mixin logic
+                // selectShippingMethod = wrapper.wrap(selectShippingMethod, function (_super, shippingMethod) {
+                //     _super(shippingMethod);
+                //     mixinLogic(shippingMethod);
+                // });
+                //
                 $('#block-shipping').on('change', 'input[type=radio][class=radio]', function () {
                     let shippingMethod = $(this).val();
 
                     if (shippingMethod) {
-                        selectShippingMethod(shippingMethod);
+                        //selectShippingMethod(shippingMethod);
+                        selectShippingMethod(shippingMethod)
                     }
                 })
             }

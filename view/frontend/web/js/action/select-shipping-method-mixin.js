@@ -5,6 +5,7 @@ define([
 
     return function (selectShippingMethod) {
         return wrapper.wrap(selectShippingMethod, function (_super, shippingMethod) {
+
             debugger;
             if (shippingMethod) {
                 console.log('shipping method before set to quote: ', shippingMethod)
