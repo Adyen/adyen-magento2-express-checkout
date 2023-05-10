@@ -77,11 +77,25 @@ define([
                 shippingMethods: {},
                 isProductView: false,
                 maskedId: null,
-                amazonPayComponent: null
+                amazonPayComponent: null,
+                adyenCheckout: null
             },
 
             initialize: async function (config, element) {
                 this._super();
+                let self = this;
+
+                this.initialiseAdyenComponent(config);
+
+                const shippingMethodChangedEvent = 'Adyen_ExpressCheckout_Event:shippingMethodChanged';
+
+                customerData.get(shippingMethodChangedEvent).subscribe(function () {
+                    getPaymentMethod('amazonpay', false).then(function (amazonPaymentMethod) {
+                        // update the amazon pay component amount
+                        this.amazonPayComponent.getShopperDetails()
+                        // self.reinitialiseAmazonPayOrderComponent(amazonPaymentMethod, element, config);
+                    })
+                });
 
                 configModel().setConfig(config);
                 countriesModel();
@@ -172,38 +186,44 @@ define([
                 }
             },
 
-            initialiseAmazonPayButtonComponent: async function (amazonPaymentMethod, element, config) {
-                const checkoutComponent = await new AdyenCheckout({
+            initialiseAdyenComponent: async function (config) {
+                this.adyenCheckout = await new AdyenCheckout({
                     locale: config.locale,
                     originKey: config.originkey,
                     environment: config.checkoutenv,
                     risk: {
                         enabled: false
                     },
-                    clientKey: AdyenConfiguration.getClientKey(),
+                    clientKey: AdyenConfiguration.getClientKey()
                 });
+            },
 
+            reinitialiseAmazonPayOrderComponent: async function (amazonPaymentMethod, element) {
+                debugger;
+                if (typeof this.amazonPayComponent != "undefined") {
+                    this.removeAdyenCheckout();
+                    // this.unmountAmazonPay();
+                }
+
+                const amazonPayOrderConfig = this.getAmazonPayOrderConfig(amazonPaymentMethod, element);
+
+                this.amazonPayComponent = this.adyenCheckout
+                    .create(amazonPaymentMethod, amazonPayOrderConfig)
+                    .mount(element)
+            },
+
+            initialiseAmazonPayButtonComponent: async function (amazonPaymentMethod, element) {
                 const amazonPayButtonConfig = this.getAmazonPayButtonConfig(amazonPaymentMethod, element);
 
-                this.amazonPayComponent = checkoutComponent
+                this.amazonPayComponent = this.adyenCheckout
                     .create(amazonPaymentMethod, amazonPayButtonConfig)
                     .mount(element);
             },
 
-            initialiseAmazonPayOrderComponent: async function(amazonPaymentMethod, element, config) {
-                const checkoutComponent = await new AdyenCheckout({
-                    locale: config.locale,
-                    originKey: config.originkey,
-                    environment: config.checkoutenv,
-                    risk: {
-                        enabled: false
-                    },
-                    clientKey: AdyenConfiguration.getClientKey(),
-                });
-
+            initialiseAmazonPayOrderComponent: async function(amazonPaymentMethod, element) {
                 const amazonPayOrderConfig = this.getAmazonPayOrderConfig(amazonPaymentMethod, element);
 
-                this.amazonPayComponent = checkoutComponent
+                this.amazonPayComponent = this.adyenCheckout
                     .create(amazonPaymentMethod, amazonPayOrderConfig)
                     .mount(element)
 
@@ -360,24 +380,12 @@ define([
                 // - [ ] build a custom event to fire when the shipping method is changed to tell the button.js file that it has been changed so we can unmount and remount the amazon component / or figure out a way to do it calling a method of the amazon component for updating the amount
                 // - [ ] unmount amazon pay component
                 // - [ ] remount amazon pay component with the updated amount
-
-
             },
 
-            initialiseAmazonPayPaymentComponent: async function (amazonPaymentMethod, element, config) {
-                const checkoutComponent = await new AdyenCheckout({
-                    locale: config.locale,
-                    originKey: config.originkey,
-                    environment: config.checkoutenv,
-                    risk: {
-                        enabled: false
-                    },
-                    clientKey: AdyenConfiguration.getClientKey()
-                });
-
+            initialiseAmazonPayPaymentComponent: async function (amazonPaymentMethod, element) {
                 const amazonPayPaymentConfig = this.getAmazonPayPaymentConfig(amazonPaymentMethod, element);
 
-                const amazonPayComponent = checkoutComponent
+                const amazonPayComponent = this.adyenCheckout
                     .create(amazonPaymentMethod, amazonPayPaymentConfig)
                     .mount(element);
 
@@ -444,6 +452,8 @@ define([
 
                 const returnUrl = urlBuilder.build('checkout/cart/index' + '?amazonExpress=finalize');
 
+                console.log('NEW AMOUNT: ', formatAmount(getCartSubtotal() * 100))
+
                 return {
                     amount: {
                         value: this.isProductView
@@ -509,10 +519,18 @@ define([
                 }
             },
 
-            unmountAmazonPay: function () {
-                if (this.amazonPayComponent) {
-                    this.amazonPayComponent.unmount();
+            removeAdyenCheckout: function () {
+                debugger;
+                if (typeof this.adyenCheckout != "undefined") {
+                    this.adyenCheckout.remove(this.amazonPayComponent);
                 }
+            },
+
+            unmountAmazonPay: function () {
+                // if (this.amazonPayComponent) {
+                //     debugger;
+                //     this.amazonPayComponent.unmount();
+                // }
             },
 
             reloadAmazonPayButton: async function (element) {

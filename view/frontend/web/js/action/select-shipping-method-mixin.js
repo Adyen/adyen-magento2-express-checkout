@@ -1,21 +1,27 @@
 define([
     'jquery',
     'mage/utils/wrapper',
+    'Magento_Customer/js/customer-data',
     'Adyen_ExpressCheckout/js/actions/setShippingInformation',
     'Adyen_ExpressCheckout/js/helpers/getQuote'
-], function ($, wrapper, setShippingInformation, getQuote) {
+    ],
+    function (
+        $,
+        wrapper,
+        customerData,
+        setShippingInformation,
+        getQuote
+    ) {
     'use strict';
+
+    const shippingMethodChangedEvent = 'Adyen_ExpressCheckout_Event:shippingMethodChanged';
 
     return function (selectShippingMethod) {
         return wrapper.wrap(selectShippingMethod, function (_super, shippingMethod) {
 
             if (shippingMethod) {
-                console.log('shipping method before set to quote: ', shippingMethod);
-
                 // update quote with selected shipping method
                 window.checkoutConfig.quoteData.shipping_method = shippingMethod;
-
-                debugger;
 
                 getQuote(false).then(function (response) {
                     let {shipping_assignments} = response.extension_attributes,
@@ -57,13 +63,7 @@ define([
                         shippingRegionCode = region_code;
                         shippingCountryId = country_id;
                         shippingPostcode = postcode;
-
-                        console.log('element shipping address: ', element.shipping.address);
                     });
-
-                    debugger;
-
-                    console.log('newly selected shipping method code: ', shippingMethod['method_code']);
 
                     let payload = {
                         'addressInformation': {
@@ -99,24 +99,24 @@ define([
                                 'customer_address_id': 0,
                                 'save_in_address_book': 0
                             },
-                            // update quote_address table with selected shipping method
                             'shipping_method_code': shippingMethod['method_code'],
                             'shipping_carrier_code': shippingMethod['carrier_code']
                         }
                     };
 
-                    debugger;
-
-                    setShippingInformation(payload, false);
+                    // update quote_address table with selected shipping method
+                    setShippingInformation(payload, false).then(function () {
+                        customerData.set(shippingMethodChangedEvent, shippingMethod['method_code']);
+                    });
                 });
 
+                // dispatch the custom shipping method changed event
+                console.log('customerData obj: ', customerData);
 
                 // update checkout data with selected shipping method
                 let result = _super(shippingMethod);
 
                 if (shippingMethod) {
-                    console.log('shipping method after set to quote: ', shippingMethod);
-
                     // update quote totals
                     window.checkoutConfig.totalsData = {
                         ...window.checkoutConfig.totalsData,
