@@ -92,8 +92,7 @@ define([
                 customerData.get(shippingMethodChangedEvent).subscribe(function () {
                     getPaymentMethod('amazonpay', false).then(function (amazonPaymentMethod) {
                         // update the amazon pay component amount
-                        this.amazonPayComponent.getShopperDetails()
-                        // self.reinitialiseAmazonPayOrderComponent(amazonPaymentMethod, element, config);
+                        self.reinitialiseAmazonPayOrderComponent(amazonPaymentMethod, element, config);
                     })
                 });
 
