@@ -1,4 +1,5 @@
 define([
+    'jquery',
     'uiComponent',
     'mage/translate',
     'Magento_Customer/js/customer-data',
@@ -6,6 +7,7 @@ define([
     'Adyen_ExpressCheckout/js/actions/activateCart',
     'Adyen_ExpressCheckout/js/actions/cancelCart',
     'Adyen_ExpressCheckout/js/actions/createPayment',
+    'Adyen_ExpressCheckout/js/actions/getPaymentStatus',
     'Adyen_ExpressCheckout/js/actions/getShippingMethods',
     'Adyen_ExpressCheckout/js/actions/getExpressMethods',
     'Adyen_ExpressCheckout/js/actions/setShippingInformation',
@@ -26,9 +28,11 @@ define([
     'Adyen_ExpressCheckout/js/model/config',
     'Adyen_ExpressCheckout/js/model/countries',
     'Adyen_ExpressCheckout/js/model/totals',
-    'Adyen_ExpressCheckout/js/model/currency'
+    'Adyen_ExpressCheckout/js/model/currency',
+    'mage/cookies',
 ],
     function (
+        $,
         Component,
         $t,
         customerData,
@@ -36,6 +40,7 @@ define([
         activateCart,
         cancelCart,
         createPayment,
+        getPaymentStatus,
         getShippingMethods,
         getExpressMethods,
         setShippingInformation,
@@ -356,7 +361,27 @@ define([
                         }
 
                         createPayment(JSON.stringify(payload), this.isProductView)
-                            .done(redirectToSuccess)
+                            .done( function (orderId) {
+                                // TODO
+                                debugger;
+                                // orderId && getPaymentStatus(orderId)
+                                var payload = {
+                                    orderId: orderId,
+                                    form_key: $.mage.cookies.get('form_key')
+                                }
+                                getPaymentStatus(payload).then(function (response) {
+                                    console.log('response to payment status: ', response)
+                                    // if the result is final, then redirectToSuccess
+                                    if (!!response.isFinal) {
+                                        redirectToSuccess();
+
+                                    // if the result is not final, call the method to handle additional action (make a payment details call)
+                                    } else {
+                                        // handle action
+                                    }
+                                })
+                            })
+
                             .fail(function (e) {
                                 console.error('Adyen GooglePay Unable to take payment', e);
                             });
