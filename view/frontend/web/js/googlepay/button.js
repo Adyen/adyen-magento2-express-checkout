@@ -1,9 +1,14 @@
 define([
     'jquery',
+    'ko',
     'uiComponent',
     'mage/translate',
     'Magento_Customer/js/customer-data',
+    'Magento_Checkout/js/model/full-screen-loader',
+    'Magento_Checkout/js/model/quote',
     'Adyen_Payment/js/adyen',
+    'Adyen_Payment/js/model/adyen-payment-modal',
+    'Adyen_Payment/js/model/adyen-payment-service',
     'Adyen_ExpressCheckout/js/actions/activateCart',
     'Adyen_ExpressCheckout/js/actions/cancelCart',
     'Adyen_ExpressCheckout/js/actions/createPayment',
@@ -33,10 +38,15 @@ define([
 ],
     function (
         $,
+        ko,
         Component,
         $t,
         customerData,
+        fullScreenLoader,
+        quote,
         AdyenCheckout,
+        adyenPaymentModal,
+        adyenPaymentService,
         activateCart,
         cancelCart,
         createPayment,
@@ -66,13 +76,17 @@ define([
         'use strict';
 
         return Component.extend({
+            isPlaceOrderActionAllowed: ko.observable(
+                quote.billingAddress() != null),
+
             defaults: {
                 shippingMethods: {},
                 googlePayToken: null,
                 googlePayAllowed: null,
                 isProductView: false,
                 maskedId: null,
-                googlePayComponent: null
+                googlePayComponent: null,
+                modalLabel: 'cc_actionModal'
             },
 
             initialize: async function (config, element) {
@@ -146,12 +160,13 @@ define([
                 this.initialiseGooglePayComponent(googlePaymentMethod, element);
             },
 
-            initialiseGooglePayComponent: async function (googlePaymentMethod, element) {
+            initialiseGooglePayComponent: async function (googlePaymentMethod, element, handleOnAdditionalDetails) {
                 const config = configModel().getConfig();
                 const checkoutComponent = await new AdyenCheckout({
                     locale: config.locale,
                     originKey: config.originkey,
                     environment: config.checkoutenv,
+                    onAdditionalDetails: this.handleOnAdditionalDetails,
                     risk: {
                         enabled: false
                     }
@@ -369,15 +384,14 @@ define([
                                     orderId: orderId,
                                     form_key: $.mage.cookies.get('form_key')
                                 }
-                                getPaymentStatus(payload).then(function (response) {
-                                    console.log('response to payment status: ', response)
-                                    // if the result is final, then redirectToSuccess
+                                getPaymentStatus(payload).done(function (responseJSON) {
+                                    let response = JSON.parse(responseJSON);
+                                    // if result is final redirect to success page
                                     if (!!response.isFinal) {
                                         redirectToSuccess();
-
-                                    // if the result is not final, call the method to handle additional action (make a payment details call)
                                     } else {
                                         // handle action
+                                        self.handleAction(response.action, orderId)
                                     }
                                 })
                             })
@@ -413,6 +427,59 @@ define([
                 };
 
                 return setShippingInformation(payload, this.isProductView);
+            },
+
+            // handleOnAdditionalDetails: function(result) {
+            //     const self = this;
+            //     let request = result.data;
+            //     adyenPaymentModal.hideModalLabel(this.modalLabel);
+            //     fullScreenLoader.startLoader();
+            //     request.orderId = self.orderId;
+            //     let popupModal = self.showModal();
+            //
+            //     adyenPaymentService.paymentDetails(request).
+            //     done(function(responseJSON) {
+            //         fullScreenLoader.stopLoader();
+            //         self.handleAdyenResult(responseJSON, self.orderId);
+            //     }).
+            //     fail(function(response) {
+            //         self.closeModal(popupModal);
+            //         errorProcessor.process(response, self.messageContainer);
+            //         self.isPlaceOrderActionAllowed(true);
+            //         fullScreenLoader.stopLoader();
+            //     });
+            // },
+
+            handleAction: function(action, orderId) {
+                var self = this;
+                let popupModal;
+
+                fullScreenLoader.stopLoader();
+
+                debugger;
+
+                if (action.type === 'threeDS2' || action.type === 'await') {
+                    popupModal = self.showModal();
+                }
+
+                try {
+                    this.googlePayComponent.createFromAction(
+                        action).mount('#' + this.modalLabel);
+                } catch (e) {
+                    console.log(e);
+                    self.closeModal(popupModal);
+                }
+            },
+
+            showModal: function() {
+                let actionModal = adyenPaymentModal.showModal(adyenPaymentService, fullScreenLoader, this.messageContainer, this.orderId, this.modalLabel, this.isPlaceOrderActionAllowed);
+                $("." + this.modalLabel + " .action-close").hide();
+
+                return actionModal;
+            },
+
+            closeModal: function(popupModal) {
+                adyenPaymentModal.closeModal(popupModal, this.modalLabel)
             },
 
             mapAddress: function (address) {
