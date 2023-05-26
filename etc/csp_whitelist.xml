@@ -15,6 +15,8 @@
     <policies>
         <policy id="script-src">
             <values>
+                <value id="amazon-script" type="host">https://*.payments-amazon.com</value>
+                <value id="google-script" type="host">https://*.google.com</value>
                 <value id="adyen" type="host">*.adyen.com</value>
             </values>
         </policy>
@@ -25,13 +27,15 @@
         </policy>
         <policy id="img-src">
             <values>
+                <value id="amazon-img" type="host">https://*.media-amazon.com</value>
+                <value id="amazon-static-img" type="host">https://*.payments-amazon.com</value>
                 <value id="google-static-img" type="host">https://*.gstatic.com</value>
                 <value id="adyen" type="host">*.adyen.com</value>
             </values>
         </policy>
         <policy id="connect-src">
             <values>
-                <value id="amazon-payments-eu" type="host">https://payments-eu.amazon.com</value>
+                <value id="google-connect" type="host">https://*.google.com</value>
                 <value id="adyen" type="host">*.adyen.com</value>
             </values>
         </policy>
