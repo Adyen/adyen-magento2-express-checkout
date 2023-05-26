@@ -451,13 +451,11 @@ define([
 
                 const returnUrl = urlBuilder.build('checkout/cart/index' + '?amazonExpress=finalize');
 
-                let amount = formatAmount(window.checkoutConfig.quoteData.base_grand_total * 100);
-
                 return {
                     amount: {
                         value: this.isProductView
                             ? formatAmount(totalsModel().getTotal() * 100)
-                            : amount,
+                            : formatAmount(window.checkoutConfig.quoteData.base_grand_total * 100),
                         currency: currency
                     },
                     amazonCheckoutSessionId: amazonPaySessionKey,
