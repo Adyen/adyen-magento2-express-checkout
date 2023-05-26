@@ -189,6 +189,13 @@ class ExpressInit implements ExpressInitInterface
             );
             // We have to save it here to get the totals in the express data builder
             $this->quoteRepository->save($adyenExpressQuote);
+
+            // Quote object is required to collect the totals instead of cart object.
+            $quoteModel = $this->quoteRepository->getActive($adyenExpressQuote->getId());
+            $quoteModel->collectTotals();
+            $quoteModel->setTotalsCollectedFlag(false);
+            $this->quoteRepository->save($quoteModel);
+
             $expressData = $this->expressDataBuilder->execute(
                 $adyenExpressQuote,
                 $product
@@ -234,8 +241,7 @@ class ExpressInit implements ExpressInitInterface
             $product,
             $productCartParams
         );
-        $adyenExpressQuote->collectTotals();
-        $adyenExpressQuote->setTotalsCollectedFlag(false);
+
         return $adyenExpressQuote;
     }
 
