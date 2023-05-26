@@ -110,23 +110,12 @@ define([
                     });
                 });
 
-                // dispatch the custom shipping method changed event
-                console.log('customerData obj: ', customerData);
-
                 // update checkout data with selected shipping method
                 let result = _super(shippingMethod);
 
                 if (shippingMethod) {
-                    // update quote totals
-                    window.checkoutConfig.totalsData = {
-                        ...window.checkoutConfig.totalsData,
-                        base_shipping_amount: shippingMethod['base_amount'],
-                        base_shipping_tax_amount: shippingMethod['base_tax_amount'],
-                        shipping_amount: shippingMethod['amount'],
-                        shipping_tax_amount: shippingMethod['tax_amount'],
-                        grand_total: parseFloat(window.checkoutConfig.totalsData.subtotal) + parseFloat(shippingMethod['amount']) + parseFloat(shippingMethod['tax_amount']),
-                        base_grand_total: parseFloat(window.checkoutConfig.totalsData.base_subtotal) + parseFloat(shippingMethod['base_amount']) + parseFloat(shippingMethod['base_tax_amount'])
-                    };
+                    // update quote data
+                    window.checkoutConfig.quoteData.base_grand_total = parseFloat(window.checkoutConfig.totalsData.subtotal) + parseFloat(shippingMethod['amount']);
                 }
 
                 return result;

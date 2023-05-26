@@ -198,8 +198,8 @@ define([
             },
 
             reinitialiseAmazonPayOrderComponent: async function (amazonPaymentMethod, element) {
-                debugger;
-                if (typeof this.amazonPayComponent != "undefined") {
+                // debugger;
+                if (!!this.amazonPayComponent) {
                     this.removeAdyenCheckout();
                     // this.unmountAmazonPay();
                 }
@@ -375,10 +375,10 @@ define([
 
                 // WORK IN PROGRESS
                 // - [x] identify which shipping method is selected on the page when the shopper first lands on it
-                // - [x] when the shipping method changes, update the quote
-                // - [ ] build a custom event to fire when the shipping method is changed to tell the button.js file that it has been changed so we can unmount and remount the amazon component / or figure out a way to do it calling a method of the amazon component for updating the amount
-                // - [ ] unmount amazon pay component
-                // - [ ] remount amazon pay component with the updated amount
+                // - [x] when the shipping method changes, fire custom event to update the quote
+                // - [x] bring the info to the frontend via the window.checkoutConfig.quoteData and use that grand_base_total of the quoteData to populate the config obj for mounting the 2nd amazon component
+                // - [x] unmount amazon pay component
+                // - [x] remount amazon pay component with the updated amount
             },
 
             initialiseAmazonPayPaymentComponent: async function (amazonPaymentMethod, element) {
@@ -451,13 +451,13 @@ define([
 
                 const returnUrl = urlBuilder.build('checkout/cart/index' + '?amazonExpress=finalize');
 
-                console.log('NEW AMOUNT: ', formatAmount(getCartSubtotal() * 100))
+                let amount = formatAmount(window.checkoutConfig.quoteData.base_grand_total * 100);
 
                 return {
                     amount: {
                         value: this.isProductView
                             ? formatAmount(totalsModel().getTotal() * 100)
-                            : formatAmount(getCartSubtotal() * 100),
+                            : amount,
                         currency: currency
                     },
                     amazonCheckoutSessionId: amazonPaySessionKey,
@@ -519,8 +519,8 @@ define([
             },
 
             removeAdyenCheckout: function () {
-                debugger;
-                if (typeof this.adyenCheckout != "undefined") {
+                // debugger;
+                if (!!this.adyenCheckout) {
                     this.adyenCheckout.remove(this.amazonPayComponent);
                 }
             },
