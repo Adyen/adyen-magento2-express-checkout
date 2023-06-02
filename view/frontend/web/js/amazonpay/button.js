@@ -198,7 +198,7 @@ define([
             },
 
             reinitialiseAmazonPayOrderComponent: async function (amazonPaymentMethod, element) {
-                // debugger;
+                debugger;
                 if (!!this.amazonPayComponent) {
                     this.removeAdyenCheckout();
                     // this.unmountAmazonPay();
