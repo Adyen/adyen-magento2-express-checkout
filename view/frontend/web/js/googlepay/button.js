@@ -294,31 +294,32 @@ define([
                             : response.find(({ method_code: id }) => id === data.shippingOptionData.id);
                         const regionId = getRegionId(data.shippingAddress.countryCode, data.shippingAddress.locality);
                         // Create payload to get totals
+                        const address = {
+                            'countryId': data.shippingAddress.countryCode,
+                            'region': data.shippingAddress.locality,
+                            'regionId': regionId,
+                            'postcode': data.shippingAddress.postalCode
+                        };
                         const totalsPayload = {
                             'addressInformation': {
-                                'address': {
-                                    'countryId': data.shippingAddress.countryCode,
-                                    'region': data.shippingAddress.locality,
-                                    'regionId': regionId,
-                                    'postcode': data.shippingAddress.postalCode
-                                },
+                                'address': address,
                                 'shipping_method_code': selectedShipping.method_code,
                                 'shipping_carrier_code': selectedShipping.carrier_code
                             }
                         };
 
                         debugger;
-
-                        const shippingInformationPayload = {
-                            'shipping_method_code': selectedShipping.method_code,
-                            'shipping_carrier_code': selectedShipping.carrier_code
-                        };
-
-                        updateShippingInformation(shippingInformationPayload, false);
-
-                        debugger;
                         setTotalsInfo(totalsPayload, this.isProductView)
                         .done(function (totals) {
+                            const shippingInformationPayload = {
+                                    'address': address,
+                                    'shipping_method_code': selectedShipping.method_code,
+                                    'shipping_description': selectedShipping.carrier_title + ' - ' + selectedShipping.method_title,
+                                    'shipping_amount': selectedShipping.amount
+                            };
+
+                            updateShippingInformation(shippingInformationPayload, false);
+
                             const shippingMethods = response.map((shippingMethod) => {
                                 const label = shippingMethod.price_incl_tax
                                     ? formatCurrency(shippingMethod.price_incl_tax, totals.quote_currency_code) + ' - ' + shippingMethod.method_title

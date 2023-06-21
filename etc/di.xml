@@ -15,6 +15,8 @@
     <preference for="Adyen\ExpressCheckout\Api\GuestExpressActivateInterface" type="Adyen\ExpressCheckout\Model\GuestExpressActivate" />
     <preference for="Adyen\ExpressCheckout\Api\ExpressCancelInterface" type="Adyen\ExpressCheckout\Model\ExpressCancel" />
     <preference for="Adyen\ExpressCheckout\Api\GuestExpressCancelInterface" type="Adyen\ExpressCheckout\Model\GuestExpressCancel" />
+    <preference for="Adyen\ExpressCheckout\Api\ExpressShippingInterface" type="Adyen\ExpressCheckout\Model\ExpressShipping" />
+    <preference for="Adyen\ExpressCheckout\Api\GuestExpressShippingInterface" type="Adyen\ExpressCheckout\Model\GuestExpressShipping" />
     <preference for="Adyen\ExpressCheckout\Api\ExpressInitInterface" type="Adyen\ExpressCheckout\Model\ExpressInit" />
     <preference for="Adyen\ExpressCheckout\Api\GuestExpressInitInterface" type="Adyen\ExpressCheckout\Model\GuestExpressInit" />
     <preference for="Adyen\ExpressCheckout\Api\Data\ExpressDataInterface" type="Adyen\ExpressCheckout\Model\ExpressData" />

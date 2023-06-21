@@ -9,9 +9,22 @@ interface ExpressShippingInterface
      * Update Express Shipping Method & Carrier Code
      *
      * @param int $adyenCartId
+     * @param string $countryId
+     * @param string $region
+     * @param string $regionId
+     * @param string postcode
+     * @param string $shippingDescription
      * @param string $shippingMethodCode
-     * @param string $shippingCarrierCode
+     * @param int $shippingAmount
      * @return void
      */
-    public function execute(int $adyenCartId, string $shippingMethodCode, string $shippingCarrierCode): void;
+    public function execute(int $adyenCartId,
+                            string $countryId,
+                            string $region,
+                            string $regionId,
+                            string $postcode,
+                            string $shippingDescription,
+                            string $shippingMethodCode,
+                            int $shippingAmount
+    ): void;
 }

@@ -37,14 +37,24 @@ class GuestExpressShipping implements GuestExpressShippingInterface
      * Update Express Shipping Method & Carrier Code
      *
      * @param string $maskedQuoteId
+     * @param string $countryId
+     * @param string $region
+     * @param string $regionId
+     * @param string $postcode
+     * @param string $shippingDescription
      * @param string $shippingMethodCode
-     * @param string $shippingCarrierCode
+     * @param int $shippingAmount
      * @throws NoSuchEntityException
      */
     public function execute(
         string $maskedQuoteId,
+        string $countryId,
+        string $region,
+        string $regionId,
+        string $postcode,
+        string $shippingDescription,
         string $shippingMethodCode,
-        string $shippingCarrierCode
+        int $shippingAmount
     ): void {
         /** @var $quoteIdMask QuoteIdMask */
         $quoteIdMask = $this->quoteIdMaskFactory->create()->load(
@@ -53,8 +63,13 @@ class GuestExpressShipping implements GuestExpressShippingInterface
         );
         $this->expressShipping->execute(
             (int) $quoteIdMask->getQuoteId(),
+            $countryId,
+            $region,
+            $regionId,
+            $postcode,
+            $shippingDescription,
             $shippingMethodCode,
-            $shippingCarrierCode
+            $shippingAmount
         );
     }
 }
