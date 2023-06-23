@@ -13,7 +13,6 @@ define([
     'Adyen_ExpressCheckout/js/actions/cancelCart',
     'Adyen_ExpressCheckout/js/actions/createPayment',
     'Adyen_ExpressCheckout/js/actions/getShippingMethods',
-    'Adyen_ExpressCheckout/js/actions/updateShippingInformation',
     'Adyen_ExpressCheckout/js/actions/getExpressMethods',
     'Adyen_ExpressCheckout/js/actions/setShippingInformation',
     'Adyen_ExpressCheckout/js/actions/setTotalsInfo',
@@ -51,7 +50,6 @@ define([
         cancelCart,
         createPayment,
         getShippingMethods,
-        updateShippingInformation,
         getExpressMethods,
         setShippingInformation,
         setTotalsInfo,
@@ -282,82 +280,82 @@ define([
                     activateCart(this.isProductView)
                         .then(() => getShippingMethods(payload, this.isProductView))
                         .then(function (response) {
-                        // Stop if no shipping methods.
-                        if (response.length === 0) {
-                            reject($t('There are no shipping methods available for you right now. Please try again or use an alternative payment method.'));
-                            return;
-                        }
-
-                        this.shippingMethods = response;
-                        const selectedShipping = data.shippingOptionData.id === 'shipping_option_unselected'
-                            ? response[0]
-                            : response.find(({ method_code: id }) => id === data.shippingOptionData.id);
-                        const regionId = getRegionId(data.shippingAddress.countryCode, data.shippingAddress.locality);
-                        // Create payload to get totals
-                        const address = {
-                            'countryId': data.shippingAddress.countryCode,
-                            'region': data.shippingAddress.locality,
-                            'regionId': regionId,
-                            'postcode': data.shippingAddress.postalCode
-                        };
-                        const totalsPayload = {
-                            'addressInformation': {
-                                'address': address,
-                                'shipping_method_code': selectedShipping.method_code,
-                                'shipping_carrier_code': selectedShipping.carrier_code
+                            // Stop if no shipping methods.
+                            if (response.length === 0) {
+                                reject($t('There are no shipping methods available for you right now. Please try again or use an alternative payment method.'));
+                                return;
                             }
-                        };
 
-                        debugger;
-                        setTotalsInfo(totalsPayload, this.isProductView)
-                        .done(function (totals) {
-                            const shippingInformationPayload = {
+                            this.shippingMethods = response;
+                            const selectedShipping = data.shippingOptionData.id === 'shipping_option_unselected'
+                                ? response[0]
+                                : response.find(({ method_code: id }) => id === data.shippingOptionData.id);
+                            const regionId = getRegionId(data.shippingAddress.countryCode, data.shippingAddress.locality);
+                            // Create payload to get totals
+                            const address = {
+                                'countryId': data.shippingAddress.countryCode,
+                                'region': data.shippingAddress.locality,
+                                'regionId': regionId,
+                                'postcode': data.shippingAddress.postalCode
+                            };
+                            const totalsPayload = {
+                                'addressInformation': {
                                     'address': address,
                                     'shipping_method_code': selectedShipping.method_code,
-                                    'shipping_description': selectedShipping.carrier_title + ' - ' + selectedShipping.method_title,
-                                    'shipping_amount': selectedShipping.amount
-                            };
-
-                            updateShippingInformation(shippingInformationPayload, false);
-
-                            const shippingMethods = response.map((shippingMethod) => {
-                                const label = shippingMethod.price_incl_tax
-                                    ? formatCurrency(shippingMethod.price_incl_tax, totals.quote_currency_code) + ' - ' + shippingMethod.method_title
-                                    : shippingMethod.method_title;
-
-                                return {
-                                    id: shippingMethod.method_code,
-                                    label: label,
-                                    description: shippingMethod.carrier_title
-                                };
-                            });
-
-                            const paymentDataRequestUpdate = {
-                                newShippingOptionParameters: {
-                                    defaultSelectedOptionId: selectedShipping.method_code,
-                                    shippingOptions: shippingMethods
-                                },
-                                newTransactionInfo: {
-                                    displayItems: [
-                                        {
-                                            label: 'Shipping',
-                                            type: 'LINE_ITEM',
-                                            price: totals.shipping_incl_tax.toString(),
-                                            status: 'FINAL'
-                                        }
-                                    ],
-                                    currencyCode: totals.quote_currency_code,
-                                    totalPriceStatus: 'FINAL',
-                                    totalPrice: totals.grand_total.toString(),
-                                    totalPriceLabel: 'Total',
-                                    countryCode: configModel().getConfig().countryCode
+                                    'shipping_carrier_code': selectedShipping.carrier_code
                                 }
                             };
+                            // Create payload to update quote and quote_address
+                            const shippingInformationPayload = {
+                                'addressInformation': {
+                                    ...totalsPayload.addressInformation,
+                                    'shipping_address': address,
+                                    'billing_address': address
+                                }
+                            };
+                            delete shippingInformationPayload.addressInformation.address;
 
-                            resolve(paymentDataRequestUpdate);
-                        })
-                        .fail(reject);
-                    }.bind(this));
+                            setShippingInformation(shippingInformationPayload, this.isProductView);
+                            setTotalsInfo(totalsPayload, this.isProductView)
+                            .done(function (totals) {
+                                const shippingMethods = response.map((shippingMethod) => {
+                                    const label = shippingMethod.price_incl_tax
+                                        ? formatCurrency(shippingMethod.price_incl_tax, totals.quote_currency_code) + ' - ' + shippingMethod.method_title
+                                        : shippingMethod.method_title;
+
+                                    return {
+                                        id: shippingMethod.method_code,
+                                        label: label,
+                                        description: shippingMethod.carrier_title
+                                    };
+                                });
+
+                                const paymentDataRequestUpdate = {
+                                    newShippingOptionParameters: {
+                                        defaultSelectedOptionId: selectedShipping.method_code,
+                                        shippingOptions: shippingMethods
+                                    },
+                                    newTransactionInfo: {
+                                        displayItems: [
+                                            {
+                                                label: 'Shipping',
+                                                type: 'LINE_ITEM',
+                                                price: totals.shipping_incl_tax.toString(),
+                                                status: 'FINAL'
+                                            }
+                                        ],
+                                        currencyCode: totals.quote_currency_code,
+                                        totalPriceStatus: 'FINAL',
+                                        totalPrice: totals.grand_total.toString(),
+                                        totalPriceLabel: 'Total',
+                                        countryCode: configModel().getConfig().countryCode
+                                    }
+                                };
+
+                                resolve(paymentDataRequestUpdate);
+                            })
+                            .fail(reject);
+                        }.bind(this));
                 });
             },
 

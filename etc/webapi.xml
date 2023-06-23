@@ -59,20 +59,4 @@
             <resource ref="anonymous"/>
         </resources>
     </route>
-    <!-- Express Update Shipping Endpoint -->
-    <route url="/V1/adyen/express/update-shipping-information/mine" method="POST">
-        <service class="Adyen\ExpressCheckout\Api\ExpressShippingInterface" method="execute"/>
-        <resources>
-            <resource ref="self"/>
-        </resources>
-        <data>
-            <parameter name="adyenCartId" force="true">%adyen_cart_id%</parameter>
-        </data>
-    </route>
-    <route url="/V1/adyen/express/update-shipping-information/guest" method="POST">
-        <service class="Adyen\ExpressCheckout\Api\GuestExpressShippingInterface" method="execute"/>
-        <resources>
-            <resource ref="anonymous"/>
-        </resources>
-    </route>
 </routes>
