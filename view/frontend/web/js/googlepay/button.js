@@ -317,44 +317,44 @@ define([
 
                         setShippingInformation(shippingInformationPayload, this.isProductView);
                         setTotalsInfo(totalsPayload, this.isProductView)
-                        .done(function (totals) {
-                            const shippingMethods = response.map((shippingMethod) => {
-                                const label = shippingMethod.price_incl_tax
-                                    ? formatCurrency(shippingMethod.price_incl_tax, totals.quote_currency_code) + ' - ' + shippingMethod.method_title
-                                    : shippingMethod.method_title;
+                            .done(function (totals) {
+                                const shippingMethods = response.map((shippingMethod) => {
+                                    const label = shippingMethod.price_incl_tax
+                                        ? formatCurrency(shippingMethod.price_incl_tax, totals.quote_currency_code) + ' - ' + shippingMethod.method_title
+                                        : shippingMethod.method_title;
 
-                                return {
-                                    id: shippingMethod.method_code,
-                                    label: label,
-                                    description: shippingMethod.carrier_title
+                                    return {
+                                        id: shippingMethod.method_code,
+                                        label: label,
+                                        description: shippingMethod.carrier_title
+                                    };
+                                });
+
+                                const paymentDataRequestUpdate = {
+                                    newShippingOptionParameters: {
+                                        defaultSelectedOptionId: selectedShipping.method_code,
+                                        shippingOptions: shippingMethods
+                                    },
+                                    newTransactionInfo: {
+                                        displayItems: [
+                                            {
+                                                label: 'Shipping',
+                                                type: 'LINE_ITEM',
+                                                price: totals.shipping_incl_tax.toString(),
+                                                status: 'FINAL'
+                                            }
+                                        ],
+                                        currencyCode: totals.quote_currency_code,
+                                        totalPriceStatus: 'FINAL',
+                                        totalPrice: totals.grand_total.toString(),
+                                        totalPriceLabel: 'Total',
+                                        countryCode: configModel().getConfig().countryCode
+                                    }
                                 };
-                            });
 
-                            const paymentDataRequestUpdate = {
-                                newShippingOptionParameters: {
-                                    defaultSelectedOptionId: selectedShipping.method_code,
-                                    shippingOptions: shippingMethods
-                                },
-                                newTransactionInfo: {
-                                    displayItems: [
-                                        {
-                                            label: 'Shipping',
-                                            type: 'LINE_ITEM',
-                                            price: totals.shipping_incl_tax.toString(),
-                                            status: 'FINAL'
-                                        }
-                                    ],
-                                    currencyCode: totals.quote_currency_code,
-                                    totalPriceStatus: 'FINAL',
-                                    totalPrice: totals.grand_total.toString(),
-                                    totalPriceLabel: 'Total',
-                                    countryCode: configModel().getConfig().countryCode
-                                }
-                            };
-
-                            resolve(paymentDataRequestUpdate);
-                        })
-                        .fail(reject);
+                                resolve(paymentDataRequestUpdate);
+                            })
+                            .fail(reject);
                     }.bind(this));
                 });
             },
