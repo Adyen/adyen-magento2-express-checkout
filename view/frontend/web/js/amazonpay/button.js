@@ -118,19 +118,7 @@ define([
                             return;
                         }
 
-                        const urlParams = new URLSearchParams(window.location.search);
-
-                        if (!urlParams.has('amazonCheckoutSessionId')) {
-                            this.initialiseAmazonPayButtonComponent(amazonPaymentMethod, element, config);
-                        } else {
-                            if (!urlParams.has('amazonExpress')) {
-                                this.initialiseAmazonPayOrderComponent(amazonPaymentMethod, element, config);
-                            } else {
-                                if (urlParams.get('amazonExpress') === 'finalize') {
-                                    this.initialiseAmazonPayPaymentComponent(amazonPaymentMethod, element, config);
-                                }
-                            }
-                        }
+                        this.handleAmazonPayComponentMounting(amazonPaymentMethod, element, config);
                     }
                 }
             },
@@ -170,19 +158,7 @@ define([
                     return;
                 }
 
-                const urlParams = new URLSearchParams(window.location.search);
-
-                if (!urlParams.has('amazonCheckoutSessionId')) {
-                    this.initialiseAmazonPayButtonComponent(amazonPaymentMethod, element, config);
-                } else {
-                    if (!urlParams.has('amazonExpress')) {
-                        this.initialiseAmazonPayOrderComponent(amazonPaymentMethod, element, config);
-                    } else {
-                        if (urlParams.get('amazonExpress') === 'finalize') {
-                            this.initialiseAmazonPayPaymentComponent(amazonPaymentMethod, element, config);
-                        }
-                    }
-                }
+                this.handleAmazonPayComponentMounting(amazonPaymentMethod, element, config);
             },
 
             initialiseAdyenComponent: async function (config) {
@@ -287,22 +263,13 @@ define([
                                     shippingMethods.push(method);
                                 }
 
-                                debugger;
-                                console.log('shipping address: ', details.shippingAddress);
-                                console.log('billing address: ', details.billingAddress);
-                                console.log('sanitized shipping address: ', shippingStreetAddress);
-                                console.log('sanitized billing address: ', billingStreetAddress);
-                                console.log('compare this to sanitized shipping address: ', details.shippingAddress.addressLine1.split(" "));
-                                console.log('compare this to sanitized billing address: ', details.billingAddress.addressLine2.split(" "));
-
-
                                 let shippingNameArr = details.shippingAddress.name.split(" "),
                                     shippingFirstname = shippingNameArr[0],
                                     shippingLastname = shippingNameArr.slice(1).join(" "),
                                     billingNameArr = details.billingAddress.name.split(" "),
                                     billingFirstname = billingNameArr[0],
                                     billingLastname = billingNameArr.slice(1).join(" "),
-                                    quotePayload = {
+                                    shippingInformationPayload = {
                                         'addressInformation': {
                                             'shipping_address': {
                                                 'email': details.buyer.email,
@@ -341,7 +308,7 @@ define([
                                         }
                                     };
 
-                                setShippingInformation(quotePayload, this.isProductView);
+                                setShippingInformation(shippingInformationPayload, this.isProductView);
                             })
 
                         let displayHtmlValues = '',
@@ -558,6 +525,10 @@ define([
                     return;
                 }
 
+                this.handleAmazonPayComponentMounting(amazonPaymentMethod, element, config);
+            },
+
+            handleAmazonPayComponentMounting: function (amazonPaymentMethod, element, config) {
                 const urlParams = new URLSearchParams(window.location.search);
 
                 if (!urlParams.has('amazonCheckoutSessionId')) {
@@ -574,13 +545,13 @@ define([
             },
 
             sanitizeAddressLines: function (addressLines) {
-                const sanitizedLines = addressLines.filter(line => line);
-                const formattedAddress = sanitizedLines.join(' ');
-                const trimmedAddress = formattedAddress.trim();
-                const addressArray = trimmedAddress.split(' ');
+                    const sanitizedLines = addressLines.filter(line => line);
+                    const formattedAddress = sanitizedLines.join(' ');
+                    const trimmedAddress = formattedAddress.trim();
+                    const streetAddressArr = trimmedAddress.split(' ');
 
-                return addressArray;
-            }
-        });
+                    return streetAddressArr;
+                }
+            });
     }
 );
