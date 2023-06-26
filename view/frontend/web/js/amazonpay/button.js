@@ -174,7 +174,7 @@ define([
             },
 
             reinitialiseAmazonPayOrderComponent: async function (amazonPaymentMethod, element) {
-                debugger;
+                // debugger;
                 if (!!this.amazonPayComponent) {
                     this.removeAdyenCheckout();
                     // this.unmountAmazonPay();
@@ -203,161 +203,8 @@ define([
                     .mount(element)
 
                 this.amazonPayComponent.getShopperDetails()
-                    .then(details => {
-                        let self = this,
-                            shippingAddress = details.shippingAddress,
-                            buyer = details.buyer,
-                            streetAddress = shippingAddress.addressLine1.split(" "),
-                            nameArr = buyer.name.split(" "),
-                            firstname = nameArr[0],
-                            lastname = nameArr.slice(1).join(" "),
-                            shippingMethods = [],
-                            payload = {
-                                address: {
-                                    city: shippingAddress.city.toLowerCase(),
-                                    country_id: shippingAddress.countryCode,
-                                    email: buyer.email,
-                                    firstname: firstname,
-                                    lastname: lastname,
-                                    postcode: shippingAddress.postalCode,
-                                    region: shippingAddress.stateOrRegion,
-                                    region_id: getRegionId(shippingAddress.countryCode, shippingAddress.stateOrRegion),
-                                    street: streetAddress,
-                                    telephone: buyer.phoneNumber,
-                                    save_in_address_book: 0
-                                }
-                        };
-                        const shippingStreetAddress = this.sanitizeAddressLines([
-                            details.shippingAddress.addressLine1,
-                            details.shippingAddress.addressLine2,
-                            details.shippingAddress.addressLine3
-                        ]);
-
-                        const billingStreetAddress = this.sanitizeAddressLines([
-                            details.billingAddress.addressLine1,
-                            details.billingAddress.addressLine2,
-                            details.billingAddress.addressLine3
-                        ])
-
-
-                        getShippingMethods(payload, self.isProductView)
-                            .then((result) => {
-                                if (result.length === 0) {
-                                    reject($t('There are no shipping methods available for you right now. ' +
-                                        'Please try again or use an alternative payment method.'));
-                                }
-
-                                for (let i = 0; i < result.length; i++) {
-                                    if (typeof result[i].method_code !== 'string') {
-                                        continue;
-                                    }
-
-                                    let method = {
-                                        method_code: result[i].method_code,
-                                        method_title: result[i].method_title,
-                                        carrier_title: result[i].carrier_title ? result[i].carrier_title : '',
-                                        carrier_code: result[i].carrier_code ? result[i].carrier_code : '',
-                                        amount: parseFloat(result[i].amount).toFixed(2)
-                                    };
-
-                                    shippingMethods.push(method);
-                                }
-
-                                let shippingNameArr = details.shippingAddress.name.split(" "),
-                                    shippingFirstname = shippingNameArr[0],
-                                    shippingLastname = shippingNameArr.slice(1).join(" "),
-                                    billingNameArr = details.billingAddress.name.split(" "),
-                                    billingFirstname = billingNameArr[0],
-                                    billingLastname = billingNameArr.slice(1).join(" "),
-                                    shippingInformationPayload = {
-                                        'addressInformation': {
-                                            'shipping_address': {
-                                                'email': details.buyer.email,
-                                                'telephone': details.shippingAddress.phoneNumber,
-                                                'firstname': shippingFirstname,
-                                                'lastname': shippingLastname,
-                                                'street': shippingStreetAddress,
-                                                'city': details.shippingAddress.city.toLowerCase(),
-                                                'region': details.shippingAddress.stateOrRegion,
-                                                'region_id': getRegionId(details.shippingAddress.countryCode, details.shippingAddress.stateOrRegion),
-                                                'region_code': null,
-                                                'country_id': details.shippingAddress.countryCode,
-                                                'postcode': details.shippingAddress.postalCode,
-                                                'same_as_billing': 0,
-                                                'customer_address_id': 0,
-                                                'save_in_address_book': 0
-                                            },
-                                            'billing_address': {
-                                                'email': details.buyer.email,
-                                                'telephone': details.billingAddress.phoneNumber,
-                                                'firstname': billingFirstname,
-                                                'lastname': billingLastname,
-                                                'street': billingStreetAddress,
-                                                'city': details.billingAddress.city.toLowerCase(),
-                                                'region': details.billingAddress.stateOrRegion,
-                                                'region_id': getRegionId(details.billingAddress.countryCode, details.billingAddress.stateOrRegion),
-                                                'region_code': null,
-                                                'country_id': details.billingAddress.countryCode,
-                                                'postcode': details.billingAddress.postalCode,
-                                                'same_as_billing': 0,
-                                                'customer_address_id': 0,
-                                                'save_in_address_book': 0
-                                            },
-                                            'shipping_method_code': shippingMethods[0].method_code,
-                                            'shipping_carrier_code': shippingMethods[0].carrier_code,
-                                        }
-                                    };
-
-                                setShippingInformation(shippingInformationPayload, this.isProductView);
-                            })
-
-                        let displayHtmlValues = '',
-                            displayPaymentDescriptor = '',
-                            shippingInformationArr = [
-                                'name',
-                                'addressLine1',
-                                'addressLine2',
-                                'addressLine3',
-                                'city',
-                                'postalCode',
-                                'countryCode',
-                                'phoneNumber'
-                            ],
-                            shippingAddressLines = [
-                                'addressLine1',
-                                'addressLine2',
-                                'addressLine3',
-                                'city',
-                                'postalCode',
-                            ];
-
-                        if (details.shippingAddress) {
-                            let shippingAddress = details.shippingAddress;
-
-                            shippingInformationArr.forEach((key, index) => {
-                                if (typeof shippingAddress[key] !== undefined && shippingAddress[key] != null) {
-                                    displayHtmlValues += `${shippingAddress[key]}`;
-
-                                    if (shippingAddressLines.includes(key)) {
-                                        displayHtmlValues += ' ';
-                                    }
-
-                                    if (!shippingAddressLines.includes(key) || key === shippingAddressLines[shippingAddressLines.length - 1]) {
-                                        displayHtmlValues += `<br>`;
-                                    }
-                                }
-                            });
-                        }
-
-                        if (details.paymentDescriptor) {
-                            let paymentDescriptor = details.paymentDescriptor;
-                            displayPaymentDescriptor += `${paymentDescriptor} <br>`;
-                        }
-
-                        $('#amazonpay_shopper_details_values').html(displayHtmlValues);
-                        $('#amazonpay_payment_descriptor').html(displayPaymentDescriptor);
-                    }
-                )
+                    .then(details => this.processShopperDetails(details, this.isProductView))
+                    .catch(error => console.error(error));
             },
 
             initialiseAmazonPayPaymentComponent: async function (amazonPaymentMethod, element) {
@@ -544,6 +391,173 @@ define([
                 }
             },
 
+            processShopperDetails: function (details, isProductView) {
+                const shippingStreetAddress = this.sanitizeAddressLines([
+                    details.shippingAddress.addressLine1,
+                    details.shippingAddress.addressLine2,
+                    details.shippingAddress.addressLine3
+                ]);
+                const billingStreetAddress = this.sanitizeAddressLines([
+                    details.billingAddress.addressLine1,
+                    details.billingAddress.addressLine2,
+                    details.billingAddress.addressLine3
+                ]);
+
+                let shippingMethods = [];
+
+                this.getShippingMethodsPayload(details.shippingAddress, details.buyer, shippingStreetAddress)
+                    .then(payload => getShippingMethods(payload, isProductView))
+                    .then(result => {
+                        if (result.length === 0) {
+                            reject($t('There are no shipping methods available for you right now. ' +
+                                'Please try again or use an alternative payment method.'));
+                        }
+
+                        shippingMethods = this.createShippingMethods(result);
+
+                        let shippingInformationPayload = this.createShippingInformationPayload(
+                            details,
+                            shippingStreetAddress,
+                            billingStreetAddress,
+                            shippingMethods
+                        );
+
+                        setShippingInformation(shippingInformationPayload, isProductView);
+                    });
+
+                let displayHtmlValues = this.buildDisplayHtmlValues(details.shippingAddress);
+                let displayPaymentDescriptor = this.buildDisplayPaymentDescriptor(details.paymentDescriptor);
+
+                this.updateHtmlElements(displayHtmlValues, displayPaymentDescriptor);
+            },
+
+            getShippingMethodsPayload: function (shippingAddress, buyer, shippingStreetAddress) {
+                return Promise.resolve({
+                    address: {
+                        city: shippingAddress.city.toLowerCase(),
+                        country_id: shippingAddress.countryCode,
+                        email: buyer.email,
+                        firstname: buyer.name.split(" ")[0],
+                        lastname: buyer.name.split(" ").slice(1).join(" "),
+                        postcode: shippingAddress.postalCode,
+                        region: shippingAddress.stateOrRegion,
+                        region_id: getRegionId(shippingAddress.countryCode, shippingAddress.stateOrRegion),
+                        street: shippingStreetAddress,
+                        telephone: buyer.phoneNumber,
+                        save_in_address_book: 0
+                    }
+                });
+            },
+
+            createShippingMethods: function (result) {
+                let shippingMethods = [];
+
+                for (let i = 0; i < result.length; i++) {
+                    if (typeof result[i].method_code !== 'string') {
+                        continue;
+                    }
+
+                    let method = {
+                        method_code: result[i].method_code,
+                        method_title: result[i].method_title,
+                        carrier_title: result[i].carrier_title ? result[i].carrier_title : '',
+                        carrier_code: result[i].carrier_code ? result[i].carrier_code : '',
+                        amount: parseFloat(result[i].amount).toFixed(2)
+                    };
+
+                    shippingMethods.push(method);
+                }
+
+                return shippingMethods;
+            },
+
+            createShippingInformationPayload: function (details, shippingStreetAddress, billingStreetAddress, shippingMethods) {
+                let shippingNameArr = details.shippingAddress.name.split(" "),
+                    shippingFirstname = shippingNameArr[0],
+                    shippingLastname = shippingNameArr.slice(1).join(" "),
+                    billingNameArr = details.billingAddress.name.split(" "),
+                    billingFirstname = billingNameArr[0],
+                    billingLastname = billingNameArr.slice(1).join(" ");
+
+                return {
+                    'addressInformation': {
+                        'shipping_address': {
+                            'email': details.buyer.email,
+                            'telephone': details.shippingAddress.phoneNumber,
+                            'firstname': shippingFirstname,
+                            'lastname': shippingLastname,
+                            'street': shippingStreetAddress,
+                            'city': details.shippingAddress.city.toLowerCase(),
+                            'region': details.shippingAddress.stateOrRegion,
+                            'region_id': getRegionId(details.shippingAddress.countryCode, details.shippingAddress.stateOrRegion),
+                            'region_code': null,
+                            'country_id': details.shippingAddress.countryCode,
+                            'postcode': details.shippingAddress.postalCode,
+                            'same_as_billing': 0,
+                            'customer_address_id': 0,
+                            'save_in_address_book': 0
+                        },
+                        'billing_address': {
+                            'email': details.buyer.email,
+                            'telephone': details.billingAddress.phoneNumber,
+                            'firstname': billingFirstname,
+                            'lastname': billingLastname,
+                            'street': billingStreetAddress,
+                            'city': details.billingAddress.city.toLowerCase(),
+                            'region': details.billingAddress.stateOrRegion,
+                            'region_id': getRegionId(details.billingAddress.countryCode, details.billingAddress.stateOrRegion),
+                            'region_code': null,
+                            'country_id': details.billingAddress.countryCode,
+                            'postcode': details.billingAddress.postalCode,
+                            'same_as_billing': 0,
+                            'customer_address_id': 0,
+                            'save_in_address_book': 0
+                        },
+                        'shipping_method_code': shippingMethods[0].method_code,
+                        'shipping_carrier_code': shippingMethods[0].carrier_code,
+                    }
+                };
+            },
+
+            buildDisplayHtmlValues: function (shippingAddress) {
+                let displayHtmlValues = '';
+                let shippingInformationArr = [
+                    'name',
+                    'addressLine1',
+                    'addressLine2',
+                    'addressLine3',
+                    'city',
+                    'postalCode',
+                    'countryCode',
+                    'phoneNumber'
+                ];
+                let shippingAddressLines = [
+                    'addressLine1',
+                    'addressLine2',
+                    'addressLine3',
+                    'city',
+                    'postalCode',
+                ];
+
+                if (shippingAddress) {
+                    shippingInformationArr.forEach((key, index) => {
+                        if (shippingAddress[key] != null) {
+                            displayHtmlValues += `${shippingAddress[key]}`;
+
+                            if (shippingAddressLines.includes(key)) {
+                                displayHtmlValues += ' ';
+                            }
+
+                            if (!shippingAddressLines.includes(key) || key === shippingAddressLines[shippingAddressLines.length - 1]) {
+                                displayHtmlValues += `<br>`;
+                            }
+                        }
+                    });
+                }
+
+                return displayHtmlValues;
+            },
+
             sanitizeAddressLines: function (addressLines) {
                     const sanitizedLines = addressLines.filter(line => line);
                     const formattedAddress = sanitizedLines.join(' ');
@@ -551,7 +565,19 @@ define([
                     const streetAddressArr = trimmedAddress.split(' ');
 
                     return streetAddressArr;
+            },
+
+            buildDisplayPaymentDescriptor: function (paymentDescriptor) {
+                if (paymentDescriptor) {
+                    return `${paymentDescriptor} <br>`;
                 }
-            });
+                return '';
+            },
+
+            updateHtmlElements: function (displayHtmlValues, displayPaymentDescriptor) {
+                $('#amazonpay_shopper_details_values').html(displayHtmlValues);
+                $('#amazonpay_payment_descriptor').html(displayPaymentDescriptor);
+            }
+        });
     }
 );
