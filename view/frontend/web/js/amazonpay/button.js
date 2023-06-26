@@ -251,6 +251,18 @@ define([
                                     save_in_address_book: 0
                                 }
                         };
+                        const shippingStreetAddress = this.sanitizeAddressLines([
+                            details.shippingAddress.addressLine1,
+                            details.shippingAddress.addressLine2,
+                            details.shippingAddress.addressLine3
+                        ]);
+
+                        const billingStreetAddress = this.sanitizeAddressLines([
+                            details.billingAddress.addressLine1,
+                            details.billingAddress.addressLine2,
+                            details.billingAddress.addressLine3
+                        ])
+
 
                         getShippingMethods(payload, self.isProductView)
                             .then((result) => {
@@ -275,11 +287,18 @@ define([
                                     shippingMethods.push(method);
                                 }
 
-                                let shippingStreetAddress = details.shippingAddress.addressLine1.split(" "),
-                                    shippingNameArr = details.shippingAddress.name.split(" "),
+                                debugger;
+                                console.log('shipping address: ', details.shippingAddress);
+                                console.log('billing address: ', details.billingAddress);
+                                console.log('sanitized shipping address: ', shippingStreetAddress);
+                                console.log('sanitized billing address: ', billingStreetAddress);
+                                console.log('compare this to sanitized shipping address: ', details.shippingAddress.addressLine1.split(" "));
+                                console.log('compare this to sanitized billing address: ', details.billingAddress.addressLine2.split(" "));
+
+
+                                let shippingNameArr = details.shippingAddress.name.split(" "),
                                     shippingFirstname = shippingNameArr[0],
                                     shippingLastname = shippingNameArr.slice(1).join(" "),
-                                    billingStreetAddress = details.billingAddress.addressLine2.split(" "),
                                     billingNameArr = details.billingAddress.name.split(" "),
                                     billingFirstname = billingNameArr[0],
                                     billingLastname = billingNameArr.slice(1).join(" "),
@@ -372,13 +391,6 @@ define([
                         $('#amazonpay_payment_descriptor').html(displayPaymentDescriptor);
                     }
                 )
-
-                // WORK IN PROGRESS
-                // - [x] identify which shipping method is selected on the page when the shopper first lands on it
-                // - [x] when the shipping method changes, fire custom event to update the quote
-                // - [x] bring the info to the frontend via the window.checkoutConfig.quoteData and use that grand_base_total of the quoteData to populate the config obj for mounting the 2nd amazon component
-                // - [x] unmount amazon pay component
-                // - [x] remount amazon pay component with the updated amount
             },
 
             initialiseAmazonPayPaymentComponent: async function (amazonPaymentMethod, element) {
@@ -389,7 +401,6 @@ define([
                     .mount(element);
 
                 amazonPayComponent.submit();
-
             },
 
             getAmazonPayButtonConfig: function (amazonPaymentMethod, element) {
@@ -560,6 +571,15 @@ define([
                         }
                     }
                 }
+            },
+
+            sanitizeAddressLines: function (addressLines) {
+                const sanitizedLines = addressLines.filter(line => line);
+                const formattedAddress = sanitizedLines.join(' ');
+                const trimmedAddress = formattedAddress.trim();
+                const addressArray = trimmedAddress.split(' ');
+
+                return addressArray;
             }
         });
     }
