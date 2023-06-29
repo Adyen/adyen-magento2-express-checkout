@@ -292,19 +292,30 @@ define([
                             : response.find(({ method_code: id }) => id === data.shippingOptionData.id);
                         const regionId = getRegionId(data.shippingAddress.countryCode, data.shippingAddress.locality);
                         // Create payload to get totals
+                        const address = {
+                            'countryId': data.shippingAddress.countryCode,
+                            'region': data.shippingAddress.locality,
+                            'regionId': regionId,
+                            'postcode': data.shippingAddress.postalCode
+                        };
                         const totalsPayload = {
                             'addressInformation': {
-                                'address': {
-                                    'countryId': data.shippingAddress.countryCode,
-                                    'region': data.shippingAddress.locality,
-                                    'regionId': regionId,
-                                    'postcode': data.shippingAddress.postalCode
-                                },
+                                'address': address,
                                 'shipping_method_code': selectedShipping.method_code,
                                 'shipping_carrier_code': selectedShipping.carrier_code
                             }
                         };
+                        // Create payload to update quote and quote_address
+                        const shippingInformationPayload = {
+                            'addressInformation': {
+                                ...totalsPayload.addressInformation,
+                                'shipping_address': address,
+                                'billing_address': address
+                            }
+                        };
+                        delete shippingInformationPayload.addressInformation.address;
 
+                        setShippingInformation(shippingInformationPayload, this.isProductView);
                         setTotalsInfo(totalsPayload, this.isProductView)
                             .done(function (totals) {
                                 const shippingMethods = response.map((shippingMethod) => {
