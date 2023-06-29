@@ -115,7 +115,7 @@ define([
 
                 if (shippingMethod) {
                     // update quote data
-                    window.checkoutConfig.quoteData.base_grand_total = parseFloat(window.checkoutConfig.totalsData.subtotal) + parseFloat(shippingMethod['amount']);
+                    window.checkoutConfig.quoteData.grand_total = parseFloat(window.checkoutConfig.totalsData.subtotal) + parseFloat(shippingMethod['amount']);
                 }
 
                 return result;

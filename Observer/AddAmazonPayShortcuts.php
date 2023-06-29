@@ -58,6 +58,7 @@ class AddAmazonPayShortcuts implements ObserverInterface
         $currentPageIdentifier = $this->getCurrentPageIdentifier($observer);
         $amazonCheckoutSessionId = $this->httpRequest->getParam('amazonCheckoutSessionId');
 
+        // TODO before release
         if (isset($amazonCheckoutSessionId) && $currentPageIdentifier === 3) {
             return;
         }

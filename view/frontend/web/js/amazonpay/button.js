@@ -280,7 +280,7 @@ define([
                     amount: {
                         value: this.isProductView
                             ? formatAmount(totalsModel().getTotal() * 100)
-                            : formatAmount(window.checkoutConfig.quoteData.base_grand_total * 100),
+                            : formatAmount(window.checkoutConfig.quoteData.grand_total * 100),
                         currency: currency
                     },
                     amazonCheckoutSessionId: amazonPaySessionKey,

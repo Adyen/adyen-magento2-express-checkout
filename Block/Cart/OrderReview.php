@@ -13,17 +13,25 @@ declare(strict_types=1);
 
 namespace Adyen\ExpressCheckout\Block\Cart;
 
+use Adyen\Payment\Helper\Config;
+use Magento\Store\Model\StoreManagerInterface;
 use \Magento\Framework\View\Element\Template;
 
 class OrderReview extends Template
 {
     protected $request;
+    protected $configHelper;
+    protected $storeManager;
 
     public function __construct(
         Template\Context $context,
+        Config $configHelper,
+        StoreManagerInterface $storeManager,
         array $data = []
     ) {
         parent::__construct($context, $data);
+        $this->configHelper = $configHelper;
+        $this->storeManager = $storeManager;
     }
 
     public function isVisible(): bool
@@ -38,5 +46,17 @@ class OrderReview extends Template
         }
 
         return false;
+    }
+
+    public function getReturnUrl(): ?string
+    {
+        $storeId = $this->storeManager->getStore()->getId();
+        $returnUrl = $this->configHelper->getConfigData(
+            'return_path',
+            Config::XML_ADYEN_ABSTRACT_PREFIX,
+            $storeId
+        );
+
+        return $returnUrl;
     }
 }
