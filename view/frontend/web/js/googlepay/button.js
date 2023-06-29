@@ -359,9 +359,6 @@ define([
                             shippingAddress: this.mapAddress(paymentData.shippingAddress),
                             billingAddress: this.mapAddress(paymentData.paymentMethodData.info.billingAddress),
                             paymentMethod: {
-                                /*/
-                                This is where we should change the method for updated method renderer.
-                                 */
                                 method: 'adyen_googlepay',
                                 additional_data: {
                                     brand_code: self.googlePayComponent.props.type,
