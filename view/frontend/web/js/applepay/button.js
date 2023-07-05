@@ -216,6 +216,7 @@ define([
                     },
                     amount: {
                         value: this.isProductView
+                            // TODO refactor this part
                             ? formatAmount(totalsModel().getTotal() * 100)
                             : formatAmount(getCartSubtotal() * 100),
                         currency: currency
@@ -282,19 +283,36 @@ define([
                                 self.shippingMethod = result[i].method_code;
                             }
                         }
+
+                        let address = {
+                            'countryId': self.shippingAddress.country_id,
+                            'region': self.shippingAddress.region,
+                            'regionId': getRegionId(self.shippingAddress.country_id, self.shippingAddress.region),
+                            'postcode': self.shippingAddress.postcode
+                        };
+
+
                         // Create payload to get totals
                         let totalsPayload = {
                             'addressInformation': {
-                                'address': {
-                                    'countryId': self.shippingAddress.country_id,
-                                    'region': self.shippingAddress.region,
-                                    'regionId': getRegionId(self.shippingAddress.country_id, self.shippingAddress.region),
-                                    'postcode': self.shippingAddress.postcode
-                                },
+                                'address': address,
                                 'shipping_method_code': self.shippingMethods[shippingMethods[0].identifier].method_code,
                                 'shipping_carrier_code': self.shippingMethods[shippingMethods[0].identifier].carrier_code
                             }
                         };
+
+                        // Create payload to update quote
+                        let shippingInformationPayload = {
+                            'addressInformation': {
+                                ...totalsPayload.addressInformation,
+                                'shipping_address': address,
+                                'billing_address': address
+                            }
+                        };
+
+                        delete shippingInformationPayload.addressInformation.address;
+
+                        setShippingInformation(shippingInformationPayload, this.isProductView);
 
                         setTotalsInfo(totalsPayload, this.isProductView)
                             .done((response) => {
@@ -330,20 +348,35 @@ define([
                 let self = this;
 
                 let shippingMethod = event.shippingMethod;
-                let payload = {
+
+                let address = {
+                    'countryId': self.shippingAddress.country_id,
+                        'region': self.shippingAddress.region,
+                        'regionId': getRegionId(self.shippingAddress.country_id, self.shippingAddress.region),
+                        'postcode': self.shippingAddress.postcode
+                }
+
+                let totalsPayload = {
                     'addressInformation': {
-                        'address': {
-                            'countryId': self.shippingAddress.country_id,
-                            'region': self.shippingAddress.region,
-                            'regionId': getRegionId(self.shippingAddress.country_id, self.shippingAddress.region),
-                            'postcode': self.shippingAddress.postcode
-                        },
+                        'address': address,
                         'shipping_method_code': self.shippingMethods[shippingMethod.identifier].method_code,
                         'shipping_carrier_code': self.shippingMethods[shippingMethod.identifier].carrier_code
                     }
                 };
 
-                setTotalsInfo(payload, this.isProductView)
+                let shippingInformationPayload = {
+                    'addressInformation': {
+                        ...totalsPayload.addressInformation,
+                        'shipping_address': address,
+                        'billing_address': address
+                    }
+                };
+
+                delete shippingInformationPayload.addressInformation.address;
+
+                setShippingInformation(shippingInformationPayload, this.isProductView);
+
+                setTotalsInfo(totalsPayload, this.isProductView)
                     .done((response) => {
                         let applePayShippingMethodUpdate = {};
 
