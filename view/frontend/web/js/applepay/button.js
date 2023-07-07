@@ -238,6 +238,7 @@ define([
 
             onShippingContactSelect: function (resolve, reject, event) {
                 let self = this;
+                debugger;
 
                 // Get the address.
                 let address = event.shippingContact,
@@ -301,21 +302,23 @@ define([
                             }
                         };
 
-                        // Create payload to update quote
-                        let shippingInformationPayload = {
-                            'addressInformation': {
-                                ...totalsPayload.addressInformation,
-                                'shipping_address': address,
-                                'billing_address': address
-                            }
-                        };
+                        // // Create payload to update quote
+                        // let shippingInformationPayload = {
+                        //     'addressInformation': {
+                        //         ...totalsPayload.addressInformation,
+                        //         'shipping_address': address,
+                        //         'billing_address': address
+                        //     }
+                        // };
+                        //
+                        // delete shippingInformationPayload.addressInformation.address;
+                        //
+                        // setShippingInformation(shippingInformationPayload, this.isProductView);
 
-                        delete shippingInformationPayload.addressInformation.address;
-
-                        setShippingInformation(shippingInformationPayload, this.isProductView);
-
+                        debugger;
                         setTotalsInfo(totalsPayload, this.isProductView)
                             .done((response) => {
+                                debugger;
                                 let applePayShippingContactUpdate = {};
 
                                 applePayShippingContactUpdate.newShippingMethods = shippingMethods;
@@ -346,6 +349,7 @@ define([
 
             onShippingMethodSelect: function (resolve, reject, event) {
                 let self = this;
+                debugger;
 
                 let shippingMethod = event.shippingMethod;
 
@@ -364,20 +368,22 @@ define([
                     }
                 };
 
-                let shippingInformationPayload = {
-                    'addressInformation': {
-                        ...totalsPayload.addressInformation,
-                        'shipping_address': address,
-                        'billing_address': address
-                    }
-                };
+                // let shippingInformationPayload = {
+                //     'addressInformation': {
+                //         ...totalsPayload.addressInformation,
+                //         'shipping_address': address,
+                //         'billing_address': address
+                //     }
+                // };
+                //
+                // delete shippingInformationPayload.addressInformation.address;
+                //
+                // setShippingInformation(shippingInformationPayload, this.isProductView);
 
-                delete shippingInformationPayload.addressInformation.address;
-
-                setShippingInformation(shippingInformationPayload, this.isProductView);
-
+                debugger;
                 setTotalsInfo(totalsPayload, this.isProductView)
                     .done((response) => {
+                        debugger;
                         let applePayShippingMethodUpdate = {};
 
                         applePayShippingMethodUpdate.newTotal = {
