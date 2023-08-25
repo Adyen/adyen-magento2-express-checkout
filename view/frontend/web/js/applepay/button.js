@@ -357,10 +357,10 @@ define([
 
                 let address = {
                     'countryId': self.shippingAddress.country_id,
-                        'region': self.shippingAddress.region,
-                        'regionId': getRegionId(self.shippingAddress.country_id, self.shippingAddress.region),
-                        'postcode': self.shippingAddress.postcode
-                }
+                    'region': self.shippingAddress.region,
+                    'regionId': getRegionId(self.shippingAddress.country_id, self.shippingAddress.region),
+                    'postcode': self.shippingAddress.postcode
+                };
 
                 let totalsPayload = {
                     'addressInformation': {
