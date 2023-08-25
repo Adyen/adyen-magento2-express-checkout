@@ -314,7 +314,6 @@ define([
 
                         setShippingInformation(shippingInformationPayload, this.isProductView);
 
-                        debugger;
                         setTotalsInfo(totalsPayload, this.isProductView)
                             .done((response) => {
                                 debugger;
