@@ -238,7 +238,6 @@ define([
 
             onShippingContactSelect: function (resolve, reject, event) {
                 let self = this;
-                debugger;
 
                 // Get the address.
                 let address = event.shippingContact,
