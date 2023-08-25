@@ -216,7 +216,6 @@ define([
                     },
                     amount: {
                         value: this.isProductView
-                            // TODO refactor this part
                             ? formatAmount(totalsModel().getTotal() * 100)
                             : formatAmount(getCartSubtotal() * 100),
                         currency: currency
@@ -238,7 +237,6 @@ define([
 
             onShippingContactSelect: function (resolve, reject, event) {
                 let self = this;
-                debugger;
 
                 // Get the address.
                 let address = event.shippingContact,
@@ -312,13 +310,10 @@ define([
                         };
 
                         delete shippingInformationPayload.addressInformation.address;
-
                         setShippingInformation(shippingInformationPayload, this.isProductView);
 
-                        debugger;
                         setTotalsInfo(totalsPayload, this.isProductView)
                             .done((response) => {
-                                debugger;
                                 let applePayShippingContactUpdate = {};
 
                                 applePayShippingContactUpdate.newShippingMethods = shippingMethods;
@@ -358,8 +353,6 @@ define([
 
             onShippingMethodSelect: function (resolve, reject, event) {
                 let self = this;
-                debugger;
-
                 let shippingMethod = event.shippingMethod;
 
                 let address = {
@@ -386,13 +379,10 @@ define([
                 };
 
                 delete shippingInformationPayload.addressInformation.address;
-
                 setShippingInformation(shippingInformationPayload, this.isProductView);
 
-                debugger;
                 setTotalsInfo(totalsPayload, this.isProductView)
                     .done((response) => {
-                        debugger;
                         let applePayShippingMethodUpdate = {};
 
                         applePayShippingMethodUpdate.newTotal = {
