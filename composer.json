@@ -11,7 +11,7 @@
     }
   ],
   "require": {
-    "adyen/module-payment": "^*"
+    "adyen/module-payment": "^8"
   },
   "require-dev": {
     "phpunit/phpunit": "*",
