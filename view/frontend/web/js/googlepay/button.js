@@ -280,7 +280,7 @@ define([
                     activateCart(this.isProductView)
                         .then(() => getShippingMethods(payload, this.isProductView))
                         .then(function (response) {
-                        // Stop if no shipping methods.
+                            // Stop if no shipping methods.
                         if (response.length === 0) {
                             reject($t('There are no shipping methods available for you right now. Please try again or use an alternative payment method.'));
                             return;
@@ -290,13 +290,24 @@ define([
                         const selectedShipping = data.shippingOptionData.id === 'shipping_option_unselected'
                             ? response[0]
                             : response.find(({ method_code: id }) => id === data.shippingOptionData.id);
-                        const regionId = getRegionId(data.shippingAddress.countryCode, data.shippingAddress.locality);
-                        // Create payload to get totals
+                        const regionId = getRegionId(data.shippingAddress.countryCode,
+                            data.shippingAddress.administrativeArea || data.shippingAddress.locality,
+                            true
+                        );
+
+                        // Create payload to get totals and use Dummy values where we do not get them
                         const address = {
                             'countryId': data.shippingAddress.countryCode,
                             'region': data.shippingAddress.locality,
                             'regionId': regionId,
-                            'postcode': data.shippingAddress.postalCode
+                            'regionCode': null,
+                            'postcode': data.shippingAddress.postalCode,
+                            'firstname': '',
+                            'lastname': '',
+                            'city': '',
+                            'telephone' : '',
+                            'street': ['', ''],
+
                         };
                         const totalsPayload = {
                             'addressInformation': {
@@ -308,16 +319,19 @@ define([
                         // Create payload to update quote and quote_address
                         const shippingInformationPayload = {
                             'addressInformation': {
-                                ...totalsPayload.addressInformation,
+                                // ...totalsPayload.addressInformation,
                                 'shipping_address': address,
-                                'billing_address': address
+                                'billing_address': address,
+                                'shipping_method_code': selectedShipping.method_code,
+                                'shipping_carrier_code': selectedShipping.carrier_code
                             }
                         };
-                        delete shippingInformationPayload.addressInformation.address;
+                        // delete shippingInformationPayload.addressInformation.address;
 
                         setShippingInformation(shippingInformationPayload, this.isProductView);
                         setTotalsInfo(totalsPayload, this.isProductView)
                             .done(function (totals) {
+                                console.log(totals.tax_amount)
                                 const shippingMethods = response.map((shippingMethod) => {
                                     const label = shippingMethod.price_incl_tax
                                         ? formatCurrency(shippingMethod.price_incl_tax, totals.quote_currency_code) + ' - ' + shippingMethod.method_title
@@ -329,7 +343,6 @@ define([
                                         description: shippingMethod.carrier_title
                                     };
                                 });
-
                                 const paymentDataRequestUpdate = {
                                     newShippingOptionParameters: {
                                         defaultSelectedOptionId: selectedShipping.method_code,
@@ -346,7 +359,7 @@ define([
                                         ],
                                         currencyCode: totals.quote_currency_code,
                                         totalPriceStatus: 'FINAL',
-                                        totalPrice: totals.grand_total.toString(),
+                                        totalPrice: (totals.grand_total+ totals.tax_amount).toString(),
                                         totalPriceLabel: 'Total',
                                         countryCode: configModel().getConfig().countryCode
                                     }
