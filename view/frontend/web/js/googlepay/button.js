@@ -319,19 +319,16 @@ define([
                         // Create payload to update quote and quote_address
                         const shippingInformationPayload = {
                             'addressInformation': {
-                                // ...totalsPayload.addressInformation,
                                 'shipping_address': address,
                                 'billing_address': address,
                                 'shipping_method_code': selectedShipping.method_code,
                                 'shipping_carrier_code': selectedShipping.carrier_code
                             }
                         };
-                        // delete shippingInformationPayload.addressInformation.address;
 
                         setShippingInformation(shippingInformationPayload, this.isProductView);
                         setTotalsInfo(totalsPayload, this.isProductView)
                             .done(function (totals) {
-                                console.log(totals.tax_amount)
                                 const shippingMethods = response.map((shippingMethod) => {
                                     const label = shippingMethod.price_incl_tax
                                         ? formatCurrency(shippingMethod.price_incl_tax, totals.quote_currency_code) + ' - ' + shippingMethod.method_title
