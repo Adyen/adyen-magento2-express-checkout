@@ -58,19 +58,24 @@ class Button extends AbstractButton implements ShortcutInterface
     private $scopeConfig;
 
     /**
-     * Button constructor
+     * @var ConfigurationInterface $configuration
+     */
+    private $configuration;
+
+    /**
+     * Button Constructor
      *
-     * @param Context $context
-     * @param Session $checkoutSession
-     * @param MethodInterface $payment
-     * @param UrlInterface $url
-     * @param CustomerSession $customerSession
-     * @param StoreManagerInterface $storeManagerInterface
-     * @param DefaultConfigProvider $defaultConfigProvider
-     * @param ScopeConfigInterface $scopeConfig
-     * @param AdyenHelper $adyenHelper
-     * @param ConfigurationInterface $configuration
-     * @param AdyenConfigHelper $adyenConfigHelper
+     * @param \Magento\Framework\View\Element\Template\Context $context
+     * @param \Magento\Checkout\Model\Session $checkoutSession
+     * @param \Magento\Payment\Model\MethodInterface $payment
+     * @param \Magento\Framework\UrlInterface $url
+     * @param \Magento\Customer\Model\Session $customerSession
+     * @param \Magento\Store\Model\StoreManagerInterface $storeManagerInterface
+     * @param \Magento\Checkout\Model\DefaultConfigProvider $defaultConfigProvider
+     * @param \Magento\Framework\App\Config\ScopeConfigInterface $scopeConfig
+     * @param \Adyen\Payment\Helper\Data $adyenHelper
+     * @param \Adyen\Payment\Helper\Config $adyenConfigHelper
+     * @param \Adyen\ExpressCheckout\Model\ConfigurationInterface $configuration
      * @param array $data
      */
     public function __construct(
@@ -84,6 +89,7 @@ class Button extends AbstractButton implements ShortcutInterface
         ScopeConfigInterface $scopeConfig,
         AdyenHelper $adyenHelper,
         AdyenConfigHelper $adyenConfigHelper,
+        ConfigurationInterface $configuration,
         array $data = []
     ) {
         parent::__construct(
@@ -99,6 +105,7 @@ class Button extends AbstractButton implements ShortcutInterface
             $data
         );
         $this->defaultConfigProvider = $defaultConfigProvider;
+        $this->configuration = $configuration;
     }
 
     /**
@@ -121,5 +128,13 @@ class Button extends AbstractButton implements ShortcutInterface
             }
         }
         return '';
+    }
+
+    /**
+     * @return string
+     */
+    public function getButtonColor(): string
+    {
+        return $this->configuration->getApplePayButtonColor();
     }
 }

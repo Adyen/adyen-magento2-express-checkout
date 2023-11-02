@@ -67,7 +67,7 @@ define([
                 shippingMethods: {},
                 isProductView: false,
                 maskedId: null,
-                applePayComponent: null
+                applePayComponent: null,
             },
 
             initialize: async function (config, element) {
@@ -209,6 +209,7 @@ define([
                     countryCode: countryCode,
                     currencyCode: currency,
                     totalPriceLabel: $t('Grand Total'),
+                    buttonColor: config.buttonColor ?? 'black',
                     configuration: {
                         domainName: window.location.hostname,
                         merchantId: applePaymentMethod.configuration.merchantId,
