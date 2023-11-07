@@ -28,6 +28,8 @@ $config = [
     ]
 ];
 ?>
-<div class="adyen-checkout__dropin apple-pay-button-card" id="<?= $id ?>"
+<div class="adyen-checkout__dropin apple-pay-button-card"
+     id="<?= $id ?>"
+     style="display: none"
      data-mage-init="<?= $escaper->escapeHtmlAttr(json_encode($config)) ?>">
 </div>
