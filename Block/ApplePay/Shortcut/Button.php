@@ -22,7 +22,6 @@ use Magento\Catalog\Block\ShortcutInterface;
 use Magento\Checkout\Model\DefaultConfigProvider;
 use Magento\Customer\Model\Session as CustomerSession;
 use Magento\Framework\App\Config\ScopeConfigInterface;
-use Magento\Framework\Exception\InputException;
 use Magento\Framework\Exception\LocalizedException;
 use Magento\Framework\UrlInterface;
 use Magento\Framework\View\Element\Template\Context;
@@ -65,17 +64,17 @@ class Button extends AbstractButton implements ShortcutInterface
     /**
      * Button Constructor
      *
-     * @param \Magento\Framework\View\Element\Template\Context $context
-     * @param \Magento\Checkout\Model\Session $checkoutSession
-     * @param \Magento\Payment\Model\MethodInterface $payment
-     * @param \Magento\Framework\UrlInterface $url
-     * @param \Magento\Customer\Model\Session $customerSession
-     * @param \Magento\Store\Model\StoreManagerInterface $storeManagerInterface
-     * @param \Magento\Checkout\Model\DefaultConfigProvider $defaultConfigProvider
-     * @param \Magento\Framework\App\Config\ScopeConfigInterface $scopeConfig
-     * @param \Adyen\Payment\Helper\Data $adyenHelper
-     * @param \Adyen\Payment\Helper\Config $adyenConfigHelper
-     * @param \Adyen\ExpressCheckout\Model\ConfigurationInterface $configuration
+     * @param Context $context
+     * @param Session $checkoutSession
+     * @param MethodInterface $payment
+     * @param UrlInterface $url
+     * @param CustomerSession $customerSession
+     * @param StoreManagerInterface $storeManagerInterface
+     * @param DefaultConfigProvider $defaultConfigProvider
+     * @param ScopeConfigInterface $scopeConfig
+     * @param AdyenHelper $adyenHelper
+     * @param AdyenConfigHelper $adyenConfigHelper
+     * @param ConfigurationInterface $configuration
      * @param array $data
      */
     public function __construct(
