@@ -22,8 +22,8 @@ use Magento\Store\Model\ScopeInterface;
  */
 interface ConfigurationInterface
 {
-    public const SHOW_APPLE_PAY_ON_CONFIG_PATH = 'payment/adyen_hpp/show_apple_pay_on';
-    public const SHOW_GOOGLE_PAY_ON_CONFIG_PATH = 'payment/adyen_hpp/show_google_pay_on';
+    public const SHOW_APPLE_PAY_ON_CONFIG_PATH = 'payment/adyen_express/show_apple_pay_on';
+    public const SHOW_GOOGLE_PAY_ON_CONFIG_PATH = 'payment/adyen_express/show_google_pay_on';
 
     /**
      * Returns configuration value for where to show apple pay
