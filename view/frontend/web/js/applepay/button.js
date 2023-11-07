@@ -209,7 +209,6 @@ define([
                     countryCode: countryCode,
                     currencyCode: currency,
                     totalPriceLabel: $t('Grand Total'),
-                    buttonColor: config.buttonColor ?? 'black',
                     configuration: {
                         domainName: window.location.hostname,
                         merchantId: applePaymentMethod.configuration.merchantId,
