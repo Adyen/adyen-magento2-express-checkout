@@ -356,7 +356,7 @@ define([
                                         ],
                                         currencyCode: totals.quote_currency_code,
                                         totalPriceStatus: 'FINAL',
-                                        totalPrice: (totals.grand_total+ totals.tax_amount).toString(),
+                                        totalPrice: (totals.grand_total).toString(),
                                         totalPriceLabel: 'Total',
                                         countryCode: configModel().getConfig().countryCode
                                     }

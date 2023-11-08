@@ -319,7 +319,7 @@ define([
                                 applePayShippingContactUpdate.newShippingMethods = shippingMethods;
                                 applePayShippingContactUpdate.newTotal = {
                                     label: $t('Grand Total'),
-                                    amount: (response.grand_total + response.tax_amount).toString()
+                                    amount: (response.grand_total).toString()
                                 };
                                 applePayShippingContactUpdate.newLineItems = [
                                     {
@@ -388,7 +388,7 @@ define([
                         applePayShippingMethodUpdate.newTotal = {
                             type: 'final',
                             label: $t('Grand Total'),
-                            amount: (response.grand_total + response.tax_amount).toString()
+                            amount: (response.grand_total).toString()
                         };
                         applePayShippingMethodUpdate.newLineItems = [
                             {
