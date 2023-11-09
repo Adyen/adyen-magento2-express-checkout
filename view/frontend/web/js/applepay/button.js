@@ -213,7 +213,7 @@ define([
                 return {
                     countryCode: countryCode,
                     currencyCode: currency,
-                    totalPriceLabel: $t('Grand Total'),
+                    totalPriceLabel: this.getMerchantName(),
                     configuration: {
                         domainName: window.location.hostname,
                         merchantId: applePaymentMethod.configuration.merchantId,
@@ -323,7 +323,7 @@ define([
 
                                 applePayShippingContactUpdate.newShippingMethods = shippingMethods;
                                 applePayShippingContactUpdate.newTotal = {
-                                    label: $t('Grand Total'),
+                                    label: this.getMerchantName(),
                                     amount: (response.grand_total).toString()
                                 };
                                 applePayShippingContactUpdate.newLineItems = [
@@ -392,7 +392,7 @@ define([
 
                         applePayShippingMethodUpdate.newTotal = {
                             type: 'final',
-                            label: $t('Grand Total'),
+                            label: this.getMerchantName(),
                             amount: (response.grand_total).toString()
                         };
                         applePayShippingMethodUpdate.newLineItems = [
@@ -508,7 +508,12 @@ define([
                     console.error('Adyen ApplePay Unable to set shipping information', e);
                     reject(window.ApplePaySession.STATUS_INVALID_BILLING_POSTAL_ADDRESS);
                 });
-            }
+            },
+
+            getMerchantName: function() {
+                const config = configModel().getConfig();
+                return config?.merchantAccount ?? $t('Grand Total');
+            },
         });
     }
 );
