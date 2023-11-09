@@ -115,4 +115,58 @@ class Configuration extends DataObject implements ConfigurationInterface
             $merchantName
         );
     }
+
+    /**
+     * Get Payment Method Public Key ID
+     *
+     * @return string|null
+     */
+    public function getPublicKeyId(): ?string
+    {
+        $publicKeyId = $this->getData(self::PUBLIC_KEY_ID);
+        return $publicKeyId ?
+            (string) $publicKeyId :
+            null;
+    }
+
+    /**
+     * Set Payment Method Public Key ID
+     *
+     * @param string $publicKeyId
+     * @return void
+     */
+    public function setPublicKeyId(string $publicKeyId): void
+    {
+        $this->setData(
+            self::PUBLIC_KEY_ID,
+            $publicKeyId
+        );
+    }
+
+    /**
+     * Get Payment Method Store ID
+     *
+     * @return string|null
+     */
+    public function getStoreId(): ?string
+    {
+        $storeId = $this->getData(self::STORE_ID);
+        return $storeId ?
+            (string) $storeId :
+            null;
+    }
+
+    /**
+     * Set Payment Method Store ID
+     *
+     * @param string $storeId
+     * @return void
+     */
+    public function setStoreId(string $storeId): void
+    {
+        $this->setData(
+            self::STORE_ID,
+            $storeId
+        );
+    }
 }

@@ -1,0 +1,27 @@
+<?php
+/**
+ * @var
+ * @var \Adyen\ExpressCheckout\Block\Cart\OrderReview $block
+ * @var \Magento\Framework\Escaper $escaper
+ */
+$isVisible = $block->isVisible();
+$pathInfo = $this->getRequest()->getPathInfo();
+$returnUrl = $block->getReturnUrl();
+$defaultReturnUrl = 'checkout/cart';
+
+if (!isset($returnUrl)) {
+    $returnUrl = $defaultReturnUrl;
+}
+?>
+<?php if($block->isVisible() && str_contains($pathInfo, $returnUrl)): ?>
+    <div class="amazonpay_order_review">
+        <strong><?= $block->escapeHtml(__('Ship To')) ?></strong>
+        <div class="amazonpay_order_review_details">
+            <p id="amazonpay_shopper_details_values"></p>
+        </div>
+        <strong><?= $block->escapeHtml(__('Payment Method')) ?></strong>
+        <div class="amazonpay_order_review_details">
+            <p id="amazonpay_payment_descriptor"></p>
+        </div>
+    </div>
+<?php endif ?>

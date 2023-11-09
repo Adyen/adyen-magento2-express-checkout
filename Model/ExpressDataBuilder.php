@@ -309,6 +309,8 @@ class ExpressDataBuilder implements ExpressDataBuilderInterface
         $methodResponseConfigurationObject->setGatewayMerchantId($configurationData['gatewayMerchantId'] ?? '');
         $methodResponseConfigurationObject->setIntent($configurationData['intent'] ?? '');
         $methodResponseConfigurationObject->setMerchantName($configurationData['merchantName'] ?? '');
+        $methodResponseConfigurationObject->setPublicKeyId($configurationData['publicKeyId'] ?? '');
+        $methodResponseConfigurationObject->setStoreId($configurationData['storeId'] ?? '');
         $brands = $methodResponseData['brands'] ?? [];
         $brands = is_array($brands) ?
             $brands :

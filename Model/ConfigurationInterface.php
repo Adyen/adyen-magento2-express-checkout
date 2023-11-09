@@ -24,6 +24,7 @@ interface ConfigurationInterface
 {
     public const SHOW_APPLE_PAY_ON_CONFIG_PATH = 'payment/adyen_hpp/show_apple_pay_on';
     public const SHOW_GOOGLE_PAY_ON_CONFIG_PATH = 'payment/adyen_hpp/show_google_pay_on';
+    public const SHOW_AMAZON_PAY_ON_CONFIG_PATH = 'payment/adyen_hpp/show_amazon_pay_on';
 
     /**
      * Returns configuration value for where to show apple pay
@@ -47,5 +48,17 @@ interface ConfigurationInterface
     public function getShowGooglePayOn(
         string $scopeType = ScopeInterface::SCOPE_STORE,
         $scopeCode = null
+    ): array;
+
+    /**
+     * Returns configuration value for where to show amazon pay
+     *
+     * @param string $scopeType
+     * @param null|int|string $scopeCode
+     * @return array
+     */
+    public function getShowAmazonPayOn(
+        string $scopeType = ScopeInterface::SCOPE_STORE,
+               $scopeCode = null
     ): array;
 }
