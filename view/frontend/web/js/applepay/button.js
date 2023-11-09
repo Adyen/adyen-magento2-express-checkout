@@ -158,10 +158,15 @@ define([
                 this.applePayComponent
                     .isAvailable()
                     .then(() => {
+                        $(element).show();
                         this.applePayComponent.mount(element);
-                    }).catch(e => {
-                        console.log('Apple pay is unavailable.', e);
+                    }).catch((e) => {
+                        this.onNotAvailable(e);
                     });
+            },
+
+            onNotAvailable: function (error) {
+                console.log('Apple pay is unavailable.', error);
             },
 
             unmountApplePay: function () {
