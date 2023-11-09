@@ -282,19 +282,35 @@ define([
                                 self.shippingMethod = result[i].method_code;
                             }
                         }
+
+                        let address = {
+                            'countryId': self.shippingAddress.country_id,
+                            'region': self.shippingAddress.region,
+                            'regionId': getRegionId(self.shippingAddress.country_id, self.shippingAddress.region),
+                            'postcode': self.shippingAddress.postcode
+                        };
+
+
                         // Create payload to get totals
                         let totalsPayload = {
                             'addressInformation': {
-                                'address': {
-                                    'countryId': self.shippingAddress.country_id,
-                                    'region': self.shippingAddress.region,
-                                    'regionId': getRegionId(self.shippingAddress.country_id, self.shippingAddress.region),
-                                    'postcode': self.shippingAddress.postcode
-                                },
+                                'address': address,
                                 'shipping_method_code': self.shippingMethods[shippingMethods[0].identifier].method_code,
                                 'shipping_carrier_code': self.shippingMethods[shippingMethods[0].identifier].carrier_code
                             }
                         };
+
+                        // Create payload to update quote
+                        let shippingInformationPayload = {
+                            'addressInformation': {
+                                ...totalsPayload.addressInformation,
+                                'shipping_address': address,
+                                'billing_address': address
+                            }
+                        };
+
+                        delete shippingInformationPayload.addressInformation.address;
+                        setShippingInformation(shippingInformationPayload, this.isProductView);
 
                         setTotalsInfo(totalsPayload, this.isProductView)
                             .done((response) => {
@@ -303,7 +319,7 @@ define([
                                 applePayShippingContactUpdate.newShippingMethods = shippingMethods;
                                 applePayShippingContactUpdate.newTotal = {
                                     label: $t('Grand Total'),
-                                    amount: response.grand_total.toString()
+                                    amount: (response.grand_total).toString()
                                 };
                                 applePayShippingContactUpdate.newLineItems = [
                                     {
@@ -317,6 +333,15 @@ define([
                                         amount: shippingMethods[0].amount.toString()
                                     }
                                 ];
+
+                                if (response.tax_amount > 0) {
+                                    applePayShippingContactUpdate.newLineItems.push({
+                                        type: 'final',
+                                        label: $t('Tax'),
+                                        amount: response.tax_amount.toString()
+                                    })
+                                }
+
                                 resolve(applePayShippingContactUpdate);
                                 // Pass shipping methods back
                             }).fail((e) => {
@@ -328,29 +353,42 @@ define([
 
             onShippingMethodSelect: function (resolve, reject, event) {
                 let self = this;
-
                 let shippingMethod = event.shippingMethod;
-                let payload = {
+
+                let address = {
+                    'countryId': self.shippingAddress.country_id,
+                    'region': self.shippingAddress.region,
+                    'regionId': getRegionId(self.shippingAddress.country_id, self.shippingAddress.region),
+                    'postcode': self.shippingAddress.postcode
+                };
+
+                let totalsPayload = {
                     'addressInformation': {
-                        'address': {
-                            'countryId': self.shippingAddress.country_id,
-                            'region': self.shippingAddress.region,
-                            'regionId': getRegionId(self.shippingAddress.country_id, self.shippingAddress.region),
-                            'postcode': self.shippingAddress.postcode
-                        },
+                        'address': address,
                         'shipping_method_code': self.shippingMethods[shippingMethod.identifier].method_code,
                         'shipping_carrier_code': self.shippingMethods[shippingMethod.identifier].carrier_code
                     }
                 };
 
-                setTotalsInfo(payload, this.isProductView)
+                let shippingInformationPayload = {
+                    'addressInformation': {
+                        ...totalsPayload.addressInformation,
+                        'shipping_address': address,
+                        'billing_address': address
+                    }
+                };
+
+                delete shippingInformationPayload.addressInformation.address;
+                setShippingInformation(shippingInformationPayload, this.isProductView);
+
+                setTotalsInfo(totalsPayload, this.isProductView)
                     .done((response) => {
                         let applePayShippingMethodUpdate = {};
 
                         applePayShippingMethodUpdate.newTotal = {
                             type: 'final',
                             label: $t('Grand Total'),
-                            amount: response.grand_total.toString()
+                            amount: (response.grand_total).toString()
                         };
                         applePayShippingMethodUpdate.newLineItems = [
                             {
@@ -364,6 +402,15 @@ define([
                                 amount: shippingMethod.amount.toString()
                             }
                         ];
+
+                        if (response.tax_amount > 0) {
+                            applePayShippingMethodUpdate.newLineItems.push({
+                                type: 'final',
+                                label: $t('Tax'),
+                                amount: response.tax_amount.toString()
+                            })
+                        }
+
                         self.shippingMethod = shippingMethod.identifier;
                         resolve(applePayShippingMethodUpdate);
                     }).fail((e) => {
