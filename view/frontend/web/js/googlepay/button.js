@@ -411,7 +411,6 @@ define([
                     }.bind(this));
             },
 
-
             setShippingInformation: function (paymentData) {
                 const shippingMethod = this.shippingMethods.find(function (method) {
                     return method.method_code === paymentData.shippingOptionData.id;
