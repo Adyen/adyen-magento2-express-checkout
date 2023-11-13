@@ -67,7 +67,7 @@ define([
                 shippingMethods: {},
                 isProductView: false,
                 maskedId: null,
-                applePayComponent: null
+                applePayComponent: null,
             },
 
             initialize: async function (config, element) {
