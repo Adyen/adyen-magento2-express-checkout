@@ -454,7 +454,7 @@ define([
                         },
                         'billing_address': {
                             'email': shippingContact.emailAddress,
-                            'telephone': '0000000000',
+                            'telephone': shippingContact.phoneNumber,
                             'firstname': billingContact.givenName,
                             'lastname': billingContact.familyName,
                             'street': billingContact.addressLines,
