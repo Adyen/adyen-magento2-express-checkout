@@ -158,7 +158,7 @@ define([
                 this.applePayComponent
                     .isAvailable()
                     .then(() => {
-                        $(element).show();
+                        element.style.display = 'block';
                         this.applePayComponent.mount(element);
                     }).catch((e) => {
                         this.onNotAvailable(e);
