@@ -22,7 +22,6 @@ use Magento\Catalog\Block\ShortcutInterface;
 use Magento\Checkout\Model\DefaultConfigProvider;
 use Magento\Customer\Model\Session as CustomerSession;
 use Magento\Framework\App\Config\ScopeConfigInterface;
-use Magento\Framework\Exception\InputException;
 use Magento\Framework\Exception\LocalizedException;
 use Magento\Framework\UrlInterface;
 use Magento\Framework\View\Element\Template\Context;
@@ -58,7 +57,12 @@ class Button extends AbstractButton implements ShortcutInterface
     private $scopeConfig;
 
     /**
-     * Button constructor
+     * @var ConfigurationInterface $configuration
+     */
+    private $configuration;
+
+    /**
+     * Button Constructor
      *
      * @param Context $context
      * @param Session $checkoutSession
@@ -69,8 +73,8 @@ class Button extends AbstractButton implements ShortcutInterface
      * @param DefaultConfigProvider $defaultConfigProvider
      * @param ScopeConfigInterface $scopeConfig
      * @param AdyenHelper $adyenHelper
-     * @param ConfigurationInterface $configuration
      * @param AdyenConfigHelper $adyenConfigHelper
+     * @param ConfigurationInterface $configuration
      * @param array $data
      */
     public function __construct(
@@ -84,6 +88,7 @@ class Button extends AbstractButton implements ShortcutInterface
         ScopeConfigInterface $scopeConfig,
         AdyenHelper $adyenHelper,
         AdyenConfigHelper $adyenConfigHelper,
+        ConfigurationInterface $configuration,
         array $data = []
     ) {
         parent::__construct(
@@ -99,6 +104,7 @@ class Button extends AbstractButton implements ShortcutInterface
             $data
         );
         $this->defaultConfigProvider = $defaultConfigProvider;
+        $this->configuration = $configuration;
     }
 
     /**
@@ -121,5 +127,13 @@ class Button extends AbstractButton implements ShortcutInterface
             }
         }
         return '';
+    }
+
+    /**
+     * @return string
+     */
+    public function getButtonColor(): string
+    {
+        return $this->configuration->getApplePayButtonColor();
     }
 }

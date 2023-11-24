@@ -24,6 +24,7 @@ interface ConfigurationInterface
 {
     public const SHOW_APPLE_PAY_ON_CONFIG_PATH = 'payment/adyen_express/show_apple_pay_on';
     public const SHOW_GOOGLE_PAY_ON_CONFIG_PATH = 'payment/adyen_express/show_google_pay_on';
+    public const APPLE_PAY_BUTTON_COLOR_CONFIG_PATH = 'payment/adyen_express/apple_pay_button_color';
 
     /**
      * Returns configuration value for where to show apple pay
@@ -36,6 +37,18 @@ interface ConfigurationInterface
         string $scopeType = ScopeInterface::SCOPE_STORE,
         $scopeCode = null
     ): array;
+
+    /**
+     * Returns Apple Pay button color, if no value set, black is returned
+     *
+     * @param string $scopeType
+     * @param $scopeCode
+     * @return string
+     */
+    public function getApplePayButtonColor(
+        string $scopeType = ScopeInterface::SCOPE_STORE,
+        $scopeCode = null
+    ): string;
 
     /**
      * Returns configuration value for where to show google pay

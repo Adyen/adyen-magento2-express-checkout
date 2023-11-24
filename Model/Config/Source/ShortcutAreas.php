@@ -22,9 +22,7 @@ class ShortcutAreas implements OptionSourceInterface
     public const MINICART_VALUE = 3;
 
     /**
-     * Return array of options for Source Model
-     *
-     * @return array[]
+     * @inheritDoc
      */
     public function toOptionArray()
     {
