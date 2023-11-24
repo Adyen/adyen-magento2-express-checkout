@@ -26,7 +26,17 @@ define([
             }
         },
 
-        getCountires: function () {
+        getCountires: function (byRegionCode) {
+            if(!!byRegionCode) {
+                this.fetchingCountries = true;
+                getCountries()
+                    .done(function (countries) {
+                        const processedCountries = processCountries(countries, byRegionCode);
+
+                        this.setCountries(processedCountries);
+                        this.fetchingCountries = false;
+                    }.bind(this));
+            }
             return this.countries();
         },
 

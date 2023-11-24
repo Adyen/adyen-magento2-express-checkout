@@ -67,7 +67,7 @@ define([
                 shippingMethods: {},
                 isProductView: false,
                 maskedId: null,
-                applePayComponent: null
+                applePayComponent: null,
             },
 
             initialize: async function (config, element) {
@@ -158,10 +158,15 @@ define([
                 this.applePayComponent
                     .isAvailable()
                     .then(() => {
+                        element.style.display = 'block';
                         this.applePayComponent.mount(element);
-                    }).catch(e => {
-                        console.log('Apple pay is unavailable.', e);
+                    }).catch((e) => {
+                        this.onNotAvailable(e);
                     });
+            },
+
+            onNotAvailable: function (error) {
+                console.log('Apple pay is unavailable.', error);
             },
 
             unmountApplePay: function () {
@@ -208,7 +213,7 @@ define([
                 return {
                     countryCode: countryCode,
                     currencyCode: currency,
-                    totalPriceLabel: $t('Grand Total'),
+                    totalPriceLabel: this.getMerchantName(),
                     configuration: {
                         domainName: window.location.hostname,
                         merchantId: applePaymentMethod.configuration.merchantId,
@@ -318,8 +323,8 @@ define([
 
                                 applePayShippingContactUpdate.newShippingMethods = shippingMethods;
                                 applePayShippingContactUpdate.newTotal = {
-                                    label: $t('Grand Total'),
-                                    amount: (response.grand_total + response.tax_amount).toString()
+                                    label: this.getMerchantName(),
+                                    amount: (response.grand_total).toString()
                                 };
                                 applePayShippingContactUpdate.newLineItems = [
                                     {
@@ -387,8 +392,8 @@ define([
 
                         applePayShippingMethodUpdate.newTotal = {
                             type: 'final',
-                            label: $t('Grand Total'),
-                            amount: (response.grand_total + response.tax_amount).toString()
+                            label: this.getMerchantName(),
+                            amount: (response.grand_total).toString()
                         };
                         applePayShippingMethodUpdate.newLineItems = [
                             {
@@ -449,7 +454,7 @@ define([
                         },
                         'billing_address': {
                             'email': shippingContact.emailAddress,
-                            'telephone': '0000000000',
+                            'telephone': shippingContact.phoneNumber,
                             'firstname': billingContact.givenName,
                             'lastname': billingContact.familyName,
                             'street': billingContact.addressLines,
@@ -503,7 +508,12 @@ define([
                     console.error('Adyen ApplePay Unable to set shipping information', e);
                     reject(window.ApplePaySession.STATUS_INVALID_BILLING_POSTAL_ADDRESS);
                 });
-            }
+            },
+
+            getMerchantName: function() {
+                const config = configModel().getConfig();
+                return config?.merchantAccount ?? $t('Grand Total');
+            },
         });
     }
 );
