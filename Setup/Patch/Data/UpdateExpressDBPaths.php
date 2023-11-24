@@ -53,6 +53,13 @@ class UpdateExpressDBPaths implements DataPatchInterface, PatchVersionInterface
             'payment/adyen_express/show_google_pay_on'
         );
 
+        // Update Google Pay config path
+        $this->updateConfigValue(
+            $this->moduleDataSetup,
+            'payment/adyen_hpp/apple_pay_button_color',
+            'payment/adyen_express/apple_pay_button_color'
+        );
+
         $this->moduleDataSetup->getConnection()->endSetup();
     }
 
