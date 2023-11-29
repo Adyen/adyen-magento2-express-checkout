@@ -380,7 +380,7 @@ define([
                             shippingAddress: this.mapAddress(paymentData.shippingAddress),
                             billingAddress: this.mapAddress(paymentData.paymentMethodData.info.billingAddress),
                             paymentMethod: {
-                                method: 'adyen_hpp',
+                                method: 'adyen_googlepay',
                                 additional_data: {
                                     brand_code: self.googlePayComponent.props.type,
                                     stateData: JSON.stringify(componentData)

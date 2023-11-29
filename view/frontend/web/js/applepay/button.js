@@ -481,7 +481,7 @@ define([
                     const postData = {
                         email: shippingContact.emailAddress,
                         paymentMethod: {
-                            method: 'adyen_hpp',
+                            method: 'adyen_applepay',
                             additional_data: {
                                 brand_code: 'applepay',
                                 stateData: JSON.stringify(componentData)

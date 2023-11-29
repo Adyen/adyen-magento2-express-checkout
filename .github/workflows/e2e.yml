@@ -1,0 +1,17 @@
+name: Adyen Magento 2 Express Checkout Plugin E2E Trigger Workflow
+run-name: Headless E2E tests for ${{ github.event.pull_request.head.ref}}
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+    branches: [main, develop]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    if: ${{ github.actor != 'renovate[bot]' || github.actor != 'lgtm-com[bot]' }}
+    env:
+      GITHUB_TOKEN: ${{ secrets.ADYEN_AUTOMATION_BOT_TEST_ACCESS_TOKEN }}
+    steps:
+      - name: Run E2E Tests
+        run: gh workflow run e2e-test-express-checkout.yml -R Adyen/adyen-magento2
