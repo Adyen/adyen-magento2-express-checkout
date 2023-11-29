@@ -23,8 +23,8 @@ bin/magento cache:clean
 
 ## Configuration Steps
 1. Add the payment method in your [Customer Area](https://docs.adyen.com/payment-methods#add-payment-methods-to-your-account).
-2. Make sure that Alternative payment methods are activated in your [Magento configuration](https://docs.adyen.com/plugins/magento-2/set-up-the-payment-methods-in-magento#alternative-payment-methods).
-3. In the Magento admin page, go to Alternative payment methods > Express Payments > Show Google Pay on > Select one or all of your desired options.
+2. Make sure that Payment methods are activated in your [Magento configuration](https://docs.adyen.com/plugins/adobe-commerce/set-up-the-payment-methods-in-adobe-commerce/).
+3. In the Magento admin page, go to Accepting Payments > Online Checkout > Express Payments > Show Google Pay on > Select one or all of your desired options.
 4. For Apple Pay: [Use Adyen's Apple Pay Certificate to go live](https://docs.adyen.com/payment-methods/apple-pay/web-component#going-live), without designing your Apple Pay integration.
 5. For Google Pay: Set up [Google Pay](https://docs.adyen.com/payment-methods/google-pay/web-component#before-you-go-live).
 
