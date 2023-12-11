@@ -13,6 +13,7 @@ declare(strict_types=1);
 
 namespace Adyen\ExpressCheckout\Block\GooglePay\Shortcut;
 
+use Adyen\ExpressCheckout\Model\AgreementsProvider;
 use Adyen\Payment\Helper\Data as AdyenHelper;
 use Adyen\Payment\Helper\Config as AdyenConfigHelper;
 use Adyen\ExpressCheckout\Block\Buttons\AbstractButton;
@@ -37,38 +38,19 @@ class Button extends AbstractButton implements ShortcutInterface
     private $defaultConfigProvider;
 
     /**
-     * @var UrlInterface $url
-     */
-    private $url;
-
-    /**
-     * @var CustomerSession $customerSession
-     */
-    private $customerSession;
-
-    /**
-     * @var StoreManagerInterface $storeManager
-     */
-    private $storeManager;
-
-    /**
-     * @var ScopeConfigInterface $scopeConfig
-     */
-    private $scopeConfig;
-
-    /**
-     * Button constructor
+     * Button Constructor
      *
-     * @param Context $context
-     * @param Session $checkoutSession
-     * @param MethodInterface $payment
-     * @param UrlInterface $url
-     * @param CustomerSession $customerSession
-     * @param StoreManagerInterface $storeManagerInterface
-     * @param DefaultConfigProvider $defaultConfigProvider
-     * @param ScopeConfigInterface $scopeConfig
-     * @param AdyenHelper $adyenHelper
-     * @param AdyenConfigHelper $adyenConfigHelper
+     * @param \Magento\Framework\View\Element\Template\Context $context
+     * @param \Magento\Checkout\Model\Session $checkoutSession
+     * @param \Magento\Payment\Model\MethodInterface $payment
+     * @param \Magento\Framework\UrlInterface $url
+     * @param \Magento\Customer\Model\Session $customerSession
+     * @param \Magento\Store\Model\StoreManagerInterface $storeManagerInterface
+     * @param \Magento\Checkout\Model\DefaultConfigProvider $defaultConfigProvider
+     * @param \Magento\Framework\App\Config\ScopeConfigInterface $scopeConfig
+     * @param \Adyen\Payment\Helper\Data $adyenHelper
+     * @param \Adyen\Payment\Helper\Config $adyenConfigHelper
+     * @param \Adyen\ExpressCheckout\Model\AgreementsProvider $agreementsProvider
      * @param array $data
      */
     public function __construct(
@@ -82,6 +64,7 @@ class Button extends AbstractButton implements ShortcutInterface
         ScopeConfigInterface $scopeConfig,
         AdyenHelper $adyenHelper,
         AdyenConfigHelper $adyenConfigHelper,
+        AgreementsProvider $agreementsProvider,
         array $data = []
     ) {
         parent::__construct(
@@ -94,6 +77,7 @@ class Button extends AbstractButton implements ShortcutInterface
             $scopeConfig,
             $adyenHelper,
             $adyenConfigHelper,
+            $agreementsProvider,
             $data
         );
         $this->defaultConfigProvider = $defaultConfigProvider;

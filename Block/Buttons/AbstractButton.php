@@ -14,17 +14,16 @@ declare(strict_types=1);
 namespace Adyen\ExpressCheckout\Block\Buttons;
 
 use Adyen\Payment\Helper\Config;
+use Adyen\ExpressCheckout\Model\AgreementsProvider;
 use Adyen\Payment\Helper\Data as AdyenHelper;
 use Magento\Checkout\Model\Session;
 use Magento\Customer\Model\Session as CustomerSession;
-use Magento\Framework\Exception\InputException;
 use Magento\Framework\Exception\LocalizedException;
 use Magento\Framework\Exception\NoSuchEntityException;
 use Magento\Framework\UrlInterface;
 use Magento\Framework\View\Element\Template;
 use Magento\Framework\View\Element\Template\Context;
 use Magento\Payment\Model\MethodInterface;
-use Magento\Store\Model\ScopeInterface;
 use Magento\Store\Model\Store;
 use Magento\Store\Model\StoreManagerInterface;
 use Magento\Framework\App\Config\ScopeConfigInterface;
@@ -38,54 +37,60 @@ abstract class AbstractButton extends Template
     /**
      * @var Session
      */
-    private $checkoutSession;
+    protected $checkoutSession;
 
     /**
      * @var MethodInterface
      */
-    private $payment;
+    protected $payment;
 
     /**
      * @var UrlInterface $url
      */
-    private $url;
+    protected $url;
 
     /**
      * @var CustomerSession $customerSession
      */
-    private $customerSession;
+    protected $customerSession;
 
     /**
      * @var StoreManagerInterface $storeManager
      */
-    private $storeManager;
+    protected $storeManager;
 
     /**
      * @var ScopeConfigInterface $scopeConfig
      */
-    private $scopeConfig;
+    protected $scopeConfig;
 
     /**
      * @var AdyenHelper
      */
-    private $adyenHelper;
+    protected $adyenHelper;
 
     /**
      * @var Config
      */
-    private $adyenConfigHelper;
+    protected $adyenConfigHelper;
 
     /**
-     * Button constructor.
-     * @param Context $context
-     * @param Session $checkoutSession
-     * @param MethodInterface $payment
-     * @param UrlInterface $url
-     * @param CustomerSession $customerSession
-     * @param StoreManagerInterface $storeManagerInterface
-     * @param ScopeConfigInterface $scopeConfig
-     * @param AdyenHelper $adyenHelper
-     * @param Config $adyenConfigHelper
+     * @var AgreementsProvider
+     */
+    protected $agreementsProvider;
+
+    /**
+     * AbstractButton Constructor
+     * @param \Magento\Framework\View\Element\Template\Context $context
+     * @param \Magento\Checkout\Model\Session $checkoutSession
+     * @param \Magento\Payment\Model\MethodInterface $payment
+     * @param \Magento\Framework\UrlInterface $url
+     * @param \Magento\Customer\Model\Session $customerSession
+     * @param \Magento\Store\Model\StoreManagerInterface $storeManagerInterface
+     * @param \Magento\Framework\App\Config\ScopeConfigInterface $scopeConfig
+     * @param \Adyen\Payment\Helper\Data $adyenHelper
+     * @param \Adyen\Payment\Helper\Config $adyenConfigHelper
+     * @param \Adyen\ExpressCheckout\Model\AgreementsProvider $agreementsProvider
      * @param array $data
      */
     public function __construct(
@@ -98,6 +103,7 @@ abstract class AbstractButton extends Template
         ScopeConfigInterface $scopeConfig,
         AdyenHelper $adyenHelper,
         Config $adyenConfigHelper,
+        AgreementsProvider $agreementsProvider,
         array $data = []
     ) {
         parent::__construct($context, $data);
@@ -254,5 +260,13 @@ abstract class AbstractButton extends Template
     public function getContainerId(): string
     {
         return $this->getData(self::BUTTON_ELEMENT_INDEX) ?: '';
+    }
+
+    /**
+     * @return array
+     */
+    public function getAgreementIds(): array
+    {
+        return $this->agreementsProvider->getRequiredAgreementIds();
     }
 }

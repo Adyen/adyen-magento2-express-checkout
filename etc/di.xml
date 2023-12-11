@@ -68,4 +68,12 @@
             </argument>
         </arguments>
     </type>
+
+    <type name="Adyen\ExpressCheckout\Model\AgreementsProvider">
+        <arguments>
+            <argument name="list" xsi:type="array">
+                <item name="checkoutAgreements" xsi:type="object">\Magento\CheckoutAgreements\Model\AgreementsProvider</item>
+            </argument>
+        </arguments>
+    </type>
 </config>
