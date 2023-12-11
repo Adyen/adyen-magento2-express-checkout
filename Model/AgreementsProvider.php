@@ -43,7 +43,7 @@ class AgreementsProvider
      */
     public function getAgreementIds(): array
     {
-        $checkoutAgreements = $this->agreementsConfigProvider->getConfig();
+        $checkoutAgreements = $this->provider->getConfig();
         $agreements = $checkoutAgreements['checkoutAgreements']['agreements'] ?? null;
         if (!is_array($agreements)) {
             return [];
