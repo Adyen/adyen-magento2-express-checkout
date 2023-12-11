@@ -33,6 +33,7 @@ define([
     'Adyen_ExpressCheckout/js/model/countries',
     'Adyen_ExpressCheckout/js/model/totals',
     'Adyen_ExpressCheckout/js/model/currency',
+    'Adyen_ExpressCheckout/js/helpers/agreementsAssigner',
     'mage/cookies',
 ],
     function (
@@ -69,7 +70,8 @@ define([
         configModel,
         countriesModel,
         totalsModel,
-        currencyModel
+        currencyModel,
+        agreementsAssigner,
     ) {
         'use strict';
 
@@ -389,11 +391,7 @@ define([
                             }
                         };
 
-                        if (window.checkout && window.checkout.agreementIds) {
-                            payload.paymentMethod.extension_attributes = {
-                                agreement_ids: window.checkout.agreementIds
-                            };
-                        }
+                        payload.paymentMethod = agreementsAssigner(payload.paymentMethod);
 
                         createPayment(JSON.stringify(payload), this.isProductView)
                             .done( function (orderId) {

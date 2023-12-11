@@ -27,7 +27,8 @@ define([
     'Adyen_ExpressCheckout/js/model/config',
     'Adyen_ExpressCheckout/js/model/countries',
     'Adyen_ExpressCheckout/js/model/totals',
-    'Adyen_ExpressCheckout/js/model/currency'
+    'Adyen_ExpressCheckout/js/model/currency',
+    'Adyen_ExpressCheckout/js/helpers/agreementsAssigner',
 ],
     function (
         Component,
@@ -58,7 +59,8 @@ define([
         configModel,
         countriesModel,
         totalsModel,
-        currencyModel
+        currencyModel,
+        agreementsAssigner
     ) {
         'use strict';
 
@@ -489,11 +491,7 @@ define([
                         }
                     };
 
-                    if (window.checkout && window.checkout.agreementIds) {
-                        postData.paymentMethod.extension_attributes = {
-                            agreement_ids: window.checkout.agreementIds
-                        };
-                    }
+                    postData.paymentMethod = agreementsAssigner(postData.paymentMethod);
 
                     createPayment(JSON.stringify(postData), this.isProductView)
                         .done(function () {

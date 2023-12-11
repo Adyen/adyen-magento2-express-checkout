@@ -13,38 +13,50 @@ declare(strict_types=1);
 
 namespace Adyen\ExpressCheckout\Model;
 
-use Magento\CheckoutAgreements\Model\AgreementsProviderInterface;
+use Magento\CheckoutAgreements\Model\AgreementsConfigProvider;
 
 /**
  * Class AgreementsProvider
  *
  * @package Reflet\AdyenExpressCheckout\Model
  */
-class AgreementsProvider implements AgreementsProviderInterface
+class AgreementsProvider
 {
-    protected array $list = [];
+    /**
+     * @var AgreementsConfigProvider
+     */
+    protected $provider;
 
     /**
      * AgreementsProvider Constructor
      *
-     * @param AgreementsProviderInterface[] $list
+     * @param AgreementsConfigProvider $agreementsConfigProvider
      */
     public function __construct(
-        array $list = []
+        AgreementsConfigProvider $agreementsConfigProvider
     ) {
-        $this->list = $list;
+        $this->provider = $agreementsConfigProvider;
     }
 
     /**
-     * @inheritDoc
+     * @return array
      */
-    public function getRequiredAgreementIds(): array
+    public function getAgreementIds(): array
     {
-        $ids = [];
-        foreach ($this->list as $provider) {
-            $ids = array_merge($ids, $provider->getRequiredAgreementIds());
+        $checkoutAgreements = $this->agreementsConfigProvider->getConfig();
+        $agreements = $checkoutAgreements['checkoutAgreements']['agreements'] ?? null;
+        if (!is_array($agreements)) {
+            return [];
         }
 
-        return array_merge($ids);
+        $ids = [];
+        foreach ($agreements as $agreement) {
+            $id = $agreement['agreementId'] ?? null;
+            if ($id) {
+                $ids[] = $id;
+            }
+        }
+
+        return $ids;
     }
 }

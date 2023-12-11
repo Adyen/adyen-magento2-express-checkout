@@ -267,6 +267,6 @@ abstract class AbstractButton extends Template
      */
     public function getAgreementIds(): array
     {
-        return $this->agreementsProvider->getRequiredAgreementIds();
+        return $this->agreementsProvider->getAgreementIds();
     }
 }
