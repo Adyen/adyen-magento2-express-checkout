@@ -263,7 +263,16 @@ define([
                     .then((result) => {
                         // Stop if no shipping methods.
                         if (result.length === 0) {
-                            reject($t('There are no shipping methods available for you right now. Please try again or use an alternative payment method.'));
+                            console.info('There are no shipping methods available for you right now. Please try again or use an alternative payment method.');
+                            reject({
+                                newTotal: {
+                                    label: this.getMerchantName(),
+                                    amount: this.isProductView
+                                        ? formatAmount(totalsModel().getTotal() * 100)
+                                        : formatAmount(getCartSubtotal() * 100),
+                                },
+                                errors: [new ApplePayError('addressUnserviceable')],
+                            });
                         }
                         let shippingMethods = [];
 
