@@ -358,10 +358,7 @@ define([
 
                                 resolve(applePayShippingContactUpdate);
                                 // Pass shipping methods back
-                            }).fail((e) => {
-                                console.error('Adyen ApplePay: Unable to get totals', e);
-                                reject($t('We\'re unable to fetch the cart totals for you. Please try an alternative payment method.'));
-                        });
+                            }).fail((e) => this._onGetTotalsError(e, reject));
                     }).catch(reject);
             },
 
@@ -427,10 +424,7 @@ define([
 
                         self.shippingMethod = shippingMethod.identifier;
                         resolve(applePayShippingMethodUpdate);
-                    }).fail((e) => {
-                        console.error('Adyen ApplePay: Unable to get totals', e);
-                        reject($t('We\'re unable to fetch the cart totals for you. Please try an alternative payment method.'));
-                });
+                    }).fail((e) => this._onGetTotalsError(e, reject));
             },
 
             /**
@@ -505,39 +499,54 @@ define([
                             redirectToSuccess();
                             resolve(window.ApplePaySession.STATUS_SUCCESS);
                         })
-                        .fail(function(error) {
-                            this.onPlaceOrderError('payment', error, reject);
-                        }.bind(this));
+                        .fail((error) => this._onPlaceOrderError('payment', error, reject));
 
-                }.bind(this)).fail(function(error) {
-                    this.onPlaceOrderError('shippingInformation', error, reject);
-                }.bind(this));
+                }.bind(this)).fail((error) => this._onPlaceOrderError('shippingInformation', error, reject));
             },
 
+            /**
+             * @param {*} error
+             * @param {function} reject
+             * @private
+             */
+            _onGetTotalsError: function (error, reject) {
+                reject({
+                    status: window.ApplePaySession.STATUS_FAILURE,
+                });
+
+                console.error('Adyen ApplePay: Unable to get totals', error);
+                this._displayError($t('We\'re unable to fetch the cart totals for you. Please try an alternative payment method.'));
+            },
 
             /**
              * @param {string} step
              * @param {*} error
              * @param {function} reject
+             * @private
              */
-            onPlaceOrderError: function(step, error, reject) {
+            _onPlaceOrderError: function(step, error, reject) {
                 reject({
                     status: window.ApplePaySession.STATUS_FAILURE,
                 });
 
                 console.error(
-                    `Adyen ApplePay unable to take payment, something went wrong during ${step} step.`,
+                    `Adyen ApplePay: Unable to take payment, something went wrong during ${step} step.`,
                     error,
                 );
 
-                /**
-                 * @see https://magento.stackexchange.com/questions/237959/how-to-use-javascript-to-display-page-messages
-                 */
-                const errorMessage = $t('Your payment failed, Please try again later');
+                this._displayError($t('Your payment failed, Please try again later'));
+            },
+
+            /**
+             * @see https://magento.stackexchange.com/questions/237959/how-to-use-javascript-to-display-page-messages
+             * @param {string} error
+             * @private
+             */
+            _displayError: function (error) {
                 setTimeout(() => {
                     customerData.set('messages', {
                         messages: [{
-                            text: errorMessage,
+                            text: error,
                             type: 'error',
                         }],
                     });
