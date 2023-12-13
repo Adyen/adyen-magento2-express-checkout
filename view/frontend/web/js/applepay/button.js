@@ -485,7 +485,7 @@ define([
 
                 let componentData = self.applePayComponent.data;
 
-                setShippingInformation(payload, this.isProductView).done(function () {
+                setShippingInformation(payload, this.isProductView).done(function() {
                     // Submit payment information
                     const postData = {
                         email: shippingContact.emailAddress,
@@ -493,32 +493,62 @@ define([
                             method: 'adyen_hpp',
                             additional_data: {
                                 brand_code: 'applepay',
-                                stateData: JSON.stringify(componentData)
-                            }
-                        }
+                                stateData: JSON.stringify(componentData),
+                            },
+                        },
                     };
 
-                    if (window.checkout && window.checkout.agreementIds) {
-                        postData.paymentMethod.extension_attributes = {
-                            agreement_ids: window.checkout.agreementIds
-                        };
-                    }
+                    postData.paymentMethod = agreementsAssigner(postData.paymentMethod);
 
                     createPayment(JSON.stringify(postData), this.isProductView)
-                        .done(function () {
+                        .done(function() {
                             redirectToSuccess();
                             resolve(window.ApplePaySession.STATUS_SUCCESS);
-                        }).fail(function (r) {
-                            reject(window.ApplePaySession.STATUS_FAILURE);
-                            console.error('Adyen ApplePay Unable to take payment', r);
-                        });
+                        })
+                        .fail(function(error) {
+                            this.onPlaceOrderError('payment', error, reject);
+                        }.bind(this));
 
-                }.bind(this)).fail(function (e) {
-                    console.error('Adyen ApplePay Unable to set shipping information', e);
-                    reject(window.ApplePaySession.STATUS_INVALID_BILLING_POSTAL_ADDRESS);
-                });
+                }.bind(this)).fail(function(error) {
+                    this.onPlaceOrderError('shippingInformation', error, reject);
+                }.bind(this));
             },
 
+
+            /**
+             * @param {string} step
+             * @param {*} error
+             * @param {function} reject
+             */
+            onPlaceOrderError: function(step, error, reject) {
+                reject({
+                    status: window.ApplePaySession.STATUS_FAILURE,
+                });
+
+                console.error(
+                    `Adyen ApplePay unable to take payment, something went wrong during ${step} step.`,
+                    error,
+                );
+
+                /**
+                 * @see https://magento.stackexchange.com/questions/237959/how-to-use-javascript-to-display-page-messages
+                 */
+                const errorMessage = $t('Your payment failed, Please try again later');
+                setTimeout(() => {
+                    customerData.set('messages', {
+                        messages: [{
+                            text: errorMessage,
+                            type: 'error',
+                        }],
+                    });
+
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                }, 1000);
+            },
+
+            /**
+             * @returns {string}
+             */
             getMerchantName: function() {
                 const config = configModel().getConfig();
                 return config?.merchantAccount ?? $t('Grand Total');
