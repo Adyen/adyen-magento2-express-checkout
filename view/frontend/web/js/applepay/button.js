@@ -534,7 +534,8 @@ define([
                     error,
                 );
 
-                this._displayError($t('Your payment failed, Please try again later'));
+                const errorMessage = error?.responseJSON.message ?? $t('Your payment failed, Please try again later');
+                this._displayError(errorMessage);
             },
 
             /**
