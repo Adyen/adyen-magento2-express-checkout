@@ -14,4 +14,4 @@ jobs:
       GITHUB_TOKEN: ${{ secrets.ADYEN_AUTOMATION_BOT_TEST_ACCESS_TOKEN }}
     steps:
       - name: Run E2E Tests
-        run: gh workflow run e2e-test-dispatch.yml -R Adyen/adyen-magento2 -F expressBranch=${{ github.event.pull_request.head.ref }} -F testGroup=${{"express-checkout"}}
+        run: gh workflow run e2e-test-dispatch.yml -R Adyen/adyen-magento2 -F expressBranch=${{ github.event.pull_request.head.ref }} -F testGroup="express-checkout"
