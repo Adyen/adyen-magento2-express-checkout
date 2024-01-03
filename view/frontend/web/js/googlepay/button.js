@@ -281,6 +281,7 @@ define([
                         .then(() => getShippingMethods(payload, this.isProductView))
                         .then(function (response) {
 
+                        // If the shipping_method is not available, remove it from the response array.
                         for (let key in response) {
                             if (response[key].available === false) {
                                 response.splice(key, 1);
