@@ -280,7 +280,15 @@ define([
                     activateCart(this.isProductView)
                         .then(() => getShippingMethods(payload, this.isProductView))
                         .then(function (response) {
-                            // Stop if no shipping methods.
+
+                        // If the shipping_method is not available, remove it from the response array.
+                        for (let key in response) {
+                            if (response[key].available === false) {
+                                response.splice(key, 1);
+                            }
+                        }
+
+                        // Stop if no shipping methods.
                         if (response.length === 0) {
                             reject($t('There are no shipping methods available for you right now. Please try again or use an alternative payment method.'));
                             return;
