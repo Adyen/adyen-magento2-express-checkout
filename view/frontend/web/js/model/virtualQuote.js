@@ -22,7 +22,7 @@ define([
 
             if (isPdp && initExpressResponse['is_virtual_quote']) {
                 isVirtual = true;
-            } else {
+            } else if (!isPdp) {
                 const cart = customerData.get('cart');
                 isVirtual = cart().items.some(item => item.product_type == 'virtual');
             }
