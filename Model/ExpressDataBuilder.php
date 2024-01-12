@@ -175,6 +175,7 @@ class ExpressDataBuilder implements ExpressDataBuilderInterface
         $expressData->setAdyenPaymentMethods($adyenPaymentMethods);
         $maskedQuoteId = $this->getMaskedQuoteId($quote);
         $expressData->setMaskedQuoteId($maskedQuoteId);
+        $expressData->setIsVirtualQuote($quote->isVirtual());
         $cartTotals = $this->cartTotalRepository->get(
             $quote->getId()
         );

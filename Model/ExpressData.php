@@ -7,7 +7,6 @@ use Adyen\ExpressCheckout\Api\Data\AdyenPaymentMethodsInterface;
 use Adyen\ExpressCheckout\Api\Data\ExpressDataInterface;
 use Magento\Framework\DataObject;
 use Magento\Quote\Api\Data\TotalsInterface;
-use Magento\Quote\Model\Quote\Address\Total;
 
 class ExpressData extends DataObject implements ExpressDataInterface
 {
@@ -92,6 +91,30 @@ class ExpressData extends DataObject implements ExpressDataInterface
         $this->setData(
             self::TOTALS,
             $totals
+        );
+    }
+
+    /**
+     * @return bool|null
+     */
+    public function getIsVirtualQuote(): ?bool
+    {
+        $isVirtual = $this->getData(self::IS_VIRTUAL_QUOTE);
+
+        return $isVirtual ?
+            (bool) $isVirtual :
+            null;
+    }
+
+    /**
+     * @param bool $isVirtual
+     * @return void
+     */
+    public function setIsVirtualQuote(bool $isVirtual): void
+    {
+        $this->setData(
+            self::IS_VIRTUAL_QUOTE,
+            $isVirtual
         );
     }
 }

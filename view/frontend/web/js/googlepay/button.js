@@ -33,7 +33,7 @@ define([
     'Adyen_ExpressCheckout/js/model/countries',
     'Adyen_ExpressCheckout/js/model/totals',
     'Adyen_ExpressCheckout/js/model/currency',
-    'mage/cookies',
+    'Adyen_ExpressCheckout/js/model/virtualQuote'
 ],
     function (
         $,
@@ -69,7 +69,8 @@ define([
         configModel,
         countriesModel,
         totalsModel,
-        currencyModel
+        currencyModel,
+        virtualQuoteModel,
     ) {
         'use strict';
 
@@ -105,6 +106,7 @@ define([
                     this.initializeOnPDP(config, element);
                 } else {
                     let googlePaymentMethod = await getPaymentMethod('googlepay', this.isProductView);
+                    virtualQuoteModel().setIsVirtual(false);
 
                     if (!googlePaymentMethod) {
                         const cart = customerData.get('cart');
@@ -124,6 +126,7 @@ define([
             initializeOnPDP: async function (config, element) {
                 const response = await getExpressMethods().getRequest(element);
                 const cart = customerData.get('cart');
+                virtualQuoteModel().setIsVirtual(true, response);
 
                 cart.subscribe(function () {
                     this.reloadGooglePayButton(element);
@@ -197,8 +200,11 @@ define([
                 if (this.isProductView) {
                     const pdpResponse = await getExpressMethods().getRequest(element);
 
+                    virtualQuoteModel().setIsVirtual(true, pdpResponse);
                     setExpressMethods(pdpResponse);
                     totalsModel().setTotal(pdpResponse.totals.grand_total);
+                } else {
+                    virtualQuoteModel().setIsVirtual(false);
                 }
 
                 this.unmountGooglePay();
@@ -214,6 +220,7 @@ define([
                 const googlePayStyles = getGooglePayStyles();
                 const config = configModel().getConfig();
                 const pdpForm = getPdpForm(element);
+                const isVirtual = virtualQuoteModel().getIsVirtual();
                 let currency;
 
                 if (this.isProductView) {
