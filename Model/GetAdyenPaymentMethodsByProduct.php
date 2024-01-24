@@ -3,11 +3,13 @@ declare(strict_types=1);
 
 namespace Adyen\ExpressCheckout\Model;
 
+use Adyen\Model\Checkout\PaymentMethodsRequest;
 use Adyen\Payment\Helper\ChargedCurrency;
 use Adyen\Payment\Helper\Config;
 use Adyen\Payment\Helper\Data;
 use Adyen\Payment\Model\AdyenAmountCurrency;
 use Adyen\Payment\Model\AdyenAmountCurrencyFactory;
+use Adyen\Service\Checkout\PaymentsApi;
 use Magento\Catalog\Api\Data\ProductInterface;
 use Magento\Framework\App\Config\ScopeConfigInterface;
 use Magento\Quote\Api\Data\CartInterface;
@@ -106,16 +108,15 @@ class GetAdyenPaymentMethodsByProduct implements GetAdyenPaymentMethodsByProduct
             "amount" => [
                 "value" => (float) $adyenAmountCurrency->getAmount(),
                 "currency" => $currencyCode
-            ]
+            ],
+            "store" => $store->getId()
         ];
-        $adyenClient = $this->adyenHelper->initializeAdyenClient(
-            $store->getId()
-        );
-        $service = $this->adyenHelper->createAdyenCheckoutService($adyenClient);
-        $response = $service->paymentMethods(
-            $paymentMethodRequest,
-            $store
-        );
+        $adyenClient = $this->adyenHelper->initializeAdyenClient($store->getId());
+        $service = new PaymentsApi($adyenClient);
+
+        $responseObj = $service->paymentMethods(new PaymentMethodsRequest($paymentMethodRequest));
+        $response = (array)$responseObj->jsonSerialize();
+
         if (!$response) {
             return [];
         }
