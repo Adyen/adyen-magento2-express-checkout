@@ -30,6 +30,8 @@ define([
     'Adyen_ExpressCheckout/js/helpers/redirectToSuccess',
     'Adyen_ExpressCheckout/js/helpers/setExpressMethods',
     'Adyen_ExpressCheckout/js/helpers/validatePdpForm',
+    'Adyen_ExpressCheckout/js/helpers/getMaskedIdFromCart',
+    'Adyen_ExpressCheckout/js/model/maskedId',
     'Adyen_ExpressCheckout/js/model/config',
     'Adyen_ExpressCheckout/js/model/countries',
     'Adyen_ExpressCheckout/js/model/totals',
@@ -68,6 +70,8 @@ define([
         redirectToSuccess,
         setExpressMethods,
         validatePdpForm,
+        getMaskedIdFromCart,
+        maskedIdModel,
         configModel,
         countriesModel,
         totalsModel,
@@ -293,7 +297,15 @@ define([
                     activateCart(this.isProductView)
                         .then(() => getShippingMethods(payload, this.isProductView))
                         .then(function (response) {
-                            // Stop if no shipping methods.
+
+                        // If the shipping_method is not available, remove it from the response array.
+                        for (let key in response) {
+                            if (response[key].available === false) {
+                                response.splice(key, 1);
+                            }
+                        }
+
+                        // Stop if no shipping methods.
                         if (response.length === 0) {
                             reject($t('There are no shipping methods available for you right now. Please try again or use an alternative payment method.'));
                             return;
@@ -433,7 +445,8 @@ define([
                     .done( function (orderId) {
                         if (!!orderId) {
                             self.orderId = orderId;
-                            adyenPaymentService.getOrderPaymentStatus(orderId).
+                            let quoteId = self.isProductView ? maskedIdModel().getMaskedId() : getMaskedIdFromCart();
+                            adyenPaymentService.getOrderPaymentStatus(orderId, quoteId).
                             done(function (responseJSON) {
                                 self.handleAdyenResult(responseJSON, orderId);
                             })

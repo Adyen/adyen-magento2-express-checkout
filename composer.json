@@ -2,7 +2,7 @@
   "name": "adyen/adyen-magento2-expresscheckout",
   "description": "Official Adyen Magento2 plugin to add express payment method shortcuts.",
   "type": "magento2-module",
-  "version": "2.0.0",
+  "version": "2.0.1",
   "license": "MIT",
   "repositories": [
     {

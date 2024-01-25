@@ -78,9 +78,9 @@ class GetAdyenPaymentMethodsByProduct implements GetAdyenPaymentMethodsByProduct
         if (!$store) {
             return [];
         }
-        $merchantAccount = $this->adyenHelper->getAdyenAbstractConfigData(
+        $merchantAccount = $this->adyenConfigHelper->getAdyenAbstractConfigData(
             'merchant_account',
-            $store->getId()
+            (int)$store->getId()
         );
         if (!$merchantAccount) {
             return [];
@@ -137,9 +137,9 @@ class GetAdyenPaymentMethodsByProduct implements GetAdyenPaymentMethodsByProduct
     private function getCurrentCountryCode(
         StoreInterface $store
     ): string {
-        $countryCode = $this->adyenHelper->getAdyenHppConfigData(
+        $countryCode = $this->adyenConfigHelper->getAdyenHppConfigData(
             'country',
-            $store->getId()
+            (int)$store->getId()
         );
         if ($countryCode) {
             return $countryCode;
