@@ -15,6 +15,7 @@ define([
     'Adyen_ExpressCheckout/js/actions/getShippingMethods',
     'Adyen_ExpressCheckout/js/actions/getExpressMethods',
     'Adyen_ExpressCheckout/js/actions/setShippingInformation',
+    'Adyen_ExpressCheckout/js/actions/setBillingAddress',
     'Adyen_ExpressCheckout/js/actions/setTotalsInfo',
     'Adyen_ExpressCheckout/js/helpers/formatAmount',
     'Adyen_ExpressCheckout/js/helpers/formatCurrency',
@@ -52,6 +53,7 @@ define([
         getShippingMethods,
         getExpressMethods,
         setShippingInformation,
+        setBillingAddress,
         setTotalsInfo,
         formatAmount,
         formatCurrency,
@@ -238,8 +240,8 @@ define([
                     environment: config.checkoutenv.toUpperCase(),
                     showButton: true,
                     emailRequired: true,
-                    shippingAddressRequired: true,
-                    shippingOptionRequired: true,
+                    shippingAddressRequired: !isVirtual,
+                    shippingOptionRequired: !isVirtual,
                     shippingAddressParameters: {
                         phoneNumberRequired: true
                     },
@@ -248,7 +250,7 @@ define([
                         format: 'FULL',
                         phoneNumberRequired: true
                     },
-                    callbackIntents: ['SHIPPING_ADDRESS', 'SHIPPING_OPTION'],
+                    callbackIntents: !isVirtual ? ['SHIPPING_ADDRESS', 'SHIPPING_OPTION'] : ['OFFER'],
                     transactionInfo: {
                         totalPriceStatus: 'ESTIMATED',
                         totalPrice: this.isProductView
@@ -257,7 +259,7 @@ define([
                         currencyCode: currency
                     },
                     paymentDataCallbacks: {
-                    onPaymentDataChanged: this.onPaymentDataChanged.bind(this)
+                        onPaymentDataChanged: this.onPaymentDataChanged.bind(this)
                     },
                     allowedPaymentMethods: ['CARD'],
                     phoneNumberRequired: true,
@@ -276,6 +278,10 @@ define([
 
             onPaymentDataChanged: function (data) {
                 return new Promise((resolve, reject) => {
+                    if (virtualQuoteModel().getIsVirtual()) {
+                        resolve();
+                    }
+
                     const payload = {
                         address: {
                             country_id: data.shippingAddress.countryCode,
@@ -378,44 +384,64 @@ define([
 
             startPlaceOrder: function (paymentData) {
                 let self = this;
-                let componentData = self.googlePayComponent.data;
+                const isVirtual = virtualQuoteModel().getIsVirtual();
 
-                this.setShippingInformation(paymentData)
-                    .done(function () {
-                        const payload = {
-                            email: paymentData.email,
-                            shippingAddress: this.mapAddress(paymentData.shippingAddress),
-                            billingAddress: this.mapAddress(paymentData.paymentMethodData.info.billingAddress),
-                            paymentMethod: {
-                                method: 'adyen_googlepay',
-                                additional_data: {
-                                    brand_code: self.googlePayComponent.props.type,
-                                    stateData: JSON.stringify(componentData)
-                                },
-                                extension_attributes: getExtensionAttributes(paymentData)
-                            }
-                        };
-
-                        if (window.checkout && window.checkout.agreementIds) {
-                            payload.paymentMethod.extension_attributes = {
-                                agreement_ids: window.checkout.agreementIds
-                            };
-                        }
-
-                        createPayment(JSON.stringify(payload), this.isProductView)
-                            .done( function (orderId) {
-                                if (!!orderId) {
-                                    self.orderId = orderId;
-                                    adyenPaymentService.getOrderPaymentStatus(orderId).
-                                    done(function (responseJSON) {
-                                        self.handleAdyenResult(responseJSON, orderId);
-                                    })
+                this.setBillingAddress(paymentData).done(function() {
+                    if (!isVirtual) {
+                        self.setShippingInformation(paymentData).done(function () {
+                            self.placeOrder(paymentData);
+                        });
+                    } else {
+                        activateCart(this.isProductView).done(function () {
+                            const totalsPayload = {
+                                'addressInformation': {
+                                    'address': this.mapAddress(paymentData.paymentMethodData.info.billingAddress)
                                 }
+                            };
+
+                            setTotalsInfo(totalsPayload, this.isProductView).done(function () {
+                                self.placeOrder(paymentData);
                             })
-                            .fail(function (e) {
-                                console.error('Adyen GooglePay Unable to take payment', e);
-                            });
-                    }.bind(this));
+                        }.bind(this));
+                    }
+                });
+            },
+
+            placeOrder: function (paymentData) {
+                let self = this;
+                let componentData = this.googlePayComponent.data;
+
+                const payload = {
+                    email: paymentData.email,
+                    paymentMethod: {
+                        method: 'adyen_googlepay',
+                        additional_data: {
+                            brand_code: this.googlePayComponent.props.type,
+                            stateData: JSON.stringify(componentData)
+                        },
+                        extension_attributes: getExtensionAttributes(paymentData)
+                    }
+                };
+
+                if (window.checkout && window.checkout.agreementIds) {
+                    payload.paymentMethod.extension_attributes = {
+                        agreement_ids: window.checkout.agreementIds
+                    };
+                }
+
+                createPayment(JSON.stringify(payload), this.isProductView)
+                    .done( function (orderId) {
+                        if (!!orderId) {
+                            self.orderId = orderId;
+                            adyenPaymentService.getOrderPaymentStatus(orderId).
+                            done(function (responseJSON) {
+                                self.handleAdyenResult(responseJSON, orderId);
+                            })
+                        }
+                    })
+                    .fail(function (e) {
+                        console.error('Adyen GooglePay Unable to take payment', e);
+                    });
             },
 
             setShippingInformation: function (paymentData) {
@@ -430,12 +456,6 @@ define([
                             'customer_address_id': 0,
                             'save_in_address_book': 0
                         },
-                        'billing_address': {
-                            ...this.mapAddress(paymentData.paymentMethodData.info.billingAddress),
-                            'same_as_billing': 0,
-                            'customer_address_id': 0,
-                            'save_in_address_book': 0
-                        },
                         'shipping_method_code': shippingMethod.method_code,
                         'shipping_carrier_code': shippingMethod.carrier_code,
                         'extension_attributes': getExtensionAttributes(paymentData)
@@ -443,6 +463,15 @@ define([
                 };
 
                 return setShippingInformation(payload, this.isProductView);
+            },
+
+            setBillingAddress: function (paymentData) {
+                let payload = {
+                    'address': this.mapAddress(paymentData.paymentMethodData.info.billingAddress),
+                    'useForShipping': false
+                };
+
+                return setBillingAddress(payload, this.isProductView);
             },
 
             handleOnAdditionalDetails: function (result) {
