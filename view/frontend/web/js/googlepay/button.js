@@ -14,6 +14,7 @@ define([
     'Adyen_ExpressCheckout/js/actions/createPayment',
     'Adyen_ExpressCheckout/js/actions/getShippingMethods',
     'Adyen_ExpressCheckout/js/actions/getExpressMethods',
+    'Adyen_ExpressCheckout/js/actions/getPaymentStatus',
     'Adyen_ExpressCheckout/js/actions/setShippingInformation',
     'Adyen_ExpressCheckout/js/actions/setBillingAddress',
     'Adyen_ExpressCheckout/js/actions/setTotalsInfo',
@@ -54,6 +55,7 @@ define([
         createPayment,
         getShippingMethods,
         getExpressMethods,
+        getPaymentStatus,
         setShippingInformation,
         setBillingAddress,
         setTotalsInfo,
@@ -76,7 +78,7 @@ define([
         countriesModel,
         totalsModel,
         currencyModel,
-        virtualQuoteModel,
+        virtualQuoteModel
     ) {
         'use strict';
 
@@ -398,24 +400,16 @@ define([
                 let self = this;
                 const isVirtual = virtualQuoteModel().getIsVirtual();
 
-                this.setBillingAddress(paymentData).done(function() {
-                    if (!isVirtual) {
-                        self.setShippingInformation(paymentData).done(function () {
-                            self.placeOrder(paymentData);
-                        });
-                    } else {
-                        activateCart(this.isProductView).done(function () {
-                            const totalsPayload = {
-                                'addressInformation': {
-                                    'address': this.mapAddress(paymentData.paymentMethodData.info.billingAddress)
-                                }
-                            };
-
-                            setTotalsInfo(totalsPayload, this.isProductView).done(function () {
+                activateCart(this.isProductView).then(function () {
+                    self.setBillingAddress(paymentData).done(function () {
+                        if (!isVirtual) {
+                            self.setShippingInformation(paymentData).done(function () {
                                 self.placeOrder(paymentData);
-                            })
-                        }.bind(this));
-                    }
+                            });
+                        } else {
+                            self.placeOrder(paymentData);
+                        }
+                    });
                 });
             },
 
@@ -442,14 +436,13 @@ define([
                 }
 
                 createPayment(JSON.stringify(payload), this.isProductView)
-                    .done( function (orderId) {
+                    .done(function (orderId) {
                         if (!!orderId) {
                             self.orderId = orderId;
-                            let quoteId = self.isProductView ? maskedIdModel().getMaskedId() : getMaskedIdFromCart();
-                            adyenPaymentService.getOrderPaymentStatus(orderId, quoteId).
-                            done(function (responseJSON) {
+
+                            getPaymentStatus(orderId, self.isProductView).then(function (responseJSON) {
                                 self.handleAdyenResult(responseJSON, orderId);
-                            })
+                            });
                         }
                     })
                     .fail(function (e) {

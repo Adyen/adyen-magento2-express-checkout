@@ -24,7 +24,7 @@ define([
                 isVirtual = true;
             } else if (!isPdp) {
                 const cart = customerData.get('cart');
-                isVirtual = cart().items.some(item => item.product_type == 'virtual');
+                isVirtual = !cart().items.some(item => item.product_type != 'virtual');
             }
 
             return this.isVirtual(isVirtual);
