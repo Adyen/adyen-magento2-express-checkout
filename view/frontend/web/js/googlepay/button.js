@@ -29,6 +29,8 @@ define([
     'Adyen_ExpressCheckout/js/helpers/redirectToSuccess',
     'Adyen_ExpressCheckout/js/helpers/setExpressMethods',
     'Adyen_ExpressCheckout/js/helpers/validatePdpForm',
+    'Adyen_ExpressCheckout/js/helpers/getMaskedIdFromCart',
+    'Adyen_ExpressCheckout/js/model/maskedId',
     'Adyen_ExpressCheckout/js/model/config',
     'Adyen_ExpressCheckout/js/model/countries',
     'Adyen_ExpressCheckout/js/model/totals',
@@ -66,6 +68,8 @@ define([
         redirectToSuccess,
         setExpressMethods,
         validatePdpForm,
+        getMaskedIdFromCart,
+        maskedIdModel,
         configModel,
         countriesModel,
         totalsModel,
@@ -407,7 +411,8 @@ define([
                             .done( function (orderId) {
                                 if (!!orderId) {
                                     self.orderId = orderId;
-                                    adyenPaymentService.getOrderPaymentStatus(orderId).
+                                    let quoteId = self.isProductView ? maskedIdModel().getMaskedId() : getMaskedIdFromCart();
+                                    adyenPaymentService.getOrderPaymentStatus(orderId, quoteId).
                                     done(function (responseJSON) {
                                         self.handleAdyenResult(responseJSON, orderId);
                                     })
