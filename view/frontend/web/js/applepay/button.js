@@ -263,7 +263,16 @@ define([
                     .then((result) => {
                         // Stop if no shipping methods.
                         if (result.length === 0) {
-                            reject($t('There are no shipping methods available for you right now. Please try again or use an alternative payment method.'));
+                            console.info('There are no shipping methods available for you right now. Please try again or use an alternative payment method.');
+                            reject({
+                                newTotal: {
+                                    label: this.getMerchantName(),
+                                    amount: this.isProductView
+                                        ? formatAmount(totalsModel().getTotal() * 100)
+                                        : formatAmount(getCartSubtotal() * 100),
+                                },
+                                errors: [new ApplePayError('addressUnserviceable')],
+                            });
                         }
                         let shippingMethods = [];
 
@@ -349,10 +358,7 @@ define([
 
                                 resolve(applePayShippingContactUpdate);
                                 // Pass shipping methods back
-                            }).fail((e) => {
-                                console.error('Adyen ApplePay: Unable to get totals', e);
-                                reject($t('We\'re unable to fetch the cart totals for you. Please try an alternative payment method.'));
-                        });
+                            }).fail((e) => this._onGetTotalsError(e, reject));
                     }).catch(reject);
             },
 
@@ -418,10 +424,7 @@ define([
 
                         self.shippingMethod = shippingMethod.identifier;
                         resolve(applePayShippingMethodUpdate);
-                    }).fail((e) => {
-                        console.error('Adyen ApplePay: Unable to get totals', e);
-                        reject($t('We\'re unable to fetch the cart totals for you. Please try an alternative payment method.'));
-                });
+                    }).fail((e) => this._onGetTotalsError(e, reject));
             },
 
             /**
@@ -476,7 +479,7 @@ define([
 
                 let componentData = self.applePayComponent.data;
 
-                setShippingInformation(payload, this.isProductView).done(function () {
+                setShippingInformation(payload, this.isProductView).done(function() {
                     // Submit payment information
                     const postData = {
                         email: shippingContact.emailAddress,
@@ -484,32 +487,78 @@ define([
                             method: 'adyen_applepay',
                             additional_data: {
                                 brand_code: 'applepay',
-                                stateData: JSON.stringify(componentData)
-                            }
-                        }
+                                stateData: JSON.stringify(componentData),
+                            },
+                        },
                     };
 
-                    if (window.checkout && window.checkout.agreementIds) {
-                        postData.paymentMethod.extension_attributes = {
-                            agreement_ids: window.checkout.agreementIds
-                        };
-                    }
+                    postData.paymentMethod = agreementsAssigner(postData.paymentMethod);
 
                     createPayment(JSON.stringify(postData), this.isProductView)
-                        .done(function () {
+                        .done(function() {
                             redirectToSuccess();
                             resolve(window.ApplePaySession.STATUS_SUCCESS);
-                        }).fail(function (r) {
-                            reject(window.ApplePaySession.STATUS_FAILURE);
-                            console.error('Adyen ApplePay Unable to take payment', r);
-                        });
+                        })
+                        .fail((error) => this._onPlaceOrderError('payment', error, reject));
 
-                }.bind(this)).fail(function (e) {
-                    console.error('Adyen ApplePay Unable to set shipping information', e);
-                    reject(window.ApplePaySession.STATUS_INVALID_BILLING_POSTAL_ADDRESS);
-                });
+                }.bind(this)).fail((error) => this._onPlaceOrderError('shippingInformation', error, reject));
             },
 
+            /**
+             * @param {*} error
+             * @param {function} reject
+             * @private
+             */
+            _onGetTotalsError: function (error, reject) {
+                reject({
+                    status: window.ApplePaySession.STATUS_FAILURE,
+                });
+
+                console.error('Adyen ApplePay: Unable to get totals', error);
+                this._displayError($t('We\'re unable to fetch the cart totals for you. Please try an alternative payment method.'));
+            },
+
+            /**
+             * @param {string} step
+             * @param {*} error
+             * @param {function} reject
+             * @private
+             */
+            _onPlaceOrderError: function(step, error, reject) {
+                reject({
+                    status: window.ApplePaySession.STATUS_FAILURE,
+                });
+
+                console.error(
+                    `Adyen ApplePay: Unable to take payment, something went wrong during ${step} step.`,
+                    error,
+                );
+
+                const errorMessage = error?.responseJSON.message ?? $t('Your payment failed, Please try again later');
+                this._displayError(errorMessage);
+            },
+
+            /**
+             * @see https://magento.stackexchange.com/questions/237959/how-to-use-javascript-to-display-page-messages
+             * @param {string} error
+             * @private
+             */
+            _displayError: function (error) {
+                setTimeout(() => {
+                    customerData.set('messages', {
+                        messages: [{
+                            text: error,
+                            type: 'error',
+                        }],
+                    });
+
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                }, 1000);
+            },
+
+            /**
+             * @returns {string}
+             */
             getMerchantName: function() {
                 const config = configModel().getConfig();
                 return config?.merchantAccount ?? $t('Grand Total');
