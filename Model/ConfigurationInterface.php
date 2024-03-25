@@ -24,6 +24,7 @@ interface ConfigurationInterface
 {
     public const SHOW_APPLE_PAY_ON_CONFIG_PATH = 'payment/adyen_express/show_apple_pay_on';
     public const SHOW_GOOGLE_PAY_ON_CONFIG_PATH = 'payment/adyen_express/show_google_pay_on';
+    public const SHOW_PAYPAL_ON_CONFIG_PATH = 'payment/adyen_express/show_paypal_on';
     public const APPLE_PAY_BUTTON_COLOR_CONFIG_PATH = 'payment/adyen_express/apple_pay_button_color';
 
     /**
@@ -60,5 +61,17 @@ interface ConfigurationInterface
     public function getShowGooglePayOn(
         string $scopeType = ScopeInterface::SCOPE_STORE,
         $scopeCode = null
+    ): array;
+
+    /**
+     * Returns configuration value for where to show PayPal
+     *
+     * @param string $scopeType
+     * @param null|int|string $scopeCode
+     * @return array
+     */
+    public function getShowPaypalOn(
+        string $scopeType = ScopeInterface::SCOPE_STORE,
+               $scopeCode = null
     ): array;
 }

@@ -41,6 +41,16 @@
                     <comment><![CDATA[More details here: <a href="https://developer.apple.com/design/human-interface-guidelines/apple-pay#Button-styles" target="_blank">Apple Pay documentation</a>.]]></comment>
                 </field>
             </group>
+            <group id="paypal" translate="label" showInDefault="1" showInWebsite="1" showInStore="1" sortOrder="30">
+                <label>PayPal</label>
+                <frontend_model>Magento\Config\Block\System\Config\Form\Fieldset</frontend_model>
+                <field id="show_paypal_on" translate="label" type="multiselect" sortOrder="10" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Show PayPal on</label>
+                    <source_model>Adyen\ExpressCheckout\Model\Config\Source\ShortcutAreas</source_model>
+                    <can_be_empty>1</can_be_empty>
+                    <config_path>payment/adyen_express/show_paypal_on</config_path>
+                </field>
+            </group>
         </group>
     </group>
 </include>
