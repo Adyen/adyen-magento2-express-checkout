@@ -22,12 +22,42 @@ use Magento\Store\Model\ScopeInterface;
  */
 interface ConfigurationInterface
 {
-    public const SHOW_APPLE_PAY_ON_CONFIG_PATH = 'payment/adyen_express/show_apple_pay_on';
-    public const SHOW_GOOGLE_PAY_ON_CONFIG_PATH = 'payment/adyen_express/show_google_pay_on';
-    public const SHOW_PAYPAL_ON_CONFIG_PATH = 'payment/adyen_express/show_paypal_on';
+    public const CONFIG_PATH_PAYMENT = 'payment';
+    public const CONFIG_PATH_ADYEN_EXPRESS = 'adyen_express';
+    public const CONFIG_PATH_SHOW_PAYMENT_METHOD_ON_FORMAT = "show_%s_on";
     public const APPLE_PAY_BUTTON_COLOR_CONFIG_PATH = 'payment/adyen_express/apple_pay_button_color';
+    /** @deprecated */
+    public const SHOW_APPLE_PAY_ON_CONFIG_PATH = 'payment/adyen_express/show_apple_pay_on';
+    /** @deprecated */
+    public const SHOW_GOOGLE_PAY_ON_CONFIG_PATH = 'payment/adyen_express/show_google_pay_on';
 
     /**
+     * @param string $paymentMethodVariant
+     * @param string $scopeType
+     * @param null $scopeCode
+     * @return array
+     */
+    public function getShowPaymentMethodOn(
+        string $paymentMethodVariant,
+        string $scopeType = ScopeInterface::SCOPE_STORE,
+               $scopeCode = null
+    ): array;
+
+    /**
+     * Returns Apple Pay button color, if no value set, black is returned
+     *
+     * @param string $scopeType
+     * @param $scopeCode
+     * @return string
+     */
+    public function getApplePayButtonColor(
+        string $scopeType = ScopeInterface::SCOPE_STORE,
+               $scopeCode = null
+    ): string;
+
+    /**
+     * @deprecated use getShowPaymentMethodOn() instead
+     *
      * Returns configuration value for where to show apple pay
      *
      * @param string $scopeType
@@ -40,18 +70,8 @@ interface ConfigurationInterface
     ): array;
 
     /**
-     * Returns Apple Pay button color, if no value set, black is returned
+     * @deprecated use getShowPaymentMethodOn() instead
      *
-     * @param string $scopeType
-     * @param $scopeCode
-     * @return string
-     */
-    public function getApplePayButtonColor(
-        string $scopeType = ScopeInterface::SCOPE_STORE,
-        $scopeCode = null
-    ): string;
-
-    /**
      * Returns configuration value for where to show google pay
      *
      * @param string $scopeType
@@ -61,17 +81,5 @@ interface ConfigurationInterface
     public function getShowGooglePayOn(
         string $scopeType = ScopeInterface::SCOPE_STORE,
         $scopeCode = null
-    ): array;
-
-    /**
-     * Returns configuration value for where to show PayPal
-     *
-     * @param string $scopeType
-     * @param null|int|string $scopeCode
-     * @return array
-     */
-    public function getShowPaypalOn(
-        string $scopeType = ScopeInterface::SCOPE_STORE,
-               $scopeCode = null
     ): array;
 }

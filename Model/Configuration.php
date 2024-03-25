@@ -36,6 +36,49 @@ class Configuration implements ConfigurationInterface
     }
 
     /**
+     * @param string $paymentMethodVariant
+     * @param string $scopeType
+     * @param $scopeCode
+     * @return array
+     */
+    public function getShowPaymentMethodOn(
+        string $paymentMethodVariant,
+        string $scopeType = ScopeInterface::SCOPE_STORE,
+        $scopeCode = null
+    ): array
+    {
+        $configParam = sprintf(self::CONFIG_PATH_SHOW_PAYMENT_METHOD_ON_FORMAT, $paymentMethodVariant);
+        $configPath = sprintf(
+            "%s/%s/%s",
+            self::CONFIG_PATH_PAYMENT,
+            self::CONFIG_PATH_ADYEN_EXPRESS,
+            $configParam
+        );
+
+        $value = $this->scopeConfig->getValue($configPath, $scopeType, $scopeCode);
+
+        return $value ? explode(',', $value) : [];
+    }
+
+    /**
+     * @inheritDoc
+     */
+    public function getApplePayButtonColor(
+        string $scopeType = ScopeInterface::SCOPE_STORE,
+               $scopeCode = null
+    ): string {
+        $value = $this->scopeConfig->getValue(
+            self::APPLE_PAY_BUTTON_COLOR_CONFIG_PATH,
+            $scopeType,
+            $scopeCode
+        );
+
+        return $value ?: ButtonColor::BLACK;
+    }
+
+    /**
+     * @deprecated use getShowPaymentMethodOn() instead
+     *
      * Returns configuration value for where to show apple pay
      *
      * @param string $scopeType
@@ -59,22 +102,8 @@ class Configuration implements ConfigurationInterface
     }
 
     /**
-     * @inheritDoc
-     */
-    public function getApplePayButtonColor(
-        string $scopeType = ScopeInterface::SCOPE_STORE,
-        $scopeCode = null
-    ): string {
-        $value = $this->scopeConfig->getValue(
-            self::APPLE_PAY_BUTTON_COLOR_CONFIG_PATH,
-            $scopeType,
-            $scopeCode
-        );
-
-        return $value ?: ButtonColor::BLACK;
-    }
-
-    /**
+     * @deprecated use getShowPaymentMethodOn() instead
+     *
      * Returns configuration value for where to show google pay
      *
      * @param string $scopeType
@@ -87,29 +116,6 @@ class Configuration implements ConfigurationInterface
     ): array {
         $value = $this->scopeConfig->getValue(
             self::SHOW_GOOGLE_PAY_ON_CONFIG_PATH,
-            $scopeType,
-            $scopeCode
-        );
-        return $value ?
-            explode(
-                ',',
-                $value
-            ) : [];
-    }
-
-    /**
-     * Returns configuration value for where to show PayPal
-     *
-     * @param string $scopeType
-     * @param null|int|string $scopeCode
-     * @return array
-     */
-    public function getShowPaypalOn(
-        string $scopeType = ScopeInterface::SCOPE_STORE,
-               $scopeCode = null
-    ): array {
-        $value = $this->scopeConfig->getValue(
-            self::SHOW_PAYPAL_ON_CONFIG_PATH,
             $scopeType,
             $scopeCode
         );
