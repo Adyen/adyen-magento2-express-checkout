@@ -1,0 +1,39 @@
+<?php
+
+use Adyen\ExpressCheckout\Block\Paypal\Shortcut\Button;
+use Magento\Framework\Escaper;
+
+/**
+ * @var Button $block
+ * @var Escaper $escaper
+ */
+
+try {
+    $id = sprintf('%s%s', $block->getContainerId(), random_int(PHP_INT_MIN, PHP_INT_MAX));
+} catch (Exception $e) {
+    /**
+     * Exception only thrown if an appropriate source of randomness cannot be found.
+     * https://www.php.net/manual/en/function.random-int.php
+     */
+    $id = 0;
+}
+
+$config = [
+    'Adyen_ExpressCheckout/js/paypal/button' => [
+        'actionSuccess' => $block->getActionSuccess(),
+        'storeCode' => $block->getStorecode(),
+        'countryCode' => $block->getDefaultCountryCode(),
+        'currency' => $block->getCurrency(),
+        'merchantAccount' => $block->getMerchantAccount(),
+        'format' => $block->getFormat(),
+        'locale' => $block->getLocale(),
+        'originkey' => $block->getOriginKey(),
+        'checkoutenv' => $block->getCheckoutEnvironment(),
+        'isProductView' => (bool) $block->getIsProductView()
+    ]
+];
+?>
+<div class="adyen-checkout__dropin paypal-button-card" id="<?= $id ?>"
+     data-mage-init="<?= $escaper->escapeHtmlAttr(json_encode($config)) ?>">
+</div>
+<div id="paypal_actionmodal"></div>
