@@ -29,6 +29,8 @@ use Magento\Store\Model\StoreManagerInterface;
 
 class Button extends AbstractButton implements ShortcutInterface
 {
+    const APPLE_PAY_VARIANT = 'apple_pay';
+
     /**
      * @var ConfigurationInterface $configuration
      */
