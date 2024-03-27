@@ -45,14 +45,13 @@ class Configuration implements ConfigurationInterface
         string $paymentMethodVariant,
         string $scopeType = ScopeInterface::SCOPE_STORE,
         $scopeCode = null
-    ): array
-    {
-        $configParam = sprintf(self::CONFIG_PATH_SHOW_PAYMENT_METHOD_ON_FORMAT, $paymentMethodVariant);
+    ): array {
         $configPath = sprintf(
-            "%s/%s/%s",
+            "%s/%s_%s/%s",
             self::CONFIG_PATH_PAYMENT,
-            self::CONFIG_PATH_ADYEN_EXPRESS,
-            $configParam
+            self::CONFIG_PATH_ADYEN_PREFIX,
+            $paymentMethodVariant,
+            self::CONFIG_PATH_SHOW_EXPRESS_ON
         );
 
         $value = $this->scopeConfig->getValue($configPath, $scopeType, $scopeCode);

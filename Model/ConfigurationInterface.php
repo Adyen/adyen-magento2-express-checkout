@@ -22,9 +22,12 @@ use Magento\Store\Model\ScopeInterface;
  */
 interface ConfigurationInterface
 {
+    public const CONFIG_PATH_ADYEN_PREFIX = 'adyen';
     public const CONFIG_PATH_PAYMENT = 'payment';
-    public const CONFIG_PATH_ADYEN_EXPRESS = 'adyen_express';
-    public const CONFIG_PATH_SHOW_PAYMENT_METHOD_ON_FORMAT = "show_%s_on";
+    public const CONFIG_PATH_SHOW_EXPRESS_ON = 'express_show_on';
+    public const CONFIG_PATH_EXPRESS_BUTTON_COLOR = 'express_button_color';
+
+    /** @deprecated */
     public const APPLE_PAY_BUTTON_COLOR_CONFIG_PATH = 'payment/adyen_express/apple_pay_button_color';
     /** @deprecated */
     public const SHOW_APPLE_PAY_ON_CONFIG_PATH = 'payment/adyen_express/show_apple_pay_on';
