@@ -18,5 +18,5 @@ use Magento\Catalog\Block\ShortcutInterface;
 
 class Button extends AbstractButton implements ShortcutInterface
 {
-    const GOOGLE_PAY_VARIANT = 'google_pay';
+    const PAYMENT_METHOD_VARIANT = 'googlepay';
 }

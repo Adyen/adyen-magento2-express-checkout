@@ -18,5 +18,5 @@ use Magento\Catalog\Block\ShortcutInterface;
 
 class Button extends AbstractButton implements ShortcutInterface
 {
-    const PAYPAL_VARIANT = 'paypal';
+    const PAYMENT_METHOD_VARIANT = 'paypal';
 }

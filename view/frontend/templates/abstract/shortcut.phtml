@@ -1,0 +1,16 @@
+<?php
+
+use Adyen\ExpressCheckout\Block\Buttons\AbstractButton;
+use Magento\Framework\Escaper;
+
+/**
+ * @var AbstractButton $block
+ * @var Escaper $escaper
+ */
+?>
+
+<div class="adyen-checkout__dropin <?= $block->getPaymentMethodVariant() ?>-button-card"
+     id="<?= $block->getRandomElementId() ?>"
+
+     data-mage-init="<?= $escaper->escapeHtmlAttr(json_encode($block->buildConfiguration())) ?>">
+</div>

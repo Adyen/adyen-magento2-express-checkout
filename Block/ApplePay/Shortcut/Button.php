@@ -14,7 +14,6 @@ declare(strict_types=1);
 namespace Adyen\ExpressCheckout\Block\ApplePay\Shortcut;
 
 use Adyen\Payment\Helper\Data as AdyenHelper;
-use Adyen\Payment\Helper\Config as AdyenConfigHelper;
 use Adyen\ExpressCheckout\Block\Buttons\AbstractButton;
 use Adyen\ExpressCheckout\Model\ConfigurationInterface;
 use Magento\Checkout\Model\Session;
@@ -29,7 +28,7 @@ use Magento\Store\Model\StoreManagerInterface;
 
 class Button extends AbstractButton implements ShortcutInterface
 {
-    const APPLE_PAY_VARIANT = 'apple_pay';
+    const PAYMENT_METHOD_VARIANT = 'applepay';
 
     /**
      * @var ConfigurationInterface $configuration
@@ -86,5 +85,15 @@ class Button extends AbstractButton implements ShortcutInterface
     public function getButtonColor(): string
     {
         return $this->configuration->getApplePayButtonColor();
+    }
+
+    public function buildConfiguration(): array
+    {
+        $baseConfiguration = parent::buildConfiguration();
+        $variant = $this->getPaymentMethodVariant();
+
+        $baseConfiguration["Adyen_ExpressCheckout/js/$variant/button"]['buttonColor'] = $this->getButtonColor();
+
+        return $baseConfiguration;
     }
 }

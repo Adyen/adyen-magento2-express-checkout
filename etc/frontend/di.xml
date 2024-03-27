@@ -14,7 +14,7 @@
     <type name="Adyen\ExpressCheckout\Block\ApplePay\Shortcut\Button">
         <arguments>
             <argument name="data" xsi:type="array">
-                <item name="template" xsi:type="string">Adyen_ExpressCheckout::applepay/shortcut.phtml</item>
+                <item name="template" xsi:type="string">Adyen_ExpressCheckout::abstract/shortcut.phtml</item>
                 <item name="alias" xsi:type="string">adyen.applepay.mini-cart</item>
                 <item name="button_id" xsi:type="string">adyen-applepay-mini-cart</item>
             </argument>
@@ -24,7 +24,7 @@
     <type name="Adyen\ExpressCheckout\Block\GooglePay\Shortcut\Button">
         <arguments>
             <argument name="data" xsi:type="array">
-                <item name="template" xsi:type="string">Adyen_ExpressCheckout::googlepay/shortcut.phtml</item>
+                <item name="template" xsi:type="string">Adyen_ExpressCheckout::abstract/shortcut.phtml</item>
                 <item name="alias" xsi:type="string">adyen.googlepay.mini-cart</item>
                 <item name="button_id" xsi:type="string">adyen-googlepay-mini-cart</item>
             </argument>
@@ -34,7 +34,7 @@
     <type name="Adyen\ExpressCheckout\Block\Paypal\Shortcut\Button">
         <arguments>
             <argument name="data" xsi:type="array">
-                <item name="template" xsi:type="string">Adyen_ExpressCheckout::paypal/shortcut.phtml</item>
+                <item name="template" xsi:type="string">Adyen_ExpressCheckout::abstract/shortcut.phtml</item>
                 <item name="alias" xsi:type="string">adyen.paypal.mini-cart</item>
                 <item name="button_id" xsi:type="string">adyen-paypal-mini-cart</item>
             </argument>

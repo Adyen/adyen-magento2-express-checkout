@@ -14,6 +14,7 @@ declare(strict_types=1);
 namespace Adyen\ExpressCheckout\Block\Buttons;
 
 use Adyen\Payment\Helper\Data as AdyenHelper;
+use Exception;
 use Magento\Checkout\Model\DefaultConfigProvider;
 use Magento\Checkout\Model\Session;
 use Magento\Customer\Model\Session as CustomerSession;
@@ -254,6 +255,21 @@ abstract class AbstractButton extends Template
         return $this->getData(self::BUTTON_ELEMENT_INDEX) ?: '';
     }
 
+    public function getRandomElementId(): string
+    {
+        try {
+            $id = sprintf('%s%s', $this->getContainerId(), random_int(PHP_INT_MIN, PHP_INT_MAX));
+        } catch (Exception $e) {
+            /**
+             * Exception only thrown if an appropriate source of randomness cannot be found.
+             * https://www.php.net/manual/en/function.random-int.php
+             */
+            $id = "0";
+        }
+
+        return $id;
+    }
+
     /**
      * Current Quote ID for guests
      *
@@ -274,5 +290,42 @@ abstract class AbstractButton extends Template
             }
         }
         return '';
+    }
+
+    /**
+     * Returns Adyen payment method variant
+     *
+     * @return string
+     */
+    public function getPaymentMethodVariant(): string
+    {
+        return static::PAYMENT_METHOD_VARIANT;
+    }
+
+    /**
+     * Returns the base configuration for express frontend
+     *
+     * @return array[]
+     * @throws LocalizedException
+     * @throws NoSuchEntityException
+     */
+    public function buildConfiguration(): array
+    {
+        $variant = $this->getPaymentMethodVariant();
+
+        return [
+            "Adyen_ExpressCheckout/js/$variant/button" => [
+                'actionSuccess' => $this->getActionSuccess(),
+                'storeCode' => $this->getStorecode(),
+                'countryCode' => $this->getDefaultCountryCode(),
+                'currency' => $this->getCurrency(),
+                'merchantAccount' => $this->getMerchantAccount(),
+                'format' => $this->getFormat(),
+                'locale' => $this->getLocale(),
+                'originkey' => $this->getOriginKey(),
+                'checkoutenv' => $this->getCheckoutEnvironment(),
+                'isProductView' => (bool) $this->getIsProductView()
+            ]
+        ];
     }
 }
