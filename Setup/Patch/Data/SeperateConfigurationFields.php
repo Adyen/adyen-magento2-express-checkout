@@ -13,25 +13,21 @@ declare(strict_types=1);
 
 namespace Adyen\ExpressCheckout\Setup\Patch\Data;
 
-use Magento\Framework\App\Config\ReinitableConfigInterface;
-use Magento\Framework\App\Config\Storage\WriterInterface;
+use Adyen\ExpressCheckout\Helper\DataPatch;
 use Magento\Framework\Setup\ModuleDataSetupInterface;
 use Magento\Framework\Setup\Patch\DataPatchInterface;
 
 class SeperateConfigurationFields implements DataPatchInterface
 {
     private ModuleDataSetupInterface $moduleDataSetup;
-    private WriterInterface $configWriter;
-    private ReinitableConfigInterface $reinitableConfig;
+    private DataPatch $dataPatchHelper;
 
     public function __construct(
         ModuleDataSetupInterface $moduleDataSetup,
-        WriterInterface $configWriter,
-        ReinitableConfigInterface $reinitableConfig
+        DataPatch $dataPatchHelper
     ) {
         $this->moduleDataSetup = $moduleDataSetup;
-        $this->configWriter = $configWriter;
-        $this->reinitableConfig = $reinitableConfig;
+        $this->dataPatchHelper = $dataPatchHelper;
     }
 
     public function apply(): void
@@ -39,62 +35,27 @@ class SeperateConfigurationFields implements DataPatchInterface
         $this->moduleDataSetup->getConnection()->startSetup();
 
         // Update Apple Pay config path
-        $this->updateConfigValue(
+        $this->dataPatchHelper->updateConfigValue(
             $this->moduleDataSetup,
             'payment/adyen_express/show_apple_pay_on',
             'payment/adyen_applepay/express_show_on'
         );
 
         // Update Google Pay config path
-        $this->updateConfigValue(
+        $this->dataPatchHelper->updateConfigValue(
             $this->moduleDataSetup,
             'payment/adyen_express/show_google_pay_on',
             'payment/adyen_googlepay/express_show_on'
         );
 
         // Update Google Pay config path
-        $this->updateConfigValue(
+        $this->dataPatchHelper->updateConfigValue(
             $this->moduleDataSetup,
             'payment/adyen_express/apple_pay_button_color',
             'payment/adyen_applepay/express_button_color'
         );
 
         $this->moduleDataSetup->getConnection()->endSetup();
-    }
-
-    private function updateConfigValue(
-        ModuleDataSetupInterface $setup,
-        string $oldPath,
-        string $newPath
-    ): void {
-        $config = $this->findConfig($setup, $oldPath);
-
-        if ($config !== false) {
-            $this->configWriter->save(
-                $newPath,
-                $config['value'],
-                $config['scope'],
-                $config['scope_id']
-            );
-        }
-
-        $this->reinitableConfig->reinit();
-    }
-
-    private function findConfig(ModuleDataSetupInterface $setup, string $path): mixed
-    {
-        $configDataTable = $setup->getTable('core_config_data');
-        $connection = $setup->getConnection();
-
-        $select = $connection->select()
-            ->from($configDataTable)
-            ->where(
-                'path = ?',
-                $path
-            );
-
-        $matchingConfigs = $connection->fetchAll($select);
-        return reset($matchingConfigs);
     }
 
     /**
