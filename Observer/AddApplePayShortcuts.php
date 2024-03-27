@@ -12,10 +12,15 @@
 namespace Adyen\ExpressCheckout\Observer;
 
 use Adyen\ExpressCheckout\Block\ApplePay\Shortcut\Button;
+use Adyen\ExpressCheckout\Model\ConfigurationInterface;
 use Magento\Framework\Event\ObserverInterface;
 
 class AddApplePayShortcuts extends AbstractPaymentMethodShortcuts implements ObserverInterface
 {
-    const SHORTCUT_BUTTON = Button::class;
-    const PAYMENT_METHOD_VARIANT = Button::APPLE_PAY_VARIANT;
+    public function __construct(
+        ConfigurationInterface $configuration,
+        Button $applepayButton
+    ) {
+        parent::__construct($configuration, $applepayButton);
+    }
 }

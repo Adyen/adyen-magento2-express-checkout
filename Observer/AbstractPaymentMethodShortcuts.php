@@ -14,6 +14,7 @@ namespace Adyen\ExpressCheckout\Observer;
 use Adyen\ExpressCheckout\Model\Config\Source\ShortcutAreas;
 use Adyen\ExpressCheckout\Model\ConfigurationInterface;
 use Magento\Catalog\Block\ShortcutButtons;
+use Magento\Catalog\Block\ShortcutInterface;
 use Magento\Checkout\Block\QuoteShortcutButtons;
 use Magento\Framework\Event\Observer;
 use Magento\Framework\Event\ObserverInterface;
@@ -21,15 +22,26 @@ use Magento\Framework\Exception\LocalizedException;
 
 abstract class AbstractPaymentMethodShortcuts implements ObserverInterface
 {
+    /**
+     * @var ConfigurationInterface
+     */
     private ConfigurationInterface $configuration;
 
     /**
+     * @var ShortcutInterface
+     */
+    private ShortcutInterface $shortcutButton;
+
+    /**
      * @param ConfigurationInterface $configuration
+     * @param ShortcutInterface $shortcutButton
      */
     public function __construct(
-        ConfigurationInterface $configuration
+        ConfigurationInterface $configuration,
+        ShortcutInterface $shortcutButton
     ) {
         $this->configuration = $configuration;
+        $this->shortcutButton = $shortcutButton;
     }
 
     /**
@@ -41,7 +53,7 @@ abstract class AbstractPaymentMethodShortcuts implements ObserverInterface
     {
         $currentPageIdentifier = $this->getCurrentPageIdentifier($observer);
         $showPaymentMethodOn = $this->configuration->getShowPaymentMethodOn(
-            static::PAYMENT_METHOD_VARIANT
+            $this->shortcutButton->getPaymentMethodVariant()
         );
         if (!in_array(
             $currentPageIdentifier,
@@ -51,7 +63,7 @@ abstract class AbstractPaymentMethodShortcuts implements ObserverInterface
         }
         /** @var ShortcutButtons $shortcutButtons */
         $shortcutButtons = $observer->getEvent()->getContainer();
-        $shortcut = $shortcutButtons->getLayout()->createBlock(static::SHORTCUT_BUTTON);
+        $shortcut = $shortcutButtons->getLayout()->createBlock($this->shortcutButton::class);
         $shortcut->setIsProductView((bool)$observer->getData('is_catalog_product'));
         $shortcut->setIsCart(get_class($shortcutButtons) === QuoteShortcutButtons::class);
         $shortcutButtons->addShortcut($shortcut);
