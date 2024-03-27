@@ -17,9 +17,8 @@ use Magento\Framework\App\Config\ReinitableConfigInterface;
 use Magento\Framework\App\Config\Storage\WriterInterface;
 use Magento\Framework\Setup\ModuleDataSetupInterface;
 use Magento\Framework\Setup\Patch\DataPatchInterface;
-use Magento\Framework\Setup\Patch\PatchVersionInterface;
 
-class UpdateExpressDBPaths implements DataPatchInterface, PatchVersionInterface
+class UpdateExpressDBPaths implements DataPatchInterface
 {
     private ModuleDataSetupInterface $moduleDataSetup;
     private WriterInterface $configWriter;
@@ -112,10 +111,5 @@ class UpdateExpressDBPaths implements DataPatchInterface, PatchVersionInterface
     public static function getDependencies(): array
     {
         return [];
-    }
-
-    public static function getVersion(): string
-    {
-        return '2.0.0';
     }
 }
