@@ -58,6 +58,7 @@
                 <item name="applepay" xsi:type="string">applepay</item>
                 <item name="googlepay" xsi:type="string">googlepay</item>
                 <item name="googlepay_alt" xsi:type="string">paywithgoogle</item>
+                <item name="paypal" xsi:type="string">paypal</item>
             </argument>
         </arguments>
     </type>
