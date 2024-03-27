@@ -11,6 +11,5 @@ use Magento\Framework\Escaper;
 
 <div class="adyen-checkout__dropin <?= $block->getPaymentMethodVariant() ?>-button-card"
      id="<?= $block->getRandomElementId() ?>"
-
      data-mage-init="<?= $escaper->escapeHtmlAttr(json_encode($block->buildConfiguration())) ?>">
 </div>
