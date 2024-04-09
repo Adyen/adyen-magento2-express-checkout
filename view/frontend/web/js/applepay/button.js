@@ -240,7 +240,9 @@ define([
                     },
                     supportedNetworks: getSupportedNetworks(),
                     merchantCapabilities: ['supports3DS'],
-                    requiredBillingContactFields: ['postalAddress'],
+                    requiredShippingContactFields: ['postalAddress', 'name', 'email', 'phone'],
+                    requiredBillingContactFields: ['postalAddress', 'name'],
+                    shippingMethods: [],
                     onAuthorized: this.startPlaceOrder.bind(this),
                     onClick: function (resolve, reject) {validatePdpForm(resolve, reject, pdpForm);},
                     onSubmit: function () {},
@@ -249,8 +251,6 @@ define([
                 };
 
                 if (!isVirtual) {
-                    applepayBaseConfiguration.shippingMethods = [];
-                    applepayBaseConfiguration.requiredShippingContactFields = ['postalAddress', 'name', 'email', 'phone'];
                     applepayBaseConfiguration.onShippingContactSelected = this.onShippingContactSelect.bind(this);
                     applepayBaseConfiguration.onShippingMethodSelected = this.onShippingMethodSelect.bind(this);
                 }
@@ -409,7 +409,7 @@ define([
                     })
                 }
 
-                self.shippingMethod = shippingMethod.identifier;
+                this.shippingMethod = shippingMethod.identifier;
                 resolve(applePayShippingMethodUpdate);
             },
 
@@ -422,34 +422,8 @@ define([
                 let self = this;
                 let componentData = self.applePayComponent.data;
 
-                let shippingContact = event.payment.shippingContact,
-                    billingContact = event.payment.billingContact,
-                    payload = {
-                    'addressInformation': {
-                        'shipping_address': {
-                            'email': shippingContact.emailAddress,
-                            'telephone': shippingContact.phoneNumber,
-                            'firstname': shippingContact.givenName,
-                            'lastname': shippingContact.familyName,
-                            'street': shippingContact.addressLines,
-                            'city': shippingContact.locality,
-                            'region': shippingContact.administrativeArea,
-                            'region_id': getRegionId(
-                                shippingContact.countryCode.toUpperCase(),
-                                shippingContact.administrativeArea
-                            ),
-                            'region_code': null,
-                            'country_id': shippingContact.countryCode.toUpperCase(),
-                            'postcode': shippingContact.postalCode,
-                            'same_as_billing': 0,
-                            'customer_address_id': 0,
-                            'save_in_address_book': 0
-                        },
-                        'shipping_method_code': self.shippingMethods[self.shippingMethod].method_code,
-                        'shipping_carrier_code': self.shippingMethods[self.shippingMethod].carrier_code,
-                        'extension_attributes': getExtensionAttributes(event.payment)
-                    }
-                };
+                let shippingContact = event.payment.shippingContact;
+                let billingContact = event.payment.billingContact;
 
                 let billingAddressPayload = {
                     address: {
@@ -471,29 +445,55 @@ define([
                     'useForShipping': false
                 };
 
+                const postData = {
+                    email: shippingContact.emailAddress,
+                    paymentMethod: {
+                        method: 'adyen_applepay',
+                        additional_data: {
+                            brand_code: 'applepay',
+                            stateData: JSON.stringify(componentData)
+                        }
+                    }
+                };
+
+                if (window.checkout && window.checkout.agreementIds) {
+                    postData.paymentMethod.extension_attributes = {
+                        agreement_ids: window.checkout.agreementIds
+                    };
+                }
 
                 activateCart(this.isProductView).then(() => {
                     setBillingAddress(billingAddressPayload, self.isProductView).done(() => {
                         if (!isVirtual) {
-                            setShippingInformation(payload, self.isProductView).done(function () {
-                                // Submit payment information
-                                const postData = {
-                                    email: shippingContact.emailAddress,
-                                    paymentMethod: {
-                                        method: 'adyen_applepay',
-                                        additional_data: {
-                                            brand_code: 'applepay',
-                                            stateData: JSON.stringify(componentData)
-                                        }
-                                    }
-                                };
-
-                                if (window.checkout && window.checkout.agreementIds) {
-                                    postData.paymentMethod.extension_attributes = {
-                                        agreement_ids: window.checkout.agreementIds
-                                    };
+                            let shippingInformationPayload = {
+                                'addressInformation': {
+                                    'shipping_address': {
+                                        'email': shippingContact.emailAddress,
+                                        'telephone': shippingContact.phoneNumber,
+                                        'firstname': shippingContact.givenName,
+                                        'lastname': shippingContact.familyName,
+                                        'street': shippingContact.addressLines,
+                                        'city': shippingContact.locality,
+                                        'region': shippingContact.administrativeArea,
+                                        'region_id': getRegionId(
+                                            shippingContact.countryCode.toUpperCase(),
+                                            shippingContact.administrativeArea
+                                        ),
+                                        'region_code': null,
+                                        'country_id': shippingContact.countryCode.toUpperCase(),
+                                        'postcode': shippingContact.postalCode,
+                                        'same_as_billing': 0,
+                                        'customer_address_id': 0,
+                                        'save_in_address_book': 0
+                                    },
+                                    'shipping_method_code': self.shippingMethods[self.shippingMethod].method_code,
+                                    'shipping_carrier_code': self.shippingMethods[self.shippingMethod].carrier_code,
+                                    'extension_attributes': getExtensionAttributes(event.payment)
                                 }
+                            };
 
+                            setShippingInformation(shippingInformationPayload, self.isProductView).done(function () {
+                                // Submit payment information
                                 createPayment(JSON.stringify(postData), self.isProductView)
                                     .done(function () {
                                         redirectToSuccess();
