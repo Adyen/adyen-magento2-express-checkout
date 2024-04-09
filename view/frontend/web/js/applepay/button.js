@@ -240,7 +240,7 @@ define([
                     },
                     supportedNetworks: getSupportedNetworks(),
                     merchantCapabilities: ['supports3DS'],
-                    requiredBillingContactFields: ['postalAddress', 'name', 'email', 'phone'],
+                    requiredBillingContactFields: ['postalAddress'],
                     onAuthorized: this.startPlaceOrder.bind(this),
                     onClick: function (resolve, reject) {validatePdpForm(resolve, reject, pdpForm);},
                     onSubmit: function () {},
@@ -250,8 +250,7 @@ define([
 
                 if (!isVirtual) {
                     applepayBaseConfiguration.shippingMethods = [];
-                    applepayBaseConfiguration.requiredShippingContactFields =
-                        ['postalAddress', 'name', 'email', 'phone'];
+                    applepayBaseConfiguration.requiredShippingContactFields = ['postalAddress', 'name', 'email', 'phone'];
                     applepayBaseConfiguration.onShippingContactSelected = this.onShippingContactSelect.bind(this);
                     applepayBaseConfiguration.onShippingMethodSelected = this.onShippingMethodSelect.bind(this);
                 }
@@ -325,16 +324,15 @@ define([
                     let shippingInformationPayload = {
                         'addressInformation': {
                             'shipping_address': address,
-                            'shipping_method_code': shippingMethod.method_code,
-                            'shipping_carrier_code': shippingMethod.carrier_code,
-                            'extension_attributes': getExtensionAttributes(paymentData)
+                            'shipping_method_code': self.shippingMethods[shippingMethods[0].identifier].method_code,
+                            'shipping_carrier_code': self.shippingMethods[shippingMethods[0].identifier].carrier_code
                         }
                     };
 
-                    setShippingInformation(shippingInformationPayload, this.isProductView).then(() => {
+                    setShippingInformation(shippingInformationPayload, self.isProductView).then(() => {
                         setTotalsInfo(totalsPayload, self.isProductView)
                             .done((response) => {
-                                self.afterSetTotalsInfo(response, self.isProductView, resolve);
+                                self.afterSetTotalsInfo(response, shippingMethods[0], self.isProductView, resolve);
                             })
                             .fail((e) => {
                                 console.error('Adyen ApplePay: Unable to get totals', e);
@@ -374,7 +372,7 @@ define([
                 setShippingInformation(shippingInformationPayload, this.isProductView).then(() => {
                     setTotalsInfo(totalsPayload, self.isProductView)
                         .done((response) => {
-                            self.afterSetTotalsInfo(response, self.isProductView, resolve);
+                            self.afterSetTotalsInfo(response, shippingMethod, self.isProductView, resolve);
                         }).fail((e) => {
                             console.error('Adyen ApplePay: Unable to get totals', e);
                             reject($t('We\'re unable to fetch the cart totals for you. Please try an alternative payment method.'));
@@ -382,7 +380,7 @@ define([
                 });
             },
 
-            afterSetTotalsInfo: function (totalsResponse, isPdp, resolve) {
+            afterSetTotalsInfo: function (response, shippingMethod, isPdp, resolve) {
                 let applePayShippingMethodUpdate = {};
 
                 applePayShippingMethodUpdate.newTotal = {
@@ -455,8 +453,8 @@ define([
 
                 let billingAddressPayload = {
                     address: {
-                        'email': billingContact.emailAddress,
-                        'telephone': billingContact.phoneNumber,
+                        'email': shippingContact.emailAddress,
+                        'telephone': shippingContact.phoneNumber,
                         'firstname': billingContact.givenName,
                         'lastname': billingContact.familyName,
                         'street': billingContact.addressLines,
