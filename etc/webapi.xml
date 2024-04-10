@@ -59,9 +59,18 @@
             <resource ref="anonymous"/>
         </resources>
     </route>
-    <!-- PayPal Update Order Endpoint for Users -->
-    <route url="/V1/adyen/express/paypal/updateOrder" method="POST">
-        <service class="Adyen\ExpressCheckout\Api\AdyenUpdateOrderInterface" method="execute"/>
+    <!-- Update Paypal order details -->
+    <route url="/V1/adyen/express/paypal-update-order/mine" method="POST">
+        <service class="Adyen\ExpressCheckout\Api\AdyenPaypalUpdateOrderInterface" method="execute"/>
+        <resources>
+            <resource ref="self"/>
+        </resources>
+        <data>
+            <parameter name="adyenCartId" force="true">%adyen_cart_id%</parameter>
+        </data>
+    </route>
+    <route url="/V1/adyen/express/paypal-update-order/guest" method="POST">
+        <service class="Adyen\ExpressCheckout\Api\GuestAdyenPaypalUpdateOrderInterface" method="execute"/>
         <resources>
             <resource ref="anonymous"/>
         </resources>
