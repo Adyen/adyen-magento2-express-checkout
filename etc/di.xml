@@ -32,6 +32,9 @@
     <preference for="Adyen\ExpressCheckout\Model\ExpressDataBuilderInterface" type="Adyen\ExpressCheckout\Model\ExpressDataBuilder" />
     <preference for="Adyen\ExpressCheckout\Model\GetAdyenPaymentMethodsByProductInterface" type="Adyen\ExpressCheckout\Model\GetAdyenPaymentMethodsByProduct" />
     <preference for="Adyen\ExpressCheckout\Model\IsExpressMethodResolverInterface" type="Adyen\ExpressCheckout\Model\IsExpressMethodResolver" />
+    <preference for="Adyen\ExpressCheckout\Api\AdyenPaypalUpdateOrderInterface" type="Adyen\ExpressCheckout\Model\AdyenPaypalUpdateOrder" />
+    <preference for="Adyen\ExpressCheckout\Api\GuestAdyenPaypalUpdateOrderInterface" type="Adyen\ExpressCheckout\Model\GuestAdyenPaypalUpdateOrder" />
+
     <type name="Adyen\Payment\Gateway\Request\BrowserInfoDataBuilder">
         <plugin name="AddLanguageToBrowserInfoForGooglePay" type="Adyen\ExpressCheckout\Plugin\Gateway\Request\BrowserInfoDataBuilder" />
     </type>
