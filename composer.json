@@ -11,7 +11,8 @@
     }
   ],
   "require": {
-    "adyen/module-payment": "^9"
+    "adyen/module-payment": "^9",
+    "adyen/php-api-library": "^17.4.0"
   },
   "require-dev": {
     "phpunit/phpunit": "*",
