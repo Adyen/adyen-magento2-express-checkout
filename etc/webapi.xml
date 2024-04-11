@@ -59,6 +59,22 @@
             <resource ref="anonymous"/>
         </resources>
     </route>
+    <!-- /payments endpoint to initiate Adyen offer -->
+    <route url="/V1/adyen/express/init-payments/mine" method="POST">
+        <service class="Adyen\ExpressCheckout\Api\AdyenInitPaymentsInterface" method="execute"/>
+        <resources>
+            <resource ref="self"/>
+        </resources>
+        <data>
+            <parameter name="adyenCartId" force="true">%adyen_cart_id%</parameter>
+        </data>
+    </route>
+    <route url="/V1/adyen/express/init-payments/guest" method="POST">
+        <service class="Adyen\ExpressCheckout\Api\GuestAdyenInitPaymentsInterface" method="execute"/>
+        <resources>
+            <resource ref="anonymous"/>
+        </resources>
+    </route>
     <!-- Update Paypal order details -->
     <route url="/V1/adyen/express/paypal-update-order/mine" method="POST">
         <service class="Adyen\ExpressCheckout\Api\AdyenPaypalUpdateOrderInterface" method="execute"/>

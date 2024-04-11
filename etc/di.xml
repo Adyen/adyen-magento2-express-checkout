@@ -26,6 +26,8 @@
     <preference for="Adyen\ExpressCheckout\Api\Data\ProductCartParamsInterface" type="Adyen\ExpressCheckout\Model\ProductCartParams" />
     <preference for="Adyen\ExpressCheckout\Api\Data\MethodResponse\ConfigurationInterface" type="Adyen\ExpressCheckout\Model\MethodResponse\Configuration" />
     <preference for="Adyen\ExpressCheckout\Api\Data\AdyenPaymentMethodsInterface" type="Adyen\ExpressCheckout\Model\AdyenPaymentMethods" />
+    <preference for="Adyen\ExpressCheckout\Api\AdyenInitPaymentsInterface" type="Adyen\ExpressCheckout\Model\AdyenInitPayments" />
+    <preference for="Adyen\ExpressCheckout\Api\GuestAdyenInitPaymentsInterface" type="Adyen\ExpressCheckout\Model\GuestAdyenInitPayments" />
     <preference for="Adyen\ExpressCheckout\Model\ConfigurationInterface" type="Adyen\ExpressCheckout\Model\Configuration" />
     <preference for="Adyen\ExpressCheckout\Model\ExpressDataBuilderInterface" type="Adyen\ExpressCheckout\Model\ExpressDataBuilder" />
     <preference for="Adyen\ExpressCheckout\Model\GetAdyenPaymentMethodsByProductInterface" type="Adyen\ExpressCheckout\Model\GetAdyenPaymentMethodsByProduct" />
