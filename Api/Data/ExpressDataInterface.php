@@ -8,6 +8,7 @@ interface ExpressDataInterface
     public const MASKED_QUOTE_ID = 'masked_quote_id';
     public const ADYEN_PAYMENT_METHODS = 'adyen_payment_methods';
     public const TOTALS = 'totals';
+    public const IS_VIRTUAL_QUOTE = 'is_virtual_quote';
 
     /**
      * Get Masked Quote ID
@@ -58,5 +59,22 @@ interface ExpressDataInterface
      */
     public function setTotals(
         \Magento\Quote\Api\Data\TotalsInterface $totals
+    ): void;
+
+    /**
+     * Is quote virtual
+     *
+     * @return bool|null
+     */
+    public function getIsVirtualQuote(): ?bool;
+
+    /**
+     * Set is quote virtual
+     *
+     * @param bool $isVirtual
+     * @return void
+     */
+    public function setIsVirtualQuote(
+        bool $isVirtual
     ): void;
 }
