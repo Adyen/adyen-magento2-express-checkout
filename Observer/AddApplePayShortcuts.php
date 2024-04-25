@@ -61,10 +61,12 @@ class AddApplePayShortcuts implements ObserverInterface
         $handles = $shortcutButtons->getLayout()->getUpdate()->getHandles();
 
         // Check if any of the layout handles indicate a product page or cart page
-        if (in_array('catalog_product_view', $handles))
+        if (in_array('catalog_product_view', $handles)) {
             $IsProductView = true;
-        else if(in_array('checkout_cart_index', $handles))
+        }
+        else if(in_array('checkout_cart_index', $handles)) {
             $IsCart = true;
+        }
         $shortcut->setIsProductView($IsProductView);
         $shortcut->setIsCart($IsCart);
         $shortcutButtons->addShortcut($shortcut);
