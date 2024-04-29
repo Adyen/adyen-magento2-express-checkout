@@ -32,7 +32,7 @@ class AddGooglePayShortcuts implements ObserverInterface
      * @param ConfigurationInterface $configuration
      */
     public function __construct(
-        ConfigurationInterface $configuration,
+        ConfigurationInterface $configuration
     ) {
         $this->configuration = $configuration;
     }
