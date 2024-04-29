@@ -16,29 +16,39 @@
             <label>Express Payments</label>
             <frontend_model>Magento\Config\Block\System\Config\Form\Fieldset</frontend_model>
             <group id="google_pay" translate="label" showInDefault="1" showInWebsite="1" showInStore="1" sortOrder="10">
-                <label>GooglePay</label>
+                <label>Google Pay</label>
                 <frontend_model>Magento\Config\Block\System\Config\Form\Fieldset</frontend_model>
                 <field id="show_google_pay_on" translate="label" type="multiselect" sortOrder="10" showInDefault="1" showInWebsite="1" showInStore="1">
-                    <label>Show GooglePay on</label>
+                    <label>Show Google Pay on</label>
                     <source_model>Adyen\ExpressCheckout\Model\Config\Source\ShortcutAreas</source_model>
                     <can_be_empty>1</can_be_empty>
-                    <config_path>payment/adyen_express/show_google_pay_on</config_path>
+                    <config_path>payment/adyen_googlepay/express_show_on</config_path>
                 </field>
             </group>
             <group id="apple_pay" translate="label" showInDefault="1" showInWebsite="1" showInStore="1" sortOrder="20">
                 <label>Apple Pay</label>
                 <frontend_model>Magento\Config\Block\System\Config\Form\Fieldset</frontend_model>
                 <field id="show_apple_pay_on" translate="label" type="multiselect" sortOrder="30" showInDefault="1" showInWebsite="1" showInStore="1">
-                    <label>Show ApplePay on</label>
+                    <label>Show Apple Pay on</label>
                     <source_model>Adyen\ExpressCheckout\Model\Config\Source\ShortcutAreas</source_model>
                     <can_be_empty>1</can_be_empty>
-                    <config_path>payment/adyen_express/show_apple_pay_on</config_path>
+                    <config_path>payment/adyen_applepay/express_show_on</config_path>
                 </field>
                 <field id="apple_pay_button_color" translate="label" type="select" sortOrder="20" showInDefault="1" showInWebsite="1" showInStore="1">
                     <label>Button color</label>
                     <source_model>Adyen\ExpressCheckout\Model\Config\Source\ApplePay\ButtonColor</source_model>
-                    <config_path>payment/adyen_express/apple_pay_button_color</config_path>
+                    <config_path>payment/adyen_applepay/express_button_color</config_path>
                     <comment><![CDATA[More details here: <a href="https://developer.apple.com/design/human-interface-guidelines/apple-pay#Button-styles" target="_blank">Apple Pay documentation</a>.]]></comment>
+                </field>
+            </group>
+            <group id="paypal" translate="label" showInDefault="1" showInWebsite="1" showInStore="1" sortOrder="30">
+                <label>PayPal</label>
+                <frontend_model>Magento\Config\Block\System\Config\Form\Fieldset</frontend_model>
+                <field id="show_paypal_on" translate="label" type="multiselect" sortOrder="10" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Show PayPal on</label>
+                    <source_model>Adyen\ExpressCheckout\Model\Config\Source\ShortcutAreas</source_model>
+                    <can_be_empty>1</can_be_empty>
+                    <config_path>payment/adyen_paypal/express_show_on</config_path>
                 </field>
             </group>
         </group>
