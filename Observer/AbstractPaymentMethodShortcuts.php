@@ -64,17 +64,19 @@ abstract class AbstractPaymentMethodShortcuts implements ObserverInterface
         /** @var ShortcutButtons $shortcutButtons */
         $shortcutButtons = $observer->getEvent()->getContainer();
         $shortcut = $shortcutButtons->getLayout()->createBlock(Button::class);
-        $IsProductView = false;
-        $IsCart = false;
+        $isProductView = false;
+        $isCart = false;
         $handles = $shortcutButtons->getLayout()->getUpdate()->getHandles();
 
         // Check if any of the layout handles indicate a product page or cart page
-        if (in_array('catalog_product_view', $handles))
-            $IsProductView = true;
-        else if(in_array('checkout_cart_index', $handles))
-            $IsCart = true;
-        $shortcut->setIsProductView($IsProductView);
-        $shortcut->setIsCart($IsCart);
+        if (in_array('catalog_product_view', $handles)) {
+            $isProductView = true;
+        }
+        elseif(in_array('checkout_cart_index', $handles)) {
+            $isCart = true;
+        }
+        $shortcut->setIsProductView($isProductView);
+        $shortcut->setIsCart($isCart);
         $shortcutButtons->addShortcut($shortcut);
     }
 
@@ -98,7 +100,7 @@ abstract class AbstractPaymentMethodShortcuts implements ObserverInterface
         //Check Cart Page or PDP
         if(in_array('catalog_product_view', $handles))
             return ShortcutAreas::PRODUCT_VIEW_VALUE;
-        else if(in_array('checkout_cart_index', $handles))
+        elseif(in_array('checkout_cart_index', $handles))
             return ShortcutAreas::CART_PAGE_VALUE;
         else
             return 0;
