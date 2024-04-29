@@ -63,9 +63,18 @@ abstract class AbstractPaymentMethodShortcuts implements ObserverInterface
         }
         /** @var ShortcutButtons $shortcutButtons */
         $shortcutButtons = $observer->getEvent()->getContainer();
-        $shortcut = $shortcutButtons->getLayout()->createBlock($this->shortcutButton::class);
-        $shortcut->setIsProductView((bool)$observer->getData('is_catalog_product'));
-        $shortcut->setIsCart(get_class($shortcutButtons) === QuoteShortcutButtons::class);
+        $shortcut = $shortcutButtons->getLayout()->createBlock(Button::class);
+        $IsProductView = false;
+        $IsCart = false;
+        $handles = $shortcutButtons->getLayout()->getUpdate()->getHandles();
+
+        // Check if any of the layout handles indicate a product page or cart page
+        if (in_array('catalog_product_view', $handles))
+            $IsProductView = true;
+        else if(in_array('checkout_cart_index', $handles))
+            $IsCart = true;
+        $shortcut->setIsProductView($IsProductView);
+        $shortcut->setIsCart($IsCart);
         $shortcutButtons->addShortcut($shortcut);
     }
 
@@ -78,14 +87,20 @@ abstract class AbstractPaymentMethodShortcuts implements ObserverInterface
     private function getCurrentPageIdentifier(
         Observer $observer
     ): int {
-        if ($observer->getData('is_catalog_product')) {
-            return ShortcutAreas::PRODUCT_VIEW_VALUE;
-        }
         $shortcutsBlock = $observer->getEvent()->getContainer();
-        $isMinicart = (bool) $shortcutsBlock->getData('is_minicart');
-        if ($isMinicart === true) {
+        $handles = $shortcutsBlock->getLayout()->getUpdate()->getHandles();
+
+        //Check MiniCart
+        if ((bool)$shortcutsBlock->getData('is_minicart') === true) {
             return ShortcutAreas::MINICART_VALUE;
         }
-        return ShortcutAreas::CART_PAGE_VALUE;
+
+        //Check Cart Page or PDP
+        if(in_array('catalog_product_view', $handles))
+            return ShortcutAreas::PRODUCT_VIEW_VALUE;
+        else if(in_array('checkout_cart_index', $handles))
+            return ShortcutAreas::CART_PAGE_VALUE;
+        else
+            return 0;
     }
 }
