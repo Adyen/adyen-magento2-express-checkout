@@ -5,9 +5,12 @@
 <?php $serializedCheckoutConfig = /* @noEscape */ $viewModel->getSerializedCheckoutConfig();
 
 $checkoutConfig = __('window.checkoutConfig = %1;', $serializedCheckoutConfig);
+$adyenData = $viewModel->getAdyenData();
+$serializedAdyenData = json_encode($adyenData, JSON_HEX_TAG);
 ?>
 <script>
     <?=$checkoutConfig?>
     window.customerData = window.checkoutConfig.customerData;
     window.isCustomerLoggedIn = window.checkoutConfig.isCustomerLoggedIn;
+    window.adyenData = <?=$serializedAdyenData?>;
 </script>
