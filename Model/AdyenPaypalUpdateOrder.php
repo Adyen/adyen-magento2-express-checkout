@@ -85,17 +85,25 @@ class AdyenPaypalUpdateOrder implements AdyenPaypalUpdateOrderInterface
     /**
      * @param int $adyenCartId
      * @param string $paymentData
-     * @param array $deliveryMethods
+     * @param string $deliveryMethods
      * @return string
      * @throws NoSuchEntityException
      * @throws ValidatorException
      */
-    public function execute(int $adyenCartId, string $paymentData, $deliveryMethods = []): string
+    public function execute(int $adyenCartId, string $paymentData, string $deliveryMethods = ''): string
     {
         /** @var Quote $quote */
         $quote = $this->cartRepository->get($adyenCartId);
         $merchantReference = $quote->getReservedOrderId();
+        $deliveryMethods = json_decode($deliveryMethods, true);
+        foreach ($deliveryMethods as &$method) {
+            $method['amount']['value'] = (int) $method['amount']['value'];
+        }
 
+        // Handle the case where JSON decoding fails
+        if (json_last_error() !== JSON_ERROR_NONE) {
+            throw new \InvalidArgumentException('Invalid JSON provided for delivery methods.');
+        }
         if (is_null($merchantReference)) {
             throw new ValidatorException(
                 __('Order ID has not been reserved!')
@@ -122,7 +130,9 @@ class AdyenPaypalUpdateOrder implements AdyenPaypalUpdateOrderInterface
         }
 
         $storeId = $quote->getStoreId();
-        $deliveryMethods = $this->deliveryMethodValidator->getValidatedDeliveryMethods($deliveryMethods);
+
+        //foreach loop
+        //$deliveryMethods = $this->deliveryMethodValidator->getValidatedDeliveryMethods($deliveryMethods);
 
         $quoteAmountCurrency = $this->chargedCurrency->getQuoteAmountCurrency($quote);
         $amountCurrency = $quoteAmountCurrency->getCurrencyCode();

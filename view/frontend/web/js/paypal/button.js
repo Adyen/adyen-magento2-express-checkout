@@ -103,6 +103,7 @@ define([
                 // Retrieve the PayPal payment method
                 let paypalPaymentMethod = await getPaymentMethod('paypal', this.isProductView);
                 virtualQuoteModel().setIsVirtual(false);
+                paypalPaymentMethod.configuration.intent = 'authorize';
 
                 if (!paypalPaymentMethod) {
                     // Subscribe to cart updates if PayPal method is not immediately available
@@ -277,12 +278,12 @@ define([
                             this.afterSetTotalsInfo(response, this.shippingMethods[this.shippingMethod], this.isProductView, resolve);
                         })
                         .fail((e) => {
-                            console.error('Adyen ApplePay: Unable to get totals', e);
+                            console.error('Adyen Paypal: Unable to get totals', e);
                             reject($t('We\'re unable to fetch the cart totals for you. Please try an alternative payment method.'));
                         });
                 });
 
-                return shippingMethods;
+                return result;
             } catch (error) {
                 console.error('Failed to retrieve shipping methods:', error);
                 throw new Error($t('Failed to retrieve shipping methods. Please try again later.'));
@@ -313,6 +314,7 @@ define([
                 countryCode: countryCode,
                 environment: "test",
                 isExpress: true,
+                intent: "authorize",
                 amount: {
                     currency: currency,
                     value: this.isProductView
@@ -354,7 +356,8 @@ define([
                         const response = await updatePaypalOrder.updateOrder(
                             quote.getQuoteId(),
                             currentPaymentData,
-                            shippingMethods
+                            shippingMethods,
+                            currency
                         );
 
                         component.updatePaymentData(response.paymentData);
