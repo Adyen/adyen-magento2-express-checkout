@@ -134,45 +134,48 @@ define([
             initializeOnPDP: async function (config, element) {
                 debugger;
                 // const response = await getExpressMethods().getRequest(element);
-                await getExpressMethods().getRequest(element).then(response => {
-                                        console.log(response);
-                                    }).catch(error => {
-                                        console.error(error);
-                                    });
-                const cart = customerData.get('cart');
-                virtualQuoteModel().setIsVirtual(true, response);
+                const self = this;
+                await getExpressMethods()
+                    .getRequest(element)
+                    .then(async function (response) {
+                        console.log(response);
+                        const cart = customerData.get('cart');
+                        virtualQuoteModel().setIsVirtual(true, response);
 
-                cart.subscribe(function () {
-                    this.reloadGooglePayButton(element);
-                }.bind(this));
-
-                setExpressMethods(response);
-                totalsModel().setTotal(response.totals.grand_total);
-                currencyModel().setCurrency(response.totals.quote_currency_code)
-
-                const $priceBox = getPdpPriceBox();
-                const pdpForm = getPdpForm(element);
-
-                $priceBox.on('priceUpdated', async function () {
-                    const isValid = new Promise((resolve, reject) => {
-                        return validatePdpForm(resolve, reject, pdpForm, true);
-                    });
-
-                    isValid
-                        .then(function () {
+                        cart.subscribe(function () {
                             this.reloadGooglePayButton(element);
-                        }.bind(this))
-                        .catch(function (error) {
-                            console.log(error);
-                        });
-                }.bind(this));
+                        }.bind(self));
 
-                let googlePaymentMethod = await getPaymentMethod('googlepay', this.isProductView);
+                        setExpressMethods(response);
+                        totalsModel().setTotal(response.totals.grand_total);
+                        currencyModel().setCurrency(response.totals.quote_currency_code)
 
-                if (!isConfigSet(googlePaymentMethod, ['gatewayMerchantId', 'merchantId'])) {
-                }
+                        const $priceBox = getPdpPriceBox();
+                        const pdpForm = getPdpForm(element);
 
-                this.initialiseGooglePayComponent(googlePaymentMethod, element);
+                        $priceBox.on('priceUpdated', async function () {
+                            const isValid = new Promise((resolve, reject) => {
+                                return validatePdpForm(resolve, reject, pdpForm, true);
+                            });
+
+                            isValid
+                                .then(function () {
+                                    this.reloadGooglePayButton(element);
+                                }.bind(this))
+                                .catch(function (error) {
+                                    console.log(error);
+                                });
+                        }.bind(self));
+
+                        let googlePaymentMethod = await getPaymentMethod('googlepay', self.isProductView);
+
+                        if (!isConfigSet(googlePaymentMethod, ['gatewayMerchantId', 'merchantId'])) {
+                        }
+
+                        self.initialiseGooglePayComponent(googlePaymentMethod, element);
+                    }).catch(function (error) {
+                        console.log(error);
+                    });
             },
 
             initialiseGooglePayComponent: async function (googlePaymentMethod, element) {
