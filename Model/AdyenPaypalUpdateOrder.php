@@ -96,8 +96,13 @@ class AdyenPaypalUpdateOrder implements AdyenPaypalUpdateOrderInterface
         $quote = $this->cartRepository->get($adyenCartId);
         $merchantReference = $quote->getReservedOrderId();
         $deliveryMethods = json_decode($deliveryMethods, true);
+        $deliveryCharges = 0;
         foreach ($deliveryMethods as &$method) {
             $method['amount']['value'] = (int) $method['amount']['value'];
+
+            if($method['selected'] == 'true') {
+                $deliveryCharges = $method['amount']['value'];
+            }
         }
 
         // Handle the case where JSON decoding fails
@@ -136,14 +141,15 @@ class AdyenPaypalUpdateOrder implements AdyenPaypalUpdateOrderInterface
 
         $quoteAmountCurrency = $this->chargedCurrency->getQuoteAmountCurrency($quote);
         $amountCurrency = $quoteAmountCurrency->getCurrencyCode();
-        $amountValue = $quoteAmountCurrency->getAmount();
+        $amountValue = $this->adyenHelper->formatAmount($quoteAmountCurrency->getAmount(), $amountCurrency);
+        //$amountValue += $deliveryCharges;
 
         try {
             $paypalUpdateOrderService = $this->paypalUpdateOrderHelper->createAdyenUtilityApiService($storeId);
             $paypalUpdateOrderRequest = $this->paypalUpdateOrderHelper->buildPaypalUpdateOrderRequest(
                 $pspReference,
                 $paymentData,
-                $this->adyenHelper->formatAmount($amountValue, $amountCurrency),
+                $amountValue,
                 $amountCurrency,
                 $deliveryMethods
             );

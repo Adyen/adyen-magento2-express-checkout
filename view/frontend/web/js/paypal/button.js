@@ -217,7 +217,7 @@ define([
             this.initialisePaypalComponent(paypalPaymentMethod, element);
         },
 
-        getShippingMethods: async function (shippingAddress, isProductView) {
+        getAndSetShippingMethods: async function (shippingAddress, isProductView) {
             try {
                 const payload = {
                     address: {
@@ -228,14 +228,12 @@ define([
                 };
                 const result = await getShippingMethods(payload, isProductView);
 
-                // Stop if no shipping methods.
                 if (result.length === 0) {
                     throw new Error($t('There are no shipping methods available for you right now. Please try again or use an alternative payment method.'));
                 }
 
                 let shippingMethods = [];
 
-                // Format shipping methods array.
                 for (let i = 0; i < result.length; i++) {
                     if (typeof result[i].method_code !== 'string') {
                         continue;
@@ -246,23 +244,20 @@ define([
                         detail: result[i].carrier_title ? result[i].carrier_title : '',
                         amount: parseFloat(result[i].amount).toFixed(2)
                     };
-                    // Add method object to array.
                     shippingMethods.push(method);
                     this.shippingMethods[result[i].method_code] = result[i];
                     if (!this.shippingMethod) {
                         this.shippingMethod = result[i].method_code;
                     }
                 }
-                console.log(shippingAddress);
-                console.log(payload);
+
                 let address = {
                     'countryId': shippingAddress.countryCode,
                     'region': shippingAddress.region,
                     'regionId': getRegionId(shippingAddress.country_id, shippingAddress.region),
                     'postcode': shippingAddress.postalCode
                 };
-                console.log(this.shippingMethod);
-                // Create payload to send.
+
                 let shippingInformationPayload = {
                     addressInformation: {
                         shipping_address: address,
@@ -272,23 +267,27 @@ define([
                     }
                 };
 
-                setShippingInformation(shippingInformationPayload, this.isProductView).then(() => {
-                    setTotalsInfo(totalsPayload, this.isProductView)
-                        .done((response) => {
-                            this.afterSetTotalsInfo(response, this.shippingMethods[this.shippingMethod], this.isProductView, resolve);
-                        })
-                        .fail((e) => {
-                            console.error('Adyen Paypal: Unable to get totals', e);
-                            reject($t('We\'re unable to fetch the cart totals for you. Please try an alternative payment method.'));
-                        });
-                });
+                const totalsPayload = {
+                    'addressInformation': {
+                        'address': address,
+                        'shipping_method_code': this.shippingMethod,
+                        'shipping_carrier_code': this.shippingMethods[this.shippingMethod].carrier_code
+                    }
+                };
 
-                return result;
+                await setShippingInformation(shippingInformationPayload, this.isProductView);
+                console.log("Shipping information set");
+
+                await setTotalsInfo(totalsPayload, this.isProductView);
+                console.log("Totals information set");
+
+                return shippingMethods;
             } catch (error) {
                 console.error('Failed to retrieve shipping methods:', error);
                 throw new Error($t('Failed to retrieve shipping methods. Please try again later.'));
             }
         },
+
 
         getPaypalConfiguration: function (paypalPaymentMethod, element) {
             const paypalStyles = getPaypalStyles();
@@ -314,13 +313,6 @@ define([
                 countryCode: countryCode,
                 environment: "test",
                 isExpress: true,
-                intent: "authorize",
-                amount: {
-                    currency: currency,
-                    value: this.isProductView
-                        ? formatAmount(totalsModel().getTotal() * 100)
-                        : formatAmount(getCartSubtotal() * 100)
-                },
                 configuration: {
                     domainName: window.location.hostname,
                     merchantId: paypalPaymentMethod.configuration.merchantId,
@@ -350,21 +342,72 @@ define([
                     });
                 },
                 onShippingAddressChange: async (data, actions, component) => {
-                    const currentPaymentData = component.paymentData;
-                    const shippingMethods = await this.getShippingMethods(data.shippingAddress, this.isProductView);
                     try {
-                        const response = await updatePaypalOrder.updateOrder(
+                        console.log("Fetching shipping methods...");
+                        const shippingMethods = await this.getAndSetShippingMethods(data.shippingAddress, this.isProductView);
+                        console.log("Shipping methods fetched:", shippingMethods);
+
+                        const currentPaymentData = component.paymentData;
+                        console.log("Current payment data:", currentPaymentData);
+
+                        console.log("Updating PayPal order...");
+                        let response = await updatePaypalOrder.updateOrder(
                             quote.getQuoteId(),
                             currentPaymentData,
                             shippingMethods,
                             currency
                         );
+                        response = JSON.parse(response);
+                        console.log("PayPal order updated:", response);
 
                         component.updatePaymentData(response.paymentData);
                     } catch (error) {
                         console.error('Failed to update PayPal order:', error);
                     }
-                }
+                },
+
+                onShippingOptionsChange: async (data, actions, component) => {
+                    // Example: PostNL is unavailable.
+                    // if (data.selectedShippingOption.label.includes('PostNL')) {
+                    //     return actions.reject(data.errors.METHOD_UNAVAILABLE);
+                    // }
+                    console.log(data);
+
+                    const currentPaymentData = component.paymentData;
+                    console.log(currentPaymentData);
+                    try {
+                        // Call your backend to update the order with the selected shipping method
+                        const response = await updatePaypalOrder.updateOrder(
+                            quote.getQuoteId(),
+                            currentPaymentData,
+                            data.selectedShippingOption
+                        );
+
+                        // Update the Component paymentData value with the new one.
+                        component.updatePaymentData(response.paymentData);
+                    } catch (error) {
+                        console.error('Failed to update PayPal order:', error);
+                    }
+                },
+                onShopperDetails: (shopperDetails, rawData, actions) => {
+                    // Handle the shopper's details
+                    console.log('Shopper Details:', shopperDetails);
+                    console.log('Raw Data:', rawData);
+
+                    // Example: Use the shopper's details for shipping label or other purposes
+                    const shippingAddress = shopperDetails.deliveryAddress;
+
+                    // Here you can save the shopper's details to your order or do other necessary actions
+
+                    // Resolve the action to continue the flow
+                    actions.resolve();
+                },
+                amount: {
+                    currency: currency,
+                    value: this.isProductView
+                        ? formatAmount(totalsModel().getTotal() * 100)
+                        : formatAmount(getCartSubtotal() * 100)
+                },
             };
 
             return paypalBaseConfiguration;
