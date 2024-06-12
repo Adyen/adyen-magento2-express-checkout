@@ -132,7 +132,13 @@ define([
             },
 
             initializeOnPDP: async function (config, element) {
-                const response = await getExpressMethods().getRequest(element);
+                debugger;
+                // const response = await getExpressMethods().getRequest(element);
+                await getExpressMethods().getRequest(element).then(response => {
+                                        console.log(response);
+                                    }).catch(error => {
+                                        console.error(error);
+                                    });
                 const cart = customerData.get('cart');
                 virtualQuoteModel().setIsVirtual(true, response);
 
