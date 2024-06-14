@@ -107,6 +107,7 @@ define([
                 configModel().setConfig(config);
                 countriesModel();
 
+                await this.manageQuoteIdOnPageRefresh();
                 this.isProductView = config.isProductView;
 
                 // If express methods is not set then set it.
@@ -131,51 +132,54 @@ define([
                 }
             },
 
+            manageQuoteIdOnPageRefresh: async function(){
+                const navigationEntries = performance.getEntriesByType('navigation');
+                const pageAccessedByReload = navigationEntries.length > 0 &&
+                    navigationEntries[0].type === 'reload';
+                if(!pageAccessedByReload){
+                    localStorage.removeItem("lastQuoteId");
+                }
+            },
+
             initializeOnPDP: async function (config, element) {
-                debugger;
-                // const response = await getExpressMethods().getRequest(element);
-                const self = this;
-                await getExpressMethods()
-                    .getRequest(element)
-                    .then(async function (response) {
-                        console.log(response);
-                        const cart = customerData.get('cart');
-                        virtualQuoteModel().setIsVirtual(true, response);
+                const response = await getExpressMethods().getRequest(element);
 
-                        cart.subscribe(function () {
-                            this.reloadGooglePayButton(element);
-                        }.bind(self));
+                localStorage.setItem("lastQuoteId", response.masked_quote_id)
 
-                        setExpressMethods(response);
-                        totalsModel().setTotal(response.totals.grand_total);
-                        currencyModel().setCurrency(response.totals.quote_currency_code)
+                const cart = customerData.get('cart');
+                virtualQuoteModel().setIsVirtual(true, response);
 
-                        const $priceBox = getPdpPriceBox();
-                        const pdpForm = getPdpForm(element);
+                cart.subscribe(function () {
+                    this.reloadGooglePayButton(element);
+                }.bind(this));
 
-                        $priceBox.on('priceUpdated', async function () {
-                            const isValid = new Promise((resolve, reject) => {
-                                return validatePdpForm(resolve, reject, pdpForm, true);
-                            });
+                setExpressMethods(response);
+                totalsModel().setTotal(response.totals.grand_total);
+                currencyModel().setCurrency(response.totals.quote_currency_code)
 
-                            isValid
-                                .then(function () {
-                                    this.reloadGooglePayButton(element);
-                                }.bind(this))
-                                .catch(function (error) {
-                                    console.log(error);
-                                });
-                        }.bind(self));
+                const $priceBox = getPdpPriceBox();
+                const pdpForm = getPdpForm(element);
 
-                        let googlePaymentMethod = await getPaymentMethod('googlepay', self.isProductView);
-
-                        if (!isConfigSet(googlePaymentMethod, ['gatewayMerchantId', 'merchantId'])) {
-                        }
-
-                        self.initialiseGooglePayComponent(googlePaymentMethod, element);
-                    }).catch(function (error) {
-                        console.log(error);
+                $priceBox.on('priceUpdated', async function () {
+                    const isValid = new Promise((resolve, reject) => {
+                        return validatePdpForm(resolve, reject, pdpForm, true);
                     });
+
+                    isValid
+                        .then(function () {
+                            this.reloadGooglePayButton(element);
+                        }.bind(this))
+                        .catch(function (error) {
+                            console.log(error);
+                        });
+                }.bind(this));
+
+                let googlePaymentMethod = await getPaymentMethod('googlepay', this.isProductView);
+
+                if (!isConfigSet(googlePaymentMethod, ['gatewayMerchantId', 'merchantId'])) {
+                }
+
+                this.initialiseGooglePayComponent(googlePaymentMethod, element);
             },
 
             initialiseGooglePayComponent: async function (googlePaymentMethod, element) {
