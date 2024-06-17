@@ -137,14 +137,14 @@ define([
                 const pageAccessedByReload = navigationEntries.length > 0 &&
                     navigationEntries[0].type === 'reload';
                 if(!pageAccessedByReload){
-                    localStorage.removeItem("lastQuoteId");
+                    localStorage.removeItem("quoteId");
                 }
             },
 
             initializeOnPDP: async function (config, element) {
                 const response = await getExpressMethods().getRequest(element);
 
-                localStorage.setItem("lastQuoteId", response.masked_quote_id)
+                localStorage.setItem("quoteId", response.masked_quote_id)
 
                 const cart = customerData.get('cart');
                 virtualQuoteModel().setIsVirtual(true, response);

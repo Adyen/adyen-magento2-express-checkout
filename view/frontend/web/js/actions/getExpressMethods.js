@@ -30,9 +30,8 @@ define([
             const formData = getFormData(pdpForm);
             const cartMaskedId = getMaskedIdFromCart();
 
-            const lastQuoteId = localStorage.getItem("lastQuoteId");
-            // console.log(lastQuoteId);
-            const adyenMaskedQuoteId = lastQuoteId != null ? lastQuoteId : maskedIdModel().getMaskedId();
+            const previousQuoteId = localStorage.getItem("quoteId");
+            const adyenMaskedQuoteId = previousQuoteId != null ? previousQuoteId : maskedIdModel().getMaskedId();
 
             const payload = {
                 productCartParams: {
