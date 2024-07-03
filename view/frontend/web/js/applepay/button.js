@@ -480,7 +480,8 @@ define([
                         additional_data: {
                             brand_code: 'applepay',
                             stateData: JSON.stringify(componentData)
-                        }
+                        },
+                        extension_attributes: getExtensionAttributes(event.payment)
                     }
                 };
 
