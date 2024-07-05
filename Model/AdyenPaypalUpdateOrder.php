@@ -96,14 +96,20 @@ class AdyenPaypalUpdateOrder implements AdyenPaypalUpdateOrderInterface
         $quote = $this->cartRepository->get($adyenCartId);
         $merchantReference = $quote->getReservedOrderId();
         $deliveryMethods = json_decode($deliveryMethods, true);
-        $deliveryCharges = 0;
+
         foreach ($deliveryMethods as &$method) {
+            // Ensure the amount value is an integer
             $method['amount']['value'] = (int) $method['amount']['value'];
 
-            if($method['selected'] == 'true') {
-                $deliveryCharges = $method['amount']['value'];
+            // Validate the current method
+            $validatedMethod = $this->deliveryMethodValidator->getValidatedDeliveryMethods([$method]);
+
+            // Replace the original method with the validated one
+            if (!empty($validatedMethod)) {
+                $method = $validatedMethod[0];
             }
         }
+        unset($method);
 
         // Handle the case where JSON decoding fails
         if (json_last_error() !== JSON_ERROR_NONE) {
@@ -137,12 +143,10 @@ class AdyenPaypalUpdateOrder implements AdyenPaypalUpdateOrderInterface
         $storeId = $quote->getStoreId();
 
         //foreach loop
-        //$deliveryMethods = $this->deliveryMethodValidator->getValidatedDeliveryMethods($deliveryMethods);
 
         $quoteAmountCurrency = $this->chargedCurrency->getQuoteAmountCurrency($quote);
         $amountCurrency = $quoteAmountCurrency->getCurrencyCode();
         $amountValue = $this->adyenHelper->formatAmount($quoteAmountCurrency->getAmount(), $amountCurrency);
-        //$amountValue += $deliveryCharges;
 
         try {
             $paypalUpdateOrderService = $this->paypalUpdateOrderHelper->createAdyenUtilityApiService($storeId);

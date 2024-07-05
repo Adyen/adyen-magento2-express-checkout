@@ -7,7 +7,7 @@ define([
 ], function (storage, urlBuilder, customer, formatAmount, configModel) {
     'use strict';
 
-    function updateOrder(cartId, paymentData, shippingMethods = null, currency, selectedShippingMethod = null) {
+    function updateOrder(cartId, paymentData, shippingMethods, currency, selectedShippingMethod = null) {
         const updateOrderUrl = customer.isLoggedIn()
             ? urlBuilder.createUrl('/adyen/express/paypal-update-order/mine', {})
             : urlBuilder.createUrl('/adyen/express/paypal-update-order/guest', {});
@@ -20,8 +20,21 @@ define([
 
         console.log(selectedShippingMethod);
         let deliveryMethods = [];
-        if (shippingMethods) {
-            //updateOrderPayload.shippingMethods = shippingMethods.map(method => method.identifier);
+        if (selectedShippingMethod) {
+            let method = {
+                reference: selectedShippingMethod.id,
+                description: selectedShippingMethod.label,
+                type: 'Shipping',
+                amount: {
+                    currency: currency,
+                    value: Math.round(selectedShippingMethod.amount.value * 100)
+                },
+                selected: true
+            };
+            deliveryMethods.push(method);
+            updateOrderPayload.deliveryMethods = JSON.stringify(deliveryMethods);
+        }
+        else {
             for (let i = 0; i < shippingMethods.length; i++) {
                 let method = {
                     reference: (i + 1).toString(),
@@ -36,7 +49,7 @@ define([
                 // Add method object to array.
                 deliveryMethods.push(method);
             }
-            updateOrderPayload.deliveryMethods = JSON.stringify(deliveryMethods)
+            updateOrderPayload.deliveryMethods = JSON.stringify(deliveryMethods);
         }
 
         return storage.post(
