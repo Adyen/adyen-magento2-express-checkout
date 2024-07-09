@@ -8,7 +8,7 @@ define([
     'Adyen_ExpressCheckout/js/actions/cancelCart',
     'Adyen_ExpressCheckout/js/actions/createPayment',
     'Adyen_ExpressCheckout/js/actions/createOrder',
-    'Adyen_ExpressCheckout/js/actions/getShippingMethods', // Use the new action
+    'Adyen_ExpressCheckout/js/actions/getShippingMethods',
     'Adyen_ExpressCheckout/js/actions/getExpressMethods',
     'Adyen_ExpressCheckout/js/actions/setShippingInformation',
     'Adyen_ExpressCheckout/js/actions/setTotalsInfo',
@@ -354,6 +354,7 @@ define([
                 },
                 onShopperDetails: async (shopperDetails, rawData, actions) => {
                     try {
+
                         let self = this;
                         const isVirtual = virtualQuoteModel().getIsVirtual();
                         let billingAddress = {
@@ -387,7 +388,7 @@ define([
                             'region': shopperDetails.shippingAddress.region,
                             'region_id': getRegionId(shopperDetails.shippingAddress.country, shopperDetails.shippingAddress.region),
                             'region_code': null,
-                            'country_id': shopperDetails.countryCode.toUpperCase(),
+                            'country_id': shopperDetails.shippingAddress.country.toUpperCase(),
                             'postcode': shopperDetails.shippingAddress.postalCode,
                             'same_as_billing': 0,
                             'customer_address_id': 0,
@@ -642,7 +643,7 @@ define([
                 'addressInformation': {
                     'address': address,
                     'shipping_method_code': this.shippingMethod,
-                    'shipping_carrier_code': shippingMethod ? shippingMethod.label : ''
+                    'shipping_carrier_code': shippingMethod ? shippingMethod.carrierCode : ''
                 }
             };
 
