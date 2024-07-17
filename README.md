@@ -2,7 +2,7 @@
 This module gives our customers the ability to use Apple Pay and Google Pay as an express payment method flow. This module is to be used along with the [Adyen Payment plugin for Magento 2](https://github.com/Adyen/adyen-magento2) and is not a standalone product.
 
 ## Features
-* Apple Pay expres checkout options on the product page, mini cart and cart.
+* Apple Pay express checkout options on the product page, mini cart and cart.
 * Google Pay express checkout options on the product page, mini cart and cart.
 
 More express flows will be coming in 2023.
