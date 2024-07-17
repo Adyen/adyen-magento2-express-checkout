@@ -29,10 +29,8 @@ define([
     'Adyen_ExpressCheckout/js/model/countries',
     'Adyen_ExpressCheckout/js/model/totals',
     'Adyen_ExpressCheckout/js/model/currency',
-    'Adyen_ExpressCheckout/js/model/virtualQuote',
     'knockout',
     'Magento_Customer/js/model/customer',
-    'Magento_Checkout/js/model/cart/totals-processor/default',
     'Magento_Checkout/js/model/quote',
     'mage/url',
     'Adyen_ExpressCheckout/js/actions/initPayments',
@@ -41,7 +39,8 @@ define([
     'Magento_Checkout/js/model/full-screen-loader',
     'Adyen_Payment/js/model/adyen-payment-service',
     'Adyen_ExpressCheckout/js/helpers/getApiUrl',
-    'jquery'
+    'jquery',
+    'Adyen_ExpressCheckout/js/model/virtualQuote'
 ], function (
     Component,
     $t,
@@ -52,7 +51,7 @@ define([
     cancelCart,
     createPayment,
     createOrder,
-    getShippingMethods, // Use the new action
+    getShippingMethods,
     getExpressMethods,
     setShippingInformation,
     setTotalsInfo,
@@ -73,10 +72,8 @@ define([
     countriesModel,
     totalsModel,
     currencyModel,
-    virtualQuoteModel,
     ko,
     customer,
-    defaultTotalProcessor,
     quote,
     urlBuilder,
     initPayments,
@@ -85,11 +82,15 @@ define([
     fullScreenLoader,
     adyenPaymentService,
     getApiUrl,
-    $
+    $,
+    virtualQuoteModel
 ) {
     'use strict';
 
     return Component.extend({
+        isPlaceOrderActionAllowed: ko.observable(
+            quote.billingAddress() != null),
+
         defaults: {
             shippingMethods: {},
             isProductView: false,
@@ -99,8 +100,8 @@ define([
             shippingMethod: null,
             shopperEmail: null,
             billingAddress : {},
-            paymentsResultCode: null,
-            orderId: null
+            orderId: null,
+            quoteId: null
         },
 
         initialize: async function (config, element) {
@@ -134,9 +135,59 @@ define([
                 }
             } else {
                 // Initialize PayPal component on product view page
-                this.initialisePaypalComponent(paypalPaymentMethod, element);
+                this.initialiseonPDP(config, element);
             }
         },
+
+        initialiseonPDP: async function (config, element) {
+            // Configuration setup
+            try {
+                const response = await getExpressMethods().getRequest(element);
+                const cart = customerData.get('cart');
+                virtualQuoteModel().setIsVirtual(true, response);
+
+                cart.subscribe(function () {
+                    this.reloadPaypalButton(element);
+                }.bind(this));
+
+                setExpressMethods(response);
+                totalsModel().setTotal(response.totals.grand_total);
+                currencyModel().setCurrency(response.totals.quote_currency_code);
+
+                const $priceBox = getPdpPriceBox();
+                const pdpForm = getPdpForm(element);
+
+                $priceBox.on('priceUpdated', async function () {
+                    const isValid = new Promise((resolve, reject) => {
+                        return validatePdpForm(resolve, reject, pdpForm, true);
+                    });
+
+                    isValid
+                        .then(async function () {
+                            this.reloadPaypalButton(element);
+                        }.bind(this))
+                        .catch(function (error) {
+                            console.log(error);
+                        });
+                }.bind(this));
+
+                let paypalPaymentMethod = await getPaymentMethod('paypal', this.isProductView);
+
+                if (!paypalPaymentMethod) {
+                    console.error('PayPal payment method not found');
+                    return;
+                }
+
+                if (!isConfigSet(paypalPaymentMethod, ['gatewayMerchantId', 'merchantId'])) {
+                }
+                paypalPaymentMethod.configuration.intent = 'authorize';
+
+                this.initialisePaypalComponent(paypalPaymentMethod, element);
+            } catch (error) {
+                console.error('Error in initialiseonPDP:', error);
+            }
+        },
+
 
         initialisePaypalComponent: async function (paypalPaymentMethod, element) {
             // Configuration setup
@@ -234,8 +285,7 @@ define([
         getPaypalConfiguration: function (paypalPaymentMethod, element) {
             const paypalStyles = getPaypalStyles();
             const config = configModel().getConfig();
-            const countryCode = "NL";
-            const pdpForm = getPdpForm(element);
+            const countryCode = config.countryCode;
             const isVirtual = virtualQuoteModel().getIsVirtual();
             const isGuest = ko.observable(!customer.isLoggedIn());
             let currency;
@@ -252,7 +302,7 @@ define([
 
             paypalBaseConfiguration = {
                 countryCode: countryCode,
-                environment: "test",
+                environment: config.checkoutenv.toUpperCase(),
                 isExpress: true,
                 configuration: {
                     domainName: window.location.hostname,
@@ -274,15 +324,12 @@ define([
                             : formatAmount(getCartSubtotal() * 100)
                     };
                     paymentData.merchantAccount = config.merchantAccount;
-                    initPayments(paymentData).then((responseJSON) => {
-                        var response = JSON.parse(responseJSON);
-                        console.log("This is the response of init Payments call - ",response)
+                    initPayments(paymentData, this.isProductView).then((responseJSON) => {
+                        let response = JSON.parse(responseJSON);
                         if (response.action) {
-                            console.log(response);
-                            this.paymentsResultCode = response.action.resultCode;
                             component.handleAction(response.action);
                         } else {
-                            showFinalResult(response);
+                            console.log('Init Payments call failed', response);
                         }
                     }).catch((error) => {
                         console.error('Payment initiation failed', error);
@@ -290,37 +337,29 @@ define([
                 },
                 onShippingAddressChange: async (data, actions, component) => {
                     try {
-                        // Store the shipping address in the global variable
                         this.shippingAddress = data.shippingAddress;
-                        console.log("Fetching shipping methods...");
                         const shippingMethods = await this.getShippingMethods(data.shippingAddress);
-                        console.log("Shipping methods fetched:", shippingMethods);
                         let shippingMethod = shippingMethods.find(method => method.identifier === this.shippingMethod);
                         await this.setShippingAndTotals(shippingMethod, data.shippingAddress);
-                        console.log("Shipping Information Set");
 
                         const currentPaymentData = component.paymentData;
-                        console.log("Current payment data:", currentPaymentData);
-
-                        console.log("Updating PayPal order...");
+                        const cartData = customerData.get('cart')();
+                        this.quoteId = cartData.guest_masked_id
+                            ? cartData.guest_masked_id
+                            : null;
                         let response = await updatePaypalOrder.updateOrder(
-                            quote.getQuoteId(),
+                            this.quoteId,
                             currentPaymentData,
                             shippingMethods,
                             currency
                         );
                         response = JSON.parse(response);
-                        console.log("PayPal order updated:", response);
-
                         component.updatePaymentData(response.paymentData);
-
-
                     } catch (error) {
                         console.error('Failed to update PayPal order:', error);
                     }
                 },
                 onShippingOptionsChange: async (data, actions, component) => {
-                    console.log("Data is here",data);
                     let shippingMethod = [];
                     const currentPaymentData = component.paymentData;
                     for (const method of Object.values(this.shippingMethods)) {
@@ -336,64 +375,23 @@ define([
                             break;
                         }
                     }
-                    //let shippingMethod = this.shippingMethods.find(method => method.carrier_title === this.shippingMethod);
                     await this.setShippingAndTotals(shippingMethod, this.shippingAddress);
 
-                    console.log("Updating PayPal order...");
                     let response = await updatePaypalOrder.updateOrder(
-                        quote.getQuoteId(),
+                        this.quoteId,
                         currentPaymentData,
                         this.shippingMethods,
                         currency,
                         data.selectedShippingOption
                     );
                     response = JSON.parse(response);
-                    console.log("PayPal order updated:", response);
-
                     component.updatePaymentData(response.paymentData);
                 },
                 onShopperDetails: async (shopperDetails, rawData, actions) => {
                     try {
-
-                        let self = this;
                         const isVirtual = virtualQuoteModel().getIsVirtual();
-                        let billingAddress = {
-                            'email': shopperDetails.shopperEmail,
-                            'telephone': shopperDetails.telephoneNumber,
-                            'firstname': shopperDetails.shopperName.firstName,
-                            'lastname': shopperDetails.shopperName.lastName,
-                            'street': [
-                                shopperDetails.billingAddress.street
-                            ],
-                            'city': shopperDetails.billingAddress.city,
-                            'region': shopperDetails.billingAddress.region,
-                            'region_id': getRegionId(shopperDetails.billingAddress.country, shopperDetails.billingAddress.region),
-                            'region_code': null,
-                            'country_id': shopperDetails.countryCode.toUpperCase(),
-                            'postcode': shopperDetails.billingAddress.postalCode,
-                            'same_as_billing': 0,
-                            'customer_address_id': 0,
-                            'save_in_address_book': 0
-                        }
 
-                        let shippingAddress = {
-                            'email': shopperDetails.shopperEmail,
-                            'telephone': shopperDetails.telephoneNumber,
-                            'firstname': shopperDetails.shopperName.firstName,
-                            'lastname': shopperDetails.shopperName.lastName,
-                            'street': [
-                                shopperDetails.shippingAddress.street
-                            ],
-                            'city': shopperDetails.shippingAddress.city,
-                            'region': shopperDetails.shippingAddress.region,
-                            'region_id': getRegionId(shopperDetails.shippingAddress.country, shopperDetails.shippingAddress.region),
-                            'region_code': null,
-                            'country_id': shopperDetails.shippingAddress.country.toUpperCase(),
-                            'postcode': shopperDetails.shippingAddress.postalCode,
-                            'same_as_billing': 0,
-                            'customer_address_id': 0,
-                            'save_in_address_book': 0
-                        }
+                        const { billingAddress, shippingAddress } = await this.setupAddresses(shopperDetails);
 
                         let billingAddressPayload = {
                             address: billingAddress,
@@ -416,15 +414,13 @@ define([
                                 if (!isVirtual) {
                                     return setShippingInformation(shippingInformationPayload)
                                         .then(() => {
-                                            console.log("finalize order");
                                             return this.createOrder();
                                         })
                                         .then(() => {
                                             actions.resolve();
                                         });
                                 } else {
-                                    console.log("finalize order");
-                                    return this.createOrder(l).then(() => {
+                                    return this.createOrder().then(() => {
                                         actions.resolve();
                                     });
                                 }
@@ -432,8 +428,6 @@ define([
                             .catch((error) => {
                                 console.error('An error occurred:', error);
                             });
-                            console.log(this.orderId);
-
                     } catch (error) {
                         console.error('Failed to complete order:', error);
                         actions.reject();
@@ -441,26 +435,18 @@ define([
                 },
 
                 onAdditionalDetails: async (state, component) => {
-                    console.log("Moved to handle additional details. Component data", component.data);
-                    console.log("Moved to handle additional details of state", state.data);
-                    //just make payment-details call here line 491 in googlepay button_old.js
-
-                    const self = this;
-                    console.log(this.orderId);
                     let request = state.data;
+                    let self = this;
                     fullScreenLoader.startLoader();
                     request.orderId = this.orderId;
 
-                    adyenPaymentService.paymentDetails(request,self.orderId).
+                    adyenPaymentService.paymentDetails(request,this.orderId,false,this.quoteId).
                     done(function(responseJSON) {
                         fullScreenLoader.stopLoader();
                         self.handleAdyenResult(responseJSON, self.orderId);
                     }).
                     fail(function(response) {
-                        let errorProcessor;
-                        //errorProcessor.process(response, self.messageContainer);
-                        console.log("Error occured", response)
-                        self.isPlaceOrderActionAllowed(true);
+                        self.isPlaceOrderActionAllowed(true); //Complete this function
                         fullScreenLoader.stopLoader();
                     });
 
@@ -469,8 +455,52 @@ define([
                 isVirtual: isVirtual,
                 isGuest: isGuest
             };
-
             return paypalBaseConfiguration;
+        },
+
+        setupAddresses: async function (shopperDetails) {
+            let billingAddress = {
+                'email': shopperDetails.shopperEmail,
+                'telephone': shopperDetails.telephoneNumber,
+                'firstname': shopperDetails.shopperName.firstName,
+                'lastname': shopperDetails.shopperName.lastName,
+                'street': [
+                    shopperDetails.billingAddress.street
+                ],
+                'city': shopperDetails.billingAddress.city,
+                'region': shopperDetails.billingAddress.stateOrProvince,
+                'region_id': getRegionId(shopperDetails.billingAddress.country, shopperDetails.billingAddress.stateOrProvince),
+                'region_code': null,
+                'country_id': shopperDetails.billingAddress.country.toUpperCase(),
+                'postcode': shopperDetails.billingAddress.postalCode,
+                'same_as_billing': 0,
+                'customer_address_id': 0,
+                'save_in_address_book': 0
+            };
+
+            let shippingAddress = {
+                'email': shopperDetails.shopperEmail,
+                'telephone': shopperDetails.telephoneNumber,
+                'firstname': shopperDetails.shopperName.firstName,
+                'lastname': shopperDetails.shopperName.lastName,
+                'street': [
+                    shopperDetails.shippingAddress.street
+                ],
+                'city': shopperDetails.shippingAddress.city,
+                'region': shopperDetails.shippingAddress.stateOrProvince,
+                'region_id': getRegionId(shopperDetails.shippingAddress.country, shopperDetails.shippingAddress.stateOrProvince),
+                'region_code': null,
+                'country_id': shopperDetails.shippingAddress.country.toUpperCase(),
+                'postcode': shopperDetails.shippingAddress.postalCode,
+                'same_as_billing': 0,
+                'customer_address_id': 0,
+                'save_in_address_book': 0
+            };
+
+            return {
+                billingAddress: billingAddress,
+                shippingAddress: shippingAddress
+            };
         },
 
         // Extracted method to get shipping methods
@@ -504,11 +534,9 @@ define([
                         };
                         shippingMethods.push(method);
                         this.shippingMethods[result[i].method_code] = result[i];
-                        console.log("GlobalShippingMethods Array",this.shippingMethods);
                         if (!this.shippingMethod) {
                             this.shippingMethod = result[i].method_code;
                         }
-                        console.log("GlobalShippingMethod Code",this.shippingMethod);
                     }
                     resolve(shippingMethods);
                 }).catch(error => {
@@ -517,49 +545,7 @@ define([
                 });
             });
         },
-
-
-        // createOrderDirectly: async function() {
-        //     let serviceUrl = getApiUrl('order', this.isProductView);
-        //     const resultCode = this.paymentsResultCode;
-        //
-        //     const payload = {
-        //         paymentMethod: {
-        //             method: 'adyen_paypal_express',
-        //             additional_data: [
-        //                 'brand_code:paypal',
-        //                 `result_code:${resultCode}` // Include the resultCode
-        //             ]
-        //         }
-        //     };
-        //     const baseUrl = 'https://localhost:8443/';
-        //     serviceUrl = baseUrl+serviceUrl;
-        //     console.log(serviceUrl);
-        //     if (window.checkout && window.checkout.agreementIds) {
-        //         payload.paymentMethod.extension_attributes = {
-        //             agreement_ids: window.checkout.agreementIds
-        //         };
-        //     }
-        //     return $.ajax({
-        //         url: serviceUrl,
-        //         type: 'PUT',
-        //         data: JSON.stringify(payload),
-        //         contentType: 'application/json',
-        //         success: function (response) {
-        //             console.log('Order created:', response);
-        //             return response;
-        //         },
-        //         error: function (response) {
-        //             console.error('Error creating order:', response);
-        //             throw new Error(response);
-        //         }
-        //     });
-        // },
-
-
         createOrder: function(email) {
-            let self = this;
-
             const payload = {
                 paymentMethod: {
                     method: 'adyen_paypal_express',
@@ -568,17 +554,6 @@ define([
                     ]
                 }
             };
-            // const payload = {
-            //     email: email,
-            //     paymentMethod: {
-            //         method: 'adyen_paypal_express',
-            //         additional_data: {
-            //             brand_code: paypal,
-            //             stateData: JSON.stringify(componentData)
-            //         },
-            //         extension_attributes: getExtensionAttributes(paymentData)
-            //     }
-            // };
 
             if (window.checkout && window.checkout.agreementIds) {
                 payload.paymentMethod.extension_attributes = {
@@ -590,7 +565,6 @@ define([
                 createOrder(JSON.stringify(payload), this.isProductView)
                     .then(function(orderId) {
                         if (orderId) {
-                            console.log("Order ID:", orderId);
                             this.orderId = orderId;
                             resolve(orderId);
                         } else {
@@ -604,32 +578,46 @@ define([
             });
         },
 
-
         handleAdyenResult: function (responseJSON, orderId) {
             let self = this;
             let response = JSON.parse(responseJSON);
 
             if (!!response.isFinal) {
                 // Status is final redirect to the success page
-                redirectToSuccess()
+                redirectToSuccess();
             } else {
                 // Handle action
-                self.handleAction(response.action, orderId);
+                self.handleAction(response.action, orderId); // Complete this
+            }
+        },
+
+        handleAction: function(action, orderId) {
+            var self = this;
+            let popupModal;
+
+            fullScreenLoader.stopLoader();
+
+            if (action.type === 'threeDS2' || action.type === 'await') {
+                popupModal = self.showModal();
+            }
+
+            try {
+                self.adyenCheckoutComponent.createFromAction(action).mount('#' + this.modalLabel);
+            } catch (e) {
+                console.log(e);
+                self.closeModal(popupModal);
             }
         },
 
         // Extracted method to set shipping information and totals
         setShippingAndTotals: function (shippingMethod, shippingAddress) {
-            console.log(shippingAddress);
             let address = {
                 'countryId': shippingAddress.countryCode,
-                'region': shippingAddress.region,
-                'regionId': getRegionId(shippingAddress.country_id, shippingAddress.region),
+                'region': shippingAddress.state,
+                'regionId': getRegionId(shippingAddress.country_id, shippingAddress.state),
                 'postcode': shippingAddress.postalCode
             };
 
-
-            console.log("selected shipping method",shippingMethod);
             let shippingInformationPayload = {
                 addressInformation: {
                     shipping_address: address,

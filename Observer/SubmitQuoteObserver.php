@@ -1,6 +1,18 @@
 <?php
+/**
+ *
+ * Adyen ExpressCheckout Module
+ *
+ * Copyright (c) 2020 Adyen B.V.
+ * This file is open source and available under the MIT license.
+ * See the LICENSE file for more info.
+ *
+ * Author: Adyen <magento@adyen.com>
+ */
 
-namespace Vendor\ExpressCheckout\Observer;
+declare(strict_types=1);
+
+namespace Adyen\ExpressCheckout\Observer;
 
 use Magento\Framework\Event\ObserverInterface;
 use Magento\Framework\Event\Observer;

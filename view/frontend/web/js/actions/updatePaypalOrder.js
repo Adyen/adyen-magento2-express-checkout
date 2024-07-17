@@ -16,9 +16,7 @@ define([
             maskedQuoteId: cartId,
             paymentData: paymentData
         };
-        const config = configModel().getConfig();
 
-        console.log(selectedShippingMethod);
         let deliveryMethods = [];
         if (selectedShippingMethod) {
             let method = {

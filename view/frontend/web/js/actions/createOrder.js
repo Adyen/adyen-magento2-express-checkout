@@ -9,11 +9,9 @@ define([
             payload,
             false
         ).then(function(response) {
-            console.log('Order placed successfully', response);
             // Assuming response contains orderId
             return response;
         }).catch(function(response) {
-            console.error('Failed to place order', response);
             throw new Error('Failed to place order');
         });
     };

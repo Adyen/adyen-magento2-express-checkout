@@ -5,8 +5,8 @@ define([
     'Adyen_ExpressCheckout/js/model/config',
     'Magento_Checkout/js/model/quote',
     'Magento_Checkout/js/model/url-builder',
-    'mage/cookies',
     'Adyen_ExpressCheckout/js/helpers/getMaskedIdFromCart',
+    'Magento_Customer/js/customer-data'
 ], function (
     storage,
     isLoggedIn,
@@ -14,12 +14,16 @@ define([
     configModel,
     quote,
     urlBuilder,
-    getMaskedIdFromCart
+    getMaskedIdFromCart,
+    customerData
 ) {
     'use strict';
 
     function getGuestCartId() {
-        return quote.getQuoteId();
+        const cartData = customerData.get('cart')();
+        return cartData.guest_masked_id
+            ? cartData.guest_masked_id
+            : null;
     }
 
     function getCartId() {
@@ -28,7 +32,7 @@ define([
         return quote.getQuoteId();
     }
 
-    return function (paymentData) {
+    return function (paymentData, isProductView) {
         const isGuest = !isLoggedIn();
         const config = configModel().getConfig();
         const adyenCartId = isGuest ? getGuestCartId() : getCartId();
@@ -40,8 +44,7 @@ define([
         const urlParams = {
             storeCode: config.storeCode
         };
-        const cartMaskedId = getMaskedIdFromCart();
-        const adyenMaskedQuoteId = maskedIdModel().getMaskedId();
+
         if (isGuest) {
             urlParams.adyenCartId = adyenCartId;
         }
