@@ -3,12 +3,14 @@ define([
     'Magento_Checkout/js/model/url-builder',
     'Magento_Customer/js/model/customer',
     'Adyen_ExpressCheckout/js/helpers/formatAmount',
-    'Adyen_ExpressCheckout/js/model/config'
-], function (storage, urlBuilder, customer, formatAmount, configModel) {
+    'Adyen_ExpressCheckout/js/model/config',
+    'Adyen_ExpressCheckout/js/helpers/getIsLoggedIn',
+], function (storage, urlBuilder, customer, formatAmount, configModel, getIsLoggedIn) {
     'use strict';
 
     function updateOrder(cartId, paymentData, shippingMethods, currency, selectedShippingMethod = null) {
-        const updateOrderUrl = customer.isLoggedIn()
+        const isLoggedIn = getIsLoggedIn();
+        const updateOrderUrl = isLoggedIn
             ? urlBuilder.createUrl('/adyen/express/paypal-update-order/mine', {})
             : urlBuilder.createUrl('/adyen/express/paypal-update-order/guest', {});
 

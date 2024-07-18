@@ -37,10 +37,11 @@ define([
     'Adyen_ExpressCheckout/js/actions/updatePaypalOrder',
     'Adyen_ExpressCheckout/js/actions/setBillingAddress',
     'Magento_Checkout/js/model/full-screen-loader',
-    'Adyen_Payment/js/model/adyen-payment-service',
+    'Adyen_ExpressCheckout/js/model/adyen-payment-service',
     'Adyen_ExpressCheckout/js/helpers/getApiUrl',
     'jquery',
-    'Adyen_ExpressCheckout/js/model/virtualQuote'
+    'Adyen_ExpressCheckout/js/model/virtualQuote',
+    'Adyen_ExpressCheckout/js/model/maskedId',
 ], function (
     Component,
     $t,
@@ -83,7 +84,8 @@ define([
     adyenPaymentService,
     getApiUrl,
     $,
-    virtualQuoteModel
+    virtualQuoteModel,
+    maskedIdModel
 ) {
     'use strict';
 
@@ -323,6 +325,11 @@ define([
                             ? formatAmount(totalsModel().getTotal() * 100)
                             : formatAmount(getCartSubtotal() * 100)
                     };
+                    const cartData = customerData.get('cart')();
+                    this.quoteId = cartData.guest_masked_id
+                        ? cartData.guest_masked_id
+                        : maskedIdModel().getMaskedId();
+
                     paymentData.merchantAccount = config.merchantAccount;
                     initPayments(paymentData, this.isProductView).then((responseJSON) => {
                         let response = JSON.parse(responseJSON);
@@ -334,6 +341,7 @@ define([
                     }).catch((error) => {
                         console.error('Payment initiation failed', error);
                     });
+
                 },
                 onShippingAddressChange: async (data, actions, component) => {
                     try {
@@ -343,10 +351,7 @@ define([
                         await this.setShippingAndTotals(shippingMethod, data.shippingAddress);
 
                         const currentPaymentData = component.paymentData;
-                        const cartData = customerData.get('cart')();
-                        this.quoteId = cartData.guest_masked_id
-                            ? cartData.guest_masked_id
-                            : null;
+
                         let response = await updatePaypalOrder.updateOrder(
                             this.quoteId,
                             currentPaymentData,

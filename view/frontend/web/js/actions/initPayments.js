@@ -27,9 +27,9 @@ define([
     }
 
     function getCartId() {
-        // This is just a placeholder. You might need to adjust this to properly get the cart ID for a logged-in user.
-        // The implementation may vary depending on how you retrieve the cart ID in your Magento setup.
-        return quote.getQuoteId();
+        return maskedIdModel().getMaskedId()
+            ? maskedIdModel().getMaskedId()
+            : null;
     }
 
     return function (paymentData, isProductView) {
