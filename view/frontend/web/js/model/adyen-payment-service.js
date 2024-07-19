@@ -21,14 +21,14 @@ define(
     ){
         'use strict';
 
-        function paymentDetails(data, orderId, isMultishipping = false, quoteId = null) {
+        function paymentDetails(data, orderId, quoteId = null) {
             let serviceUrl;
             let payload = {
                 'payload': JSON.stringify(data),
                 'orderId': orderId
             };
             const isLoggedIn = getIsLoggedIn();
-            if (isLoggedIn || isMultishipping) {
+            if (isLoggedIn) {
                 serviceUrl = urlBuilder.createUrl(
                     '/adyen/carts/mine/payments-details',
                     {}
