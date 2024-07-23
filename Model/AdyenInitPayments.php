@@ -16,7 +16,6 @@ namespace Adyen\ExpressCheckout\Model;
 use Adyen\ExpressCheckout\Api\AdyenInitPaymentsInterface;
 use Adyen\Payment\Gateway\Http\Client\TransactionPayment;
 use Adyen\Payment\Gateway\Http\TransferFactory;
-use Adyen\Payment\Helper\ChargedCurrency;
 use Adyen\Payment\Helper\Config;
 use Adyen\Payment\Helper\Data;
 use Adyen\Payment\Helper\PaymentResponseHandler;
@@ -40,11 +39,6 @@ class AdyenInitPayments implements AdyenInitPaymentsInterface
      * @var Config
      */
     private Config $configHelper;
-
-    /**
-     * @var ChargedCurrency
-     */
-    private ChargedCurrency $chargedCurrency;
 
     /**
      * @var ReturnUrlHelper
@@ -131,7 +125,6 @@ class AdyenInitPayments implements AdyenInitPaymentsInterface
                 __('Payments call failed because stateData was not a valid JSON!')
             );
         }
-
         // Validate the keys in stateData and remove invalid keys
         $stateData = $this->checkoutStateDataValidator->getValidatedAdditionalData($stateData);
         $paymentsRequest = $this->buildPaymentsRequest($quote, $stateData);
@@ -160,9 +153,6 @@ class AdyenInitPayments implements AdyenInitPaymentsInterface
      */
     protected function buildPaymentsRequest(Quote $quote, array $stateData): array
     {
-        $chargedQuoteCurrency = $this->chargedCurrency->getQuoteAmountCurrency($quote);
-        $currency = $chargedQuoteCurrency->getCurrencyCode();
-
         $merchantReference = $quote->getReservedOrderId();
         $storeId = $quote->getStoreId();
         $returnUrl = sprintf(
@@ -170,11 +160,12 @@ class AdyenInitPayments implements AdyenInitPaymentsInterface
             $this->returnUrlHelper->getStoreReturnUrl($storeId),
             $merchantReference
         );
-
+        $currency = $quote->getQuoteCurrencyCode();
+        $cartSubtotal = $quote->getSubtotal();
         $request = [
             'amount' => [
                 'currency' => $currency,
-                'value' => $this->adyenHelper->formatAmount($chargedQuoteCurrency->getAmount(), $currency)
+                'value' => $this->adyenHelper->formatAmount($cartSubtotal, $currency)
             ],
             'reference' => $merchantReference,
             'returnUrl' => $returnUrl,

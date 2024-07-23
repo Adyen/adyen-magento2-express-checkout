@@ -5,8 +5,7 @@
 <?php $serializedCheckoutConfig = /* @noEscape */ $viewModel->getSerializedCheckoutConfig();
 
 $checkoutConfig = __('window.checkoutConfig = %1;', $serializedCheckoutConfig);
-?>
-<?php $adyenData = $viewModel->getAdyenData();
+$adyenData = $viewModel->getAdyenData();
 $serializedAdyenData = json_encode($adyenData, JSON_HEX_TAG);
 ?>
 <script>

@@ -14,6 +14,6 @@
     <event name="shortcut_buttons_container">
         <observer name="adyen_applepay_shortcuts" instance="Adyen\ExpressCheckout\Observer\AddApplePayShortcuts" />
         <observer name="adyen_googlepay_shortcuts" instance="Adyen\ExpressCheckout\Observer\AddGooglePayShortcuts" />
-        <observer name="adyen_paypal_shortcuts" instance="Adyen\ExpressCheckout\Observer\AddPaypalShortcuts" />
+        <observer name="adyen_paypal_express_shortcuts" instance="Adyen\ExpressCheckout\Observer\AddPaypalShortcuts" />
     </event>
 </config>

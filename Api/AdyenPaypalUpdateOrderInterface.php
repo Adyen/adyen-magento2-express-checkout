@@ -18,8 +18,8 @@ interface AdyenPaypalUpdateOrderInterface
     /**
      * @param int $adyenCartId
      * @param string $paymentData
-     * @param string[]|null $deliveryMethods
+     * @param string $deliveryMethods
      * @return mixed
      */
-    public function execute(int $adyenCartId, string $paymentData, $deliveryMethods = []): string;
+    public function execute(int $adyenCartId, string $paymentData, string $deliveryMethods = ''): string;
 }

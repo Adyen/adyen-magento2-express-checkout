@@ -18,8 +18,8 @@ interface GuestAdyenPaypalUpdateOrderInterface
     /**
      * @param string $maskedQuoteId
      * @param string $paymentData
-     * @param string[]|null $deliveryMethods
+     * @param string $deliveryMethods
      * @return mixed
      */
-    public function execute(string $maskedQuoteId, string $paymentData, $deliveryMethods = []): string;
+    public function execute(string $maskedQuoteId, string $paymentData, string $deliveryMethods = ''): string;
 }

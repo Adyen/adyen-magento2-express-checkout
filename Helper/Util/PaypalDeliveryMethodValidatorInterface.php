@@ -32,8 +32,8 @@ interface PaypalDeliveryMethodValidatorInterface
     /**
      * Validates and clean-up the invalid data from PayPal's delivery methods and returns a valid array.
      *
-     * @param array $deliveryMethods
+     * @param array $deliveryMethod
      * @return array
      */
-    public function getValidatedDeliveryMethods(array $deliveryMethods): array;
+    public function getValidatedDeliveryMethod(array $deliveryMethod): array;
 }

@@ -85,17 +85,36 @@ class AdyenPaypalUpdateOrder implements AdyenPaypalUpdateOrderInterface
     /**
      * @param int $adyenCartId
      * @param string $paymentData
-     * @param array $deliveryMethods
+     * @param string $deliveryMethods
      * @return string
      * @throws NoSuchEntityException
      * @throws ValidatorException
      */
-    public function execute(int $adyenCartId, string $paymentData, $deliveryMethods = []): string
+    public function execute(int $adyenCartId, string $paymentData, string $deliveryMethods = ''): string
     {
         /** @var Quote $quote */
         $quote = $this->cartRepository->get($adyenCartId);
         $merchantReference = $quote->getReservedOrderId();
+        $deliveryMethods = json_decode($deliveryMethods, true);
 
+        foreach ($deliveryMethods as &$method) {
+            // Ensure the amount value is an integer
+            $method['amount']['value'] = (int) $method['amount']['value'];
+
+            // Validate the current method
+            $validatedMethod = $this->deliveryMethodValidator->getValidatedDeliveryMethod([$method]);
+
+            // Replace the original method with the validated one
+            if (!empty($validatedMethod)) {
+                $method = $validatedMethod[0];
+            }
+        }
+        unset($method);
+
+        // Handle the case where JSON decoding fails
+        if (json_last_error() !== JSON_ERROR_NONE) {
+            throw new \InvalidArgumentException('Invalid JSON provided for delivery methods.');
+        }
         if (is_null($merchantReference)) {
             throw new ValidatorException(
                 __('Order ID has not been reserved!')
@@ -122,18 +141,16 @@ class AdyenPaypalUpdateOrder implements AdyenPaypalUpdateOrderInterface
         }
 
         $storeId = $quote->getStoreId();
-        $deliveryMethods = $this->deliveryMethodValidator->getValidatedDeliveryMethods($deliveryMethods);
-
         $quoteAmountCurrency = $this->chargedCurrency->getQuoteAmountCurrency($quote);
         $amountCurrency = $quoteAmountCurrency->getCurrencyCode();
-        $amountValue = $quoteAmountCurrency->getAmount();
+        $amountValue = $this->adyenHelper->formatAmount($quoteAmountCurrency->getAmount(), $amountCurrency);
 
         try {
             $paypalUpdateOrderService = $this->paypalUpdateOrderHelper->createAdyenUtilityApiService($storeId);
             $paypalUpdateOrderRequest = $this->paypalUpdateOrderHelper->buildPaypalUpdateOrderRequest(
                 $pspReference,
                 $paymentData,
-                $this->adyenHelper->formatAmount($amountValue, $amountCurrency),
+                $amountValue,
                 $amountCurrency,
                 $deliveryMethods
             );

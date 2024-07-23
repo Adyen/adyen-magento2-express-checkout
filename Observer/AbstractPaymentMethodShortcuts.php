@@ -63,7 +63,7 @@ abstract class AbstractPaymentMethodShortcuts implements ObserverInterface
         }
         /** @var ShortcutButtons $shortcutButtons */
         $shortcutButtons = $observer->getEvent()->getContainer();
-        $shortcut = $shortcutButtons->getLayout()->createBlock(Button::class);
+        $shortcut = $shortcutButtons->getLayout()->createBlock($this->shortcutButton::class);
         $isProductView = false;
         $isCart = false;
         $handles = $shortcutButtons->getLayout()->getUpdate()->getHandles();
