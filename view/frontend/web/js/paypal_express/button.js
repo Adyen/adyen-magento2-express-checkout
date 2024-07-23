@@ -42,6 +42,7 @@ define([
     'jquery',
     'Adyen_ExpressCheckout/js/model/virtualQuote',
     'Adyen_ExpressCheckout/js/model/maskedId',
+    'Adyen_ExpressCheckout/js/helpers/manageQuoteIdOnPageRefresh'
 ], function (
     Component,
     $t,
@@ -85,7 +86,8 @@ define([
     getApiUrl,
     $,
     virtualQuoteModel,
-    maskedIdModel
+    maskedIdModel,
+    manageQuoteIdOnPageRefresh
 ) {
     'use strict';
 
@@ -112,6 +114,7 @@ define([
             // Set the config and countries model
             configModel().setConfig(config);
             countriesModel();
+            await manageQuoteIdOnPageRefresh();
 
             // Determine if this is a product view page
             this.isProductView = config.isProductView;
@@ -145,6 +148,8 @@ define([
             // Configuration setup
             try {
                 const response = await getExpressMethods().getRequest(element);
+                localStorage.setItem("quoteId", response.masked_quote_id);
+
                 const cart = customerData.get('cart');
                 virtualQuoteModel().setIsVirtual(true, response);
 
@@ -520,21 +525,21 @@ define([
 
                     let shippingMethods = [];
 
-                    for (let i = 0; i < result.length; i++) {
-                        if (typeof result[i].method_code !== 'string') {
+                    for (let method of result) {
+                        if (typeof method.method_code !== 'string') {
                             continue;
                         }
-                        let method = {
-                            identifier: result[i].method_code,
-                            label: result[i].method_title,
-                            detail: result[i].carrier_title ? result[i].carrier_title : '',
-                            amount: parseFloat(result[i].amount).toFixed(2),
-                            carrierCode: result[i].carrier_code,
+                        let shippingMethod = {
+                            identifier: method.method_code,
+                            label: method.method_title,
+                            detail: method.carrier_title ? method.carrier_title : '',
+                            amount: parseFloat(method.amount).toFixed(2),
+                            carrierCode: method.carrier_code,
                         };
-                        shippingMethods.push(method);
-                        this.shippingMethods[result[i].method_code] = result[i];
+                        shippingMethods.push(shippingMethod);
+                        this.shippingMethods[method.method_code] = method;
                         if (!this.shippingMethod) {
-                            this.shippingMethod = result[i].method_code;
+                            this.shippingMethod = method.method_code;
                         }
                     }
                     resolve(shippingMethods);
@@ -581,7 +586,7 @@ define([
             let self = this;
             let response = JSON.parse(responseJSON);
 
-            if (!!response.isFinal) {
+            if (response.isFinal) {
                 // Status is final redirect to the success page
                 redirectToSuccess();
             } else {
@@ -591,7 +596,7 @@ define([
         },
 
         handleAction: function(action, orderId) {
-            var self = this;
+            let self = this;
             let popupModal;
 
             fullScreenLoader.stopLoader();
