@@ -120,9 +120,9 @@ define([
                 // Retrieve the PayPal payment method
                 let paypalPaymentMethod = await getPaymentMethod('paypal', this.isProductView);
                 virtualQuoteModel().setIsVirtual(false);
-                paypalPaymentMethod.configuration.intent = 'authorize';
 
                 if (!paypalPaymentMethod) {
+                    paypalPaymentMethod.configuration.intent = 'authorize';
                     // Subscribe to cart updates if PayPal method is not immediately available
                     const cart = customerData.get('cart');
                     cart.subscribe(function () {
