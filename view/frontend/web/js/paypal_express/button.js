@@ -637,9 +637,7 @@ define([
             return Promise.all([
                 setShippingInformation(shippingInformationPayload, this.isProductView),
                 setTotalsInfo(totalsPayload, this.isProductView)
-            ]).then(() => {
-                console.log("Shipping and totals information set");
-            }).catch(error => {
+            ]).catch(error => {
                 console.error('Failed to set shipping and totals information:', error);
                 throw new Error($t('Failed to set shipping and totals information. Please try again later.'));
             });
