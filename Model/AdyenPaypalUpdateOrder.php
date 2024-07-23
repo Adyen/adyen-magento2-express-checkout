@@ -102,7 +102,7 @@ class AdyenPaypalUpdateOrder implements AdyenPaypalUpdateOrderInterface
             $method['amount']['value'] = (int) $method['amount']['value'];
 
             // Validate the current method
-            $validatedMethod = $this->deliveryMethodValidator->getValidatedDeliveryMethods([$method]);
+            $validatedMethod = $this->deliveryMethodValidator->getValidatedDeliveryMethod([$method]);
 
             // Replace the original method with the validated one
             if (!empty($validatedMethod)) {

@@ -17,15 +17,15 @@ use Adyen\Payment\Helper\Util\DataArrayValidator;
 
 class PaypalDeliveryMethodValidator implements PaypalDeliveryMethodValidatorInterface
 {
-    public function getValidatedDeliveryMethods(array $deliveryMethods): array
+    public function getValidatedDeliveryMethod(array $deliveryMethod): array
     {
-        if (!empty($deliveryMethods)) {
-            $deliveryMethods = DataArrayValidator::getArrayOnlyWithApprovedKeys(
-                $deliveryMethods,
+        if (!empty($deliveryMethod)) {
+            $deliveryMethod = DataArrayValidator::getArrayOnlyWithApprovedKeys(
+                $deliveryMethod,
                 self::DELIVERY_METHOD_FIELDS
             );
         }
 
-        return $deliveryMethods;
+        return $deliveryMethod;
     }
 }
