@@ -151,7 +151,6 @@ define([
 
                 const adyenCheckoutComponent = await new AdyenCheckout({
                     locale: config.locale,
-                    originKey: config.originkey,
                     environment: config.checkoutenv,
                     analytics: {
                         analyticsData: {
