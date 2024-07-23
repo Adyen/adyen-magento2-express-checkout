@@ -16,7 +16,6 @@ namespace Adyen\ExpressCheckout\Model;
 use Adyen\ExpressCheckout\Api\AdyenInitPaymentsInterface;
 use Adyen\Payment\Gateway\Http\Client\TransactionPayment;
 use Adyen\Payment\Gateway\Http\TransferFactory;
-use Adyen\Payment\Helper\ChargedCurrency;
 use Adyen\Payment\Helper\Config;
 use Adyen\Payment\Helper\Data;
 use Adyen\Payment\Helper\PaymentResponseHandler;
@@ -40,11 +39,6 @@ class AdyenInitPayments implements AdyenInitPaymentsInterface
      * @var Config
      */
     private Config $configHelper;
-
-    /**
-     * @var ChargedCurrency
-     */
-    private ChargedCurrency $chargedCurrency;
 
     /**
      * @var ReturnUrlHelper
@@ -166,8 +160,7 @@ class AdyenInitPayments implements AdyenInitPaymentsInterface
             $this->returnUrlHelper->getStoreReturnUrl($storeId),
             $merchantReference
         );
-        $chargedQuoteCurrency = $this->chargedCurrency->getQuoteAmountCurrency($quote);
-        $currency = $chargedQuoteCurrency->getCurrencyCode();
+        $currency = $quote->getQuoteCurrencyCode();
         $cartSubtotal = $quote->getSubtotal();
         $request = [
             'amount' => [
