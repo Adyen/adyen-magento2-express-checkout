@@ -319,12 +319,6 @@ define([
                 },
                 onSubmit: (state, component) => {
                     const paymentData = state.data;
-                    paymentData.amount = {
-                        currency: currency,
-                        value: this.isProductView
-                            ? formatAmount(totalsModel().getTotal() * 100)
-                            : formatAmount(getCartSubtotal() * 100)
-                    };
                     const cartData = customerData.get('cart')();
                     this.quoteId = cartData.guest_masked_id
                         ? cartData.guest_masked_id

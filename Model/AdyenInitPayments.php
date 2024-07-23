@@ -131,10 +131,9 @@ class AdyenInitPayments implements AdyenInitPaymentsInterface
                 __('Payments call failed because stateData was not a valid JSON!')
             );
         }
-        $amount = $stateData['amount'];
         // Validate the keys in stateData and remove invalid keys
         $stateData = $this->checkoutStateDataValidator->getValidatedAdditionalData($stateData);
-        $paymentsRequest = $this->buildPaymentsRequest($quote, $stateData, $amount);
+        $paymentsRequest = $this->buildPaymentsRequest($quote, $stateData);
 
         $transfer = $this->transferFactory->create([
             'body' => $paymentsRequest,
@@ -158,7 +157,7 @@ class AdyenInitPayments implements AdyenInitPaymentsInterface
      * @param array $stateData
      * @return array
      */
-    protected function buildPaymentsRequest(Quote $quote, array $stateData, array $amount): array
+    protected function buildPaymentsRequest(Quote $quote, array $stateData): array
     {
         $merchantReference = $quote->getReservedOrderId();
         $storeId = $quote->getStoreId();
@@ -167,9 +166,14 @@ class AdyenInitPayments implements AdyenInitPaymentsInterface
             $this->returnUrlHelper->getStoreReturnUrl($storeId),
             $merchantReference
         );
-
+        $chargedQuoteCurrency = $this->chargedCurrency->getQuoteAmountCurrency($quote);
+        $currency = $chargedQuoteCurrency->getCurrencyCode();
+        $cartSubtotal = $quote->getSubtotal();
         $request = [
-            'amount' => $amount,
+            'amount' => [
+                'currency' => $currency,
+                'value' => $this->adyenHelper->formatAmount($cartSubtotal, $currency)
+            ],
             'reference' => $merchantReference,
             'returnUrl' => $returnUrl,
             'merchantAccount' => $this->configHelper->getMerchantAccount($storeId),

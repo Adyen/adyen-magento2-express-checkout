@@ -36,7 +36,7 @@ class SubmitQuoteObserver implements ObserverInterface
         }
 
         $order->setState(Order::STATE_NEW);
-        $order->setStatus(Order::STATE_NEW);
+        $order->setStatus($order->getConfig()->getStateDefaultStatus(Order:: STATE_NEW));
         $order->save();
     }
 }

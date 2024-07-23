@@ -141,8 +141,6 @@ class AdyenPaypalUpdateOrder implements AdyenPaypalUpdateOrderInterface
         }
 
         $storeId = $quote->getStoreId();
-
-
         $quoteAmountCurrency = $this->chargedCurrency->getQuoteAmountCurrency($quote);
         $amountCurrency = $quoteAmountCurrency->getCurrencyCode();
         $amountValue = $this->adyenHelper->formatAmount($quoteAmountCurrency->getAmount(), $amountCurrency);
