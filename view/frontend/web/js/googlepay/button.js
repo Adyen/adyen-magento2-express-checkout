@@ -32,6 +32,7 @@ define([
     'Adyen_ExpressCheckout/js/helpers/setExpressMethods',
     'Adyen_ExpressCheckout/js/helpers/validatePdpForm',
     'Adyen_ExpressCheckout/js/helpers/getMaskedIdFromCart',
+    'Adyen_ExpressCheckout/js/helpers/manageQuoteIdOnPageRefresh',
     'Adyen_ExpressCheckout/js/model/maskedId',
     'Adyen_ExpressCheckout/js/model/config',
     'Adyen_ExpressCheckout/js/model/countries',
@@ -74,6 +75,7 @@ define([
         validatePdpForm,
         getMaskedIdFromCart,
         maskedIdModel,
+        manageQuoteIdOnPageRefresh,
         configModel,
         countriesModel,
         totalsModel,
@@ -107,6 +109,7 @@ define([
                 configModel().setConfig(config);
                 countriesModel();
 
+                await manageQuoteIdOnPageRefresh();
                 this.isProductView = config.isProductView;
 
                 // If express methods is not set then set it.
@@ -133,6 +136,8 @@ define([
 
             initializeOnPDP: async function (config, element) {
                 const response = await getExpressMethods().getRequest(element);
+
+                localStorage.setItem("quoteId", response.masked_quote_id);
                 const cart = customerData.get('cart');
                 virtualQuoteModel().setIsVirtual(true, response);
 
@@ -171,10 +176,26 @@ define([
 
             initialiseGooglePayComponent: async function (googlePaymentMethod, element) {
                 const config = configModel().getConfig();
+                const adyenData = window.adyenData;
+
                 this.checkoutComponent = await new AdyenCheckout({
                     locale: config.locale,
                     clientKey: config.originkey,
                     environment: config.checkoutenv,
+                    analytics: {
+                        analyticsData: {
+                            applicationInfo: {
+                                merchantApplication: {
+                                    name: adyenData['merchant-application-name'],
+                                    version: adyenData['merchant-application-version']
+                                },
+                                externalPlatform: {
+                                    name: adyenData['external-platform-name'],
+                                    version: adyenData['external-platform-version']
+                                }
+                            }
+                        }
+                    },
                     paymentMethodsResponse: getPaymentMethod('googlepay', this.isProductView),
                     onAdditionalDetails: this.handleOnAdditionalDetails.bind(this),
                     risk: {
@@ -256,6 +277,7 @@ define([
                         format: 'FULL',
                         phoneNumberRequired: true
                     },
+                    isExpress: true,
                     callbackIntents: !isVirtual ? ['SHIPPING_ADDRESS', 'SHIPPING_OPTION'] : ['OFFER'],
                     transactionInfo: {
                         totalPriceStatus: 'ESTIMATED',

@@ -25,6 +25,7 @@ define([
     'Adyen_ExpressCheckout/js/helpers/redirectToSuccess',
     'Adyen_ExpressCheckout/js/helpers/setExpressMethods',
     'Adyen_ExpressCheckout/js/helpers/validatePdpForm',
+    'Adyen_ExpressCheckout/js/helpers/manageQuoteIdOnPageRefresh',
     'Adyen_ExpressCheckout/js/model/config',
     'Adyen_ExpressCheckout/js/model/countries',
     'Adyen_ExpressCheckout/js/model/totals',
@@ -58,6 +59,7 @@ define([
         redirectToSuccess,
         setExpressMethods,
         validatePdpForm,
+        manageQuoteIdOnPageRefresh,
         configModel,
         countriesModel,
         totalsModel,
@@ -80,11 +82,14 @@ define([
                 configModel().setConfig(config);
                 countriesModel();
 
+                await manageQuoteIdOnPageRefresh();
                 this.isProductView = config.isProductView;
 
                 // If express methods is not set then set it.
                 if (this.isProductView) {
                     const response = await getExpressMethods().getRequest(element);
+
+                    localStorage.setItem("quoteId", response.masked_quote_id);
                     const cart = customerData.get('cart');
 
                     virtualQuoteModel().setIsVirtual(true, response);
@@ -142,10 +147,26 @@ define([
 
             initialiseApplePayComponent: async function (applePaymentMethod, element) {
                 const config = configModel().getConfig();
+                const adyenData = window.adyenData;
+
                 const adyenCheckoutComponent = await new AdyenCheckout({
                     locale: config.locale,
                     originKey: config.originkey,
                     environment: config.checkoutenv,
+                    analytics: {
+                        analyticsData: {
+                            applicationInfo: {
+                                merchantApplication: {
+                                    name: adyenData['merchant-application-name'],
+                                    version: adyenData['merchant-application-version']
+                                },
+                                externalPlatform: {
+                                    name: adyenData['external-platform-name'],
+                                    version: adyenData['external-platform-version']
+                                }
+                            }
+                        }
+                    },
                     risk: {
                         enabled: false
                     },
@@ -249,6 +270,7 @@ define([
                             : formatAmount(getCartSubtotal() * 100),
                         currency: currency
                     },
+                    isExpress: true,
                     supportedNetworks: getSupportedNetworks(),
                     merchantCapabilities: ['supports3DS'],
                     requiredShippingContactFields: ['postalAddress', 'name', 'email', 'phone'],
