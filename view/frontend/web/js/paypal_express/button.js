@@ -42,7 +42,8 @@ define([
     'jquery',
     'Adyen_ExpressCheckout/js/model/virtualQuote',
     'Adyen_ExpressCheckout/js/model/maskedId',
-    'Adyen_ExpressCheckout/js/helpers/manageQuoteIdOnPageRefresh'
+    'Adyen_ExpressCheckout/js/helpers/manageQuoteIdOnPageRefresh',
+    'Adyen_ExpressCheckout/js/helpers/getCurrentPage'
 ], function (
     Component,
     $t,
@@ -87,7 +88,8 @@ define([
     $,
     virtualQuoteModel,
     maskedIdModel,
-    manageQuoteIdOnPageRefresh
+    manageQuoteIdOnPageRefresh,
+    getCurrentPage
 ) {
     'use strict';
 
@@ -200,6 +202,8 @@ define([
             // Configuration setup
             const config = configModel().getConfig();
             const adyenData = window.adyenData;
+            let currentPage = getCurrentPage(this.isProductView, element);
+
             const adyenCheckoutComponent = await new AdyenCheckout({
                 locale: config.locale,
                 originKey: config.originkey,
@@ -222,6 +226,7 @@ define([
                     enabled: false
                 },
                 isExpress: true,
+                expressPage: currentPage,
                 clientKey: AdyenConfiguration.getClientKey()
             });
 
@@ -444,7 +449,7 @@ define([
                     fullScreenLoader.startLoader();
                     request.orderId = this.orderId;
 
-                    adyenPaymentService.paymentDetails(request,this.orderId,false,this.quoteId).
+                    adyenPaymentService.paymentDetails(request,this.orderId,this.quoteId).
                     done(function(responseJSON) {
                         fullScreenLoader.stopLoader();
                         self.handleAdyenResult(responseJSON, self.orderId);

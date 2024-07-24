@@ -38,7 +38,8 @@ define([
     'Adyen_ExpressCheckout/js/model/countries',
     'Adyen_ExpressCheckout/js/model/totals',
     'Adyen_ExpressCheckout/js/model/currency',
-    'Adyen_ExpressCheckout/js/model/virtualQuote'
+    'Adyen_ExpressCheckout/js/model/virtualQuote',
+    'Adyen_ExpressCheckout/js/helpers/getCurrentPage'
 ],
     function (
         $,
@@ -80,7 +81,8 @@ define([
         countriesModel,
         totalsModel,
         currencyModel,
-        virtualQuoteModel
+        virtualQuoteModel,
+        getCurrentPage
     ) {
         'use strict';
 
@@ -177,6 +179,7 @@ define([
             initialiseGooglePayComponent: async function (googlePaymentMethod, element) {
                 const config = configModel().getConfig();
                 const adyenData = window.adyenData;
+                let currentPage = getCurrentPage(this.isProductView, element);
 
                 this.checkoutComponent = await new AdyenCheckout({
                     locale: config.locale,
@@ -198,6 +201,8 @@ define([
                     },
                     paymentMethodsResponse: getPaymentMethod('googlepay', this.isProductView),
                     onAdditionalDetails: this.handleOnAdditionalDetails.bind(this),
+                    isExpress: true,
+                    expressPage: currentPage,
                     risk: {
                         enabled: false
                     }
