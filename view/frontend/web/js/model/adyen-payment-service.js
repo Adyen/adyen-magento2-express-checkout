@@ -25,7 +25,8 @@ define(
             let serviceUrl;
             let payload = {
                 'payload': JSON.stringify(data),
-                'orderId': orderId
+                'orderId': orderId,
+                'quoteId': quoteId
             };
             const isLoggedIn = getIsLoggedIn();
             if (isLoggedIn) {

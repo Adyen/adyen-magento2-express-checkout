@@ -73,7 +73,6 @@ class AdyenInitPayments implements AdyenInitPaymentsInterface
     /**
      * @param CartRepositoryInterface $cartRepository
      * @param Config $configHelper
-     * @param ChargedCurrency $chargedCurrency
      * @param ReturnUrlHelper $returnUrlHelper
      * @param CheckoutStateDataValidator $checkoutStateDataValidator
      * @param TransferFactory $transferFactory
@@ -84,7 +83,6 @@ class AdyenInitPayments implements AdyenInitPaymentsInterface
     public function __construct(
         CartRepositoryInterface $cartRepository,
         Config $configHelper,
-        ChargedCurrency $chargedCurrency,
         ReturnUrlHelper $returnUrlHelper,
         CheckoutStateDataValidator $checkoutStateDataValidator,
         TransferFactory $transferFactory,
@@ -94,7 +92,6 @@ class AdyenInitPayments implements AdyenInitPaymentsInterface
     ) {
         $this->cartRepository = $cartRepository;
         $this->configHelper = $configHelper;
-        $this->chargedCurrency = $chargedCurrency;
         $this->returnUrlHelper = $returnUrlHelper;
         $this->checkoutStateDataValidator = $checkoutStateDataValidator;
         $this->transferFactory = $transferFactory;

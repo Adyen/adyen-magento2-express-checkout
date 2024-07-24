@@ -36,7 +36,7 @@
                 <supports_manual_capture>1</supports_manual_capture>
                 <supports_auto_capture>1</supports_auto_capture>
                 <is_wallet>0</is_wallet>
-                <group>adyen-alternative-payment-method</group>
+                <group>adyen-express-payment-method</group>
             </adyen_paypal_express>
         </payment>
     </default>
