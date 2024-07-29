@@ -26,10 +26,15 @@
     <preference for="Adyen\ExpressCheckout\Api\Data\ProductCartParamsInterface" type="Adyen\ExpressCheckout\Model\ProductCartParams" />
     <preference for="Adyen\ExpressCheckout\Api\Data\MethodResponse\ConfigurationInterface" type="Adyen\ExpressCheckout\Model\MethodResponse\Configuration" />
     <preference for="Adyen\ExpressCheckout\Api\Data\AdyenPaymentMethodsInterface" type="Adyen\ExpressCheckout\Model\AdyenPaymentMethods" />
+    <preference for="Adyen\ExpressCheckout\Api\AdyenInitPaymentsInterface" type="Adyen\ExpressCheckout\Model\AdyenInitPayments" />
+    <preference for="Adyen\ExpressCheckout\Api\GuestAdyenInitPaymentsInterface" type="Adyen\ExpressCheckout\Model\GuestAdyenInitPayments" />
     <preference for="Adyen\ExpressCheckout\Model\ConfigurationInterface" type="Adyen\ExpressCheckout\Model\Configuration" />
     <preference for="Adyen\ExpressCheckout\Model\ExpressDataBuilderInterface" type="Adyen\ExpressCheckout\Model\ExpressDataBuilder" />
     <preference for="Adyen\ExpressCheckout\Model\GetAdyenPaymentMethodsByProductInterface" type="Adyen\ExpressCheckout\Model\GetAdyenPaymentMethodsByProduct" />
     <preference for="Adyen\ExpressCheckout\Model\IsExpressMethodResolverInterface" type="Adyen\ExpressCheckout\Model\IsExpressMethodResolver" />
+    <preference for="Adyen\ExpressCheckout\Api\AdyenPaypalUpdateOrderInterface" type="Adyen\ExpressCheckout\Model\AdyenPaypalUpdateOrder" />
+    <preference for="Adyen\ExpressCheckout\Api\GuestAdyenPaypalUpdateOrderInterface" type="Adyen\ExpressCheckout\Model\GuestAdyenPaypalUpdateOrder" />
+
     <type name="Adyen\Payment\Gateway\Request\BrowserInfoDataBuilder">
         <plugin name="AddLanguageToBrowserInfoForGooglePay" type="Adyen\ExpressCheckout\Plugin\Gateway\Request\BrowserInfoDataBuilder" />
     </type>
@@ -58,6 +63,7 @@
                 <item name="applepay" xsi:type="string">applepay</item>
                 <item name="googlepay" xsi:type="string">googlepay</item>
                 <item name="googlepay_alt" xsi:type="string">paywithgoogle</item>
+                <item name="paypal" xsi:type="string">paypal</item>
             </argument>
         </arguments>
     </type>
@@ -68,4 +74,31 @@
             </argument>
         </arguments>
     </type>
+    <virtualType name="AdyenPaymentPaypalExpressFacade" type="Adyen\Payment\Model\Method\Adapter">
+        <arguments>
+            <argument name="code" xsi:type="string">adyen_paypal_express</argument>
+            <argument name="formBlockType" xsi:type="string">Magento\Payment\Block\Form</argument>
+            <argument name="infoBlockType" xsi:type="string">Adyen\Payment\Block\Info\PaymentMethodInfo</argument>
+            <argument name="valueHandlerPool" xsi:type="object">AdyenPaymentPaypalExpressValueHandlerPool</argument>
+            <argument name="validatorPool" xsi:type="object">AdyenPaymentValidatorPool</argument>
+            <argument name="commandPool" xsi:type="object">AdyenPaymentCommandPool</argument>
+        </arguments>
+    </virtualType>
+    <virtualType name="AdyenPaymentPaypalExpressValueHandlerPool" type="Magento\Payment\Gateway\Config\ValueHandlerPool">
+        <arguments>
+            <argument name="handlers" xsi:type="array">
+                <item name="default" xsi:type="string">AdyenPaymentPaypalExpressConfigValueHandler</item>
+            </argument>
+        </arguments>
+    </virtualType>
+    <virtualType name="AdyenPaymentPaypalExpressConfigValueHandler" type="Magento\Payment\Gateway\Config\ConfigValueHandler">
+        <arguments>
+            <argument name="configInterface" xsi:type="object">AdyenPaymentPaypalExpressConfig</argument>
+        </arguments>
+    </virtualType>
+    <virtualType name="AdyenPaymentPaypalExpressConfig" type="Magento\Payment\Gateway\Config\Config">
+        <arguments>
+            <argument name="methodCode" xsi:type="string">adyen_paypal_express</argument>
+        </arguments>
+    </virtualType>
 </config>

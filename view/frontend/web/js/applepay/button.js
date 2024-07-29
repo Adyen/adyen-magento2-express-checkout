@@ -30,6 +30,7 @@ define([
     'Adyen_ExpressCheckout/js/model/countries',
     'Adyen_ExpressCheckout/js/model/totals',
     'Adyen_ExpressCheckout/js/model/currency',
+    'Adyen_ExpressCheckout/js/helpers/getCurrentPage',
     'Adyen_ExpressCheckout/js/model/virtualQuote'
 ],
     function (
@@ -64,6 +65,7 @@ define([
         countriesModel,
         totalsModel,
         currencyModel,
+        getCurrentPage,
         virtualQuoteModel
     ) {
         'use strict';
@@ -148,10 +150,10 @@ define([
             initialiseApplePayComponent: async function (applePaymentMethod, element) {
                 const config = configModel().getConfig();
                 const adyenData = window.adyenData;
+                let currentPage = getCurrentPage(this.isProductView, element);
 
                 const adyenCheckoutComponent = await new AdyenCheckout({
                     locale: config.locale,
-                    originKey: config.originkey,
                     environment: config.checkoutenv,
                     analytics: {
                         analyticsData: {
@@ -170,6 +172,8 @@ define([
                     risk: {
                         enabled: false
                     },
+                    isExpress: true,
+                    expressPage: currentPage,
                     clientKey: AdyenConfiguration.getClientKey()
                 });
                 const applePayConfiguration = this.getApplePayConfiguration(applePaymentMethod, element);

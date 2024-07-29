@@ -51,8 +51,8 @@ class CheckoutDataBuilder
             /** @var PaymentDataObject $paymentDataObject */
             $paymentDataObject = SubjectReader::readPayment($buildSubject);
             $payment = $paymentDataObject->getPayment();
-            $isAppleOrGooglePay = $this->isExpressMethodResolver->execute($payment);
-            if ($isAppleOrGooglePay === true) {
+            $isExpressMethod = $this->isExpressMethodResolver->execute($payment);
+            if ($isExpressMethod === true) {
                 $paymentMethodStateData = $paymentAdditionalInfo['stateData']['paymentMethod'] ?? [];
                 $result['body']['paymentMethod'] = $paymentMethodStateData;
             }
