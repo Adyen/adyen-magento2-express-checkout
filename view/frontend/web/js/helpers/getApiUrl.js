@@ -7,9 +7,13 @@ define([
     'use strict';
 
     return function (uri, isProductView) {
-        const maskedId = isProductView
+        let maskedId = isProductView
             ? maskedIdModel().getMaskedId()
             : getMaskedIdFromCart();
+
+        if(!maskedId) {
+            maskedId = localStorage.getItem("quoteId");
+        }
 
         const config = configModel().getConfig();
 

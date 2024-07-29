@@ -27,9 +27,7 @@ define([
     }
 
     function getCartId() {
-        return maskedIdModel().getMaskedId()
-            ? maskedIdModel().getMaskedId()
-            : null;
+        return null;
     }
 
     return function (paymentData, isProductView) {
@@ -51,9 +49,10 @@ define([
 
         const url = urlBuilder.createUrl(urlPath, urlParams);
         paymentData.paymentMethod.subtype = "express";
-        const payload = {
+
+        let payload = {
             stateData: JSON.stringify(paymentData),
-            maskedQuoteId: adyenCartId
+            adyenCartId: adyenCartId // Include adyenCartId in both cases
         };
 
         return new Promise(function (resolve, reject) {

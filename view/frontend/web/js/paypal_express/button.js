@@ -151,7 +151,7 @@ define([
             try {
                 const response = await getExpressMethods().getRequest(element);
                 localStorage.setItem("quoteId", response.masked_quote_id);
-
+                this.quoteId = response.masked_quote_id;
                 const cart = customerData.get('cart');
                 virtualQuoteModel().setIsVirtual(true, response);
 
@@ -330,9 +330,12 @@ define([
                 onSubmit: (state, component) => {
                     const paymentData = state.data;
                     const cartData = customerData.get('cart')();
-                    this.quoteId = cartData.guest_masked_id
-                        ? cartData.guest_masked_id
-                        : maskedIdModel().getMaskedId();
+                    if(!this.isProductView)
+                    {
+                        this.quoteId = cartData.guest_masked_id
+                            ? cartData.guest_masked_id
+                            : maskedIdModel().getMaskedId();
+                    }
 
                     paymentData.merchantAccount = config.merchantAccount;
                     initPayments(paymentData, this.isProductView).then((responseJSON) => {
@@ -350,6 +353,10 @@ define([
                 onShippingAddressChange: async (data, actions, component) => {
                     try {
                         this.shippingAddress = data.shippingAddress;
+                        if(this.isProductView) {
+                            await activateCart(true);
+                        }
+
                         const shippingMethods = await this.getShippingMethods(data.shippingAddress);
                         let shippingMethod = shippingMethods.find(method => method.identifier === this.shippingMethod);
                         await this.setShippingAndTotals(shippingMethod, data.shippingAddress);
