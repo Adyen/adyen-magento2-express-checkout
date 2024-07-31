@@ -42,7 +42,6 @@ define([
     'jquery',
     'Adyen_ExpressCheckout/js/model/virtualQuote',
     'Adyen_ExpressCheckout/js/model/maskedId',
-    'Adyen_ExpressCheckout/js/helpers/manageQuoteIdOnPageRefresh',
     'Adyen_ExpressCheckout/js/helpers/getCurrentPage'
 ], function (
     Component,
@@ -88,7 +87,6 @@ define([
     $,
     virtualQuoteModel,
     maskedIdModel,
-    manageQuoteIdOnPageRefresh,
     getCurrentPage
 ) {
     'use strict';
@@ -116,7 +114,6 @@ define([
             // Set the config and countries model
             configModel().setConfig(config);
             countriesModel();
-            await manageQuoteIdOnPageRefresh();
 
             // Determine if this is a product view page
             this.isProductView = config.isProductView;
@@ -363,16 +360,20 @@ define([
 
                         const currentPaymentData = component.paymentData;
 
-                        let response = await updatePaypalOrder.updateOrder(
+                        await updatePaypalOrder.updateOrder(
                             this.quoteId,
                             currentPaymentData,
                             shippingMethods,
                             currency
-                        );
-                        response = JSON.parse(response);
-                        component.updatePaymentData(response.paymentData);
+                        ).then(function (response) {
+                            let parsedResponse = JSON.parse(response);
+                            component.updatePaymentData(parsedResponse.paymentData);
+                        }).catch(function () {
+                            component.updatePaymentData(currentPaymentData);
+                            return actions.reject();
+                        });
                     } catch (error) {
-                        console.error('Failed to update PayPal order:', error);
+                        return actions.reject();
                     }
                 },
                 onShippingOptionsChange: async (data, actions, component) => {
@@ -393,15 +394,19 @@ define([
                     }
                     await this.setShippingAndTotals(shippingMethod, this.shippingAddress);
 
-                    let response = await updatePaypalOrder.updateOrder(
+                    await updatePaypalOrder.updateOrder(
                         this.quoteId,
                         currentPaymentData,
                         this.shippingMethods,
                         currency,
                         data.selectedShippingOption
-                    );
-                    response = JSON.parse(response);
-                    component.updatePaymentData(response.paymentData);
+                    ).then(function (response) {
+                        let parsedResponse = JSON.parse(response);
+                        component.updatePaymentData(parsedResponse.paymentData);
+                    }).catch(function () {
+                        component.updatePaymentData(currentPaymentData);
+                        return actions.reject();
+                    });
                 },
                 onShopperDetails: async (shopperDetails, rawData, actions) => {
                     try {
