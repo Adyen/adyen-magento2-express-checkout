@@ -1,39 +1,29 @@
 define([
     'mage/storage',
     'Adyen_ExpressCheckout/js/helpers/getIsLoggedIn',
-    'Adyen_ExpressCheckout/js/model/config',
-    'Magento_Checkout/js/model/url-builder',
-    'Adyen_ExpressCheckout/js/helpers/getMaskedIdFromCart'
+    'Adyen_ExpressCheckout/js/helpers/getMaskedIdFromCart',
+    'Adyen_ExpressCheckout/js/model/maskedId'
 ], function (
     storage,
-    isLoggedIn,
-    configModel,
-    urlBuilder,
-    getMaskedIdFromCart
+    getIsLoggedIn,
+    getMaskedIdFromCart,
+    maskedIdModel
 ) {
     'use strict';
 
     return function (paymentData, isProductView) {
-        const config = configModel().getConfig();
-        let payload;
+        let payload= {
+            stateData: JSON.stringify(paymentData)
+        };
 
-        const urlPath = isLoggedIn()
-            ? '/adyen/express/init-payments/mine'
-            : '/adyen/express/init-payments/guest';
+        const url = getIsLoggedIn()
+            ? 'rest/V1/adyen/express/init-payments/mine'
+            : 'rest/V1/adyen/express/init-payments/guest';
 
-        const url = urlBuilder.createUrl(urlPath, {
-            storeCode: config.storeCode
-        });
-
-        if (isLoggedIn()) {
-            payload = {
-                stateData: JSON.stringify(paymentData)
-            };
+        if (isProductView) {
+            payload.adyenMaskedQuoteId = maskedIdModel().getMaskedId();
         } else {
-            payload = {
-                maskedQuoteId: getMaskedIdFromCart(),
-                stateData: JSON.stringify(paymentData)
-            };
+            payload.guestMaskedId = getMaskedIdFromCart();
         }
 
         return new Promise(function (resolve, reject) {

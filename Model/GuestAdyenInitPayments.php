@@ -14,9 +14,11 @@ declare(strict_types=1);
 namespace Adyen\ExpressCheckout\Model;
 
 use Adyen\ExpressCheckout\Api\GuestAdyenInitPaymentsInterface;
+use Magento\Framework\Exception\LocalizedException;
 use Magento\Framework\Exception\NoSuchEntityException;
 use Magento\Framework\Exception\ValidatorException;
 use Magento\Payment\Gateway\Http\ClientException;
+use Magento\Quote\Model\QuoteIdMask;
 use Magento\Quote\Model\QuoteIdMaskFactory;
 
 class GuestAdyenInitPayments implements GuestAdyenInitPaymentsInterface
@@ -44,15 +46,30 @@ class GuestAdyenInitPayments implements GuestAdyenInitPaymentsInterface
     }
 
     /**
+     * @param string $stateData
+     * @param string|null $guestMaskedId
+     * @param string|null $adyenMaskedQuoteId
+     * @return string
+     * @throws ClientException
      * @throws NoSuchEntityException
      * @throws ValidatorException
-     * @throws ClientException
+     * @throws LocalizedException
      */
-    public function execute(string $maskedQuoteId, string $stateData): string
-    {
-        $quoteIdMask = $this->quoteIdMaskFactory->create()->load($maskedQuoteId, 'masked_id');
-        $quoteId = (int) $quoteIdMask->getQuoteId();
+    public function execute(
+        string $stateData,
+        ?string $guestMaskedId = null,
+        ?string $adyenMaskedQuoteId = null
+    ): string {
+        $quoteId = null;
+        if ($guestMaskedId !== null) {
+            /** @var $quoteIdMask QuoteIdMask */
+            $quoteIdMask = $this->quoteIdMaskFactory->create()->load(
+                $guestMaskedId,
+                'masked_id'
+            );
+            $quoteId = (int) $quoteIdMask->getQuoteId();
+        }
 
-        return $this->adyenInitPayments->execute($quoteId, $stateData);
+        return $this->adyenInitPayments->execute($stateData, $quoteId, $adyenMaskedQuoteId);
     }
 }
