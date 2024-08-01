@@ -186,11 +186,11 @@ class AdyenInitPayments implements AdyenInitPaymentsInterface
             $merchantReference
         );
         $currency = $quote->getQuoteCurrencyCode();
-        $cartTotal = $quote->getGrandTotal();
+        $amount = $quote->getSubtotalWithDiscount();
         $request = [
             'amount' => [
                 'currency' => $currency,
-                'value' => $this->adyenHelper->formatAmount($cartTotal, $currency)
+                'value' => $this->adyenHelper->formatAmount($amount, $currency)
             ],
             'reference' => $merchantReference,
             'returnUrl' => $returnUrl,

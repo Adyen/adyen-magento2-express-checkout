@@ -167,7 +167,8 @@ class AdyenPaypalUpdateOrder implements AdyenPaypalUpdateOrderInterface
         $storeId = $quote->getStoreId();
         $quoteAmountCurrency = $this->chargedCurrency->getQuoteAmountCurrency($quote);
         $amountCurrency = $quoteAmountCurrency->getCurrencyCode();
-        $amountValue = $this->adyenHelper->formatAmount($quoteAmountCurrency->getAmount(), $amountCurrency);
+        $amountValue = $this->adyenHelper->formatAmount($quote->getGrandTotal(), $amountCurrency);
+        $taxAmount = $this->adyenHelper->formatAmount($quote->getShippingAddress()->getTaxAmount(), $amountCurrency);
 
         try {
             $paypalUpdateOrderService = $this->paypalUpdateOrderHelper->createAdyenUtilityApiService($storeId);
@@ -175,6 +176,7 @@ class AdyenPaypalUpdateOrder implements AdyenPaypalUpdateOrderInterface
                 $pspReference,
                 $paymentData,
                 $amountValue,
+                $taxAmount,
                 $amountCurrency,
                 $deliveryMethods
             );

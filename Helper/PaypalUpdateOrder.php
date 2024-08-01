@@ -17,6 +17,7 @@ use Adyen\Model\Checkout\Amount;
 use Adyen\Model\Checkout\DeliveryMethod;
 use Adyen\Model\Checkout\PaypalUpdateOrderRequest;
 use Adyen\Model\Checkout\PaypalUpdateOrderResponse;
+use Adyen\Model\Checkout\TaxTotal;
 use Adyen\Payment\Helper\Data;
 use Adyen\Service\Checkout\UtilityApi;
 use Adyen\AdyenException;
@@ -65,6 +66,7 @@ class PaypalUpdateOrder
         string $pspReference,
         string $paymentData,
         int $amountValue,
+        int $taxAmount,
         string $amountCurrency,
         array $deliveryMethods = []
     ): PaypalUpdateOrderRequest {
@@ -72,11 +74,19 @@ class PaypalUpdateOrder
         $amount->setValue($amountValue);
         $amount->setCurrency($amountCurrency);
 
+        $taxTotalAmount = new Amount();
+        $taxTotalAmount->setValue($taxAmount);
+        $taxTotalAmount->setCurrency($amountCurrency);
+
+        $taxTotal = new TaxTotal();
+        $taxTotal->setAmount($taxTotalAmount);
+
         $paypalUpdateOrderRequest = new PaypalUpdateOrderRequest();
 
         $paypalUpdateOrderRequest->setPspReference($pspReference);
         $paypalUpdateOrderRequest->setPaymentData($paymentData);
         $paypalUpdateOrderRequest->setAmount($amount);
+        $paypalUpdateOrderRequest->setTaxTotal($taxTotal);
 
         if (!empty($deliveryMethods)) {
             $deliveryMethodsObjectArray = [];
