@@ -168,7 +168,14 @@ class AdyenPaypalUpdateOrder implements AdyenPaypalUpdateOrderInterface
         $quoteAmountCurrency = $this->chargedCurrency->getQuoteAmountCurrency($quote);
         $amountCurrency = $quoteAmountCurrency->getCurrencyCode();
         $amountValue = $this->adyenHelper->formatAmount($quote->getGrandTotal(), $amountCurrency);
-        $taxAmount = $this->adyenHelper->formatAmount($quote->getShippingAddress()->getTaxAmount(), $amountCurrency);
+
+        if ($quote->isVirtual()) {
+            $taxAmount = $quote->getBillingAddress()->getTaxAmount();
+        } else {
+            $taxAmount = $quote->getShippingAddress()->getTaxAmount();
+        }
+
+        $formattedTaxAmount = $this->adyenHelper->formatAmount($taxAmount, $amountCurrency);
 
         try {
             $paypalUpdateOrderService = $this->paypalUpdateOrderHelper->createAdyenUtilityApiService($storeId);
@@ -176,7 +183,7 @@ class AdyenPaypalUpdateOrder implements AdyenPaypalUpdateOrderInterface
                 $pspReference,
                 $paymentData,
                 $amountValue,
-                $taxAmount,
+                $formattedTaxAmount,
                 $amountCurrency,
                 $deliveryMethods
             );
