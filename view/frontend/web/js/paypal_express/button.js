@@ -136,9 +136,8 @@ define([
             // Configuration setup
             try {
                 const response = await getExpressMethods().getRequest(element);
-                localStorage.setItem("quoteId", response.masked_quote_id);
-                this.quoteId = response.masked_quote_id;
                 const cart = customerData.get('cart');
+
                 virtualQuoteModel().setIsVirtual(true, response);
 
                 cart.subscribe(function () {
