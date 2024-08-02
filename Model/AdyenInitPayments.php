@@ -22,11 +22,14 @@ use Adyen\Payment\Helper\PaymentResponseHandler;
 use Adyen\Payment\Helper\ReturnUrlHelper;
 use Adyen\Payment\Helper\Util\CheckoutStateDataValidator;
 use Exception;
+use Magento\Framework\Exception\LocalizedException;
 use Magento\Framework\Exception\NoSuchEntityException;
 use Magento\Framework\Exception\ValidatorException;
 use Magento\Payment\Gateway\Http\ClientException;
 use Magento\Quote\Api\CartRepositoryInterface;
 use Magento\Quote\Model\Quote;
+use Magento\Quote\Model\QuoteIdMask;
+use Magento\Quote\Model\QuoteIdMaskFactory;
 
 class AdyenInitPayments implements AdyenInitPaymentsInterface
 {
@@ -71,6 +74,11 @@ class AdyenInitPayments implements AdyenInitPaymentsInterface
     private PaymentResponseHandler $paymentResponseHandler;
 
     /**
+     * @var QuoteIdMaskFactory
+     */
+    private QuoteIdMaskFactory $quoteIdMaskFactory;
+
+    /**
      * @param CartRepositoryInterface $cartRepository
      * @param Config $configHelper
      * @param ReturnUrlHelper $returnUrlHelper
@@ -79,6 +87,7 @@ class AdyenInitPayments implements AdyenInitPaymentsInterface
      * @param TransactionPayment $transactionPaymentClient
      * @param Data $adyenHelper
      * @param PaymentResponseHandler $paymentResponseHandler
+     * @param QuoteIdMaskFactory $quoteIdMaskFactory
      */
     public function __construct(
         CartRepositoryInterface $cartRepository,
@@ -88,7 +97,8 @@ class AdyenInitPayments implements AdyenInitPaymentsInterface
         TransferFactory $transferFactory,
         TransactionPayment $transactionPaymentClient,
         Data $adyenHelper,
-        PaymentResponseHandler $paymentResponseHandler
+        PaymentResponseHandler $paymentResponseHandler,
+        QuoteIdMaskFactory $quoteIdMaskFactory
     ) {
         $this->cartRepository = $cartRepository;
         $this->configHelper = $configHelper;
@@ -98,20 +108,38 @@ class AdyenInitPayments implements AdyenInitPaymentsInterface
         $this->transactionPaymentClient = $transactionPaymentClient;
         $this->adyenHelper = $adyenHelper;
         $this->paymentResponseHandler = $paymentResponseHandler;
+        $this->quoteIdMaskFactory = $quoteIdMaskFactory;
     }
 
     /**
+     * @param string $stateData
+     * @param int|null $adyenCartId
+     * @param string|null $adyenMaskedQuoteId
+     * @return string
+     * @throws ClientException
      * @throws NoSuchEntityException
      * @throws ValidatorException
-     * @throws ClientException
+     * @throws LocalizedException
      */
-    public function execute(int $adyenCartId, string $stateData): string
-    {
-        /** @var Quote $quote */
+    public function execute(
+        string $stateData,
+        ?int $adyenCartId = null,
+        ?string $adyenMaskedQuoteId = null
+    ): string {
+        if (is_null($adyenCartId)) {
+            /** @var $quoteIdMask QuoteIdMask */
+            $quoteIdMask = $this->quoteIdMaskFactory->create()->load(
+                $adyenMaskedQuoteId,
+                'masked_id'
+            );
+            $adyenCartId = (int) $quoteIdMask->getQuoteId();
+        }
+
         $quote = $this->cartRepository->get($adyenCartId);
+
         // Reserve an order ID for the quote to obtain the reference and save the quote
         if (is_null($quote->getReservedOrderId())) {
-            $quote = $quote->reserveOrderId();
+            $quote->reserveOrderId();
             $this->cartRepository->save($quote);
         }
 
@@ -158,11 +186,11 @@ class AdyenInitPayments implements AdyenInitPaymentsInterface
             $merchantReference
         );
         $currency = $quote->getQuoteCurrencyCode();
-        $cartSubtotal = $quote->getSubtotal();
+        $amount = $quote->getSubtotalWithDiscount();
         $request = [
             'amount' => [
                 'currency' => $currency,
-                'value' => $this->adyenHelper->formatAmount($cartSubtotal, $currency)
+                'value' => $this->adyenHelper->formatAmount($amount, $currency)
             ],
             'reference' => $merchantReference,
             'returnUrl' => $returnUrl,

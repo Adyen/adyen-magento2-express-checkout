@@ -25,7 +25,6 @@ define([
     'Adyen_ExpressCheckout/js/helpers/redirectToSuccess',
     'Adyen_ExpressCheckout/js/helpers/setExpressMethods',
     'Adyen_ExpressCheckout/js/helpers/validatePdpForm',
-    'Adyen_ExpressCheckout/js/helpers/manageQuoteIdOnPageRefresh',
     'Adyen_ExpressCheckout/js/model/config',
     'Adyen_ExpressCheckout/js/model/countries',
     'Adyen_ExpressCheckout/js/model/totals',
@@ -60,7 +59,6 @@ define([
         redirectToSuccess,
         setExpressMethods,
         validatePdpForm,
-        manageQuoteIdOnPageRefresh,
         configModel,
         countriesModel,
         totalsModel,
@@ -84,14 +82,11 @@ define([
                 configModel().setConfig(config);
                 countriesModel();
 
-                await manageQuoteIdOnPageRefresh();
                 this.isProductView = config.isProductView;
 
                 // If express methods is not set then set it.
                 if (this.isProductView) {
                     const response = await getExpressMethods().getRequest(element);
-
-                    localStorage.setItem("quoteId", response.masked_quote_id);
                     const cart = customerData.get('cart');
 
                     virtualQuoteModel().setIsVirtual(true, response);

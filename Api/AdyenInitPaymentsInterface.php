@@ -18,9 +18,14 @@ interface AdyenInitPaymentsInterface
     const PAYMENT_CHANNEL_WEB = 'web';
 
     /**
-     * @param int $adyenCartId
      * @param string $stateData
+     * @param int|null $adyenCartId
+     * @param string|null $adyenMaskedQuoteId
      * @return string
      */
-    public function execute(int $adyenCartId, string $stateData): string;
+    public function execute(
+        string $stateData,
+        ?int $adyenCartId = null,
+        ?string $adyenMaskedQuoteId = null
+    ): string;
 }

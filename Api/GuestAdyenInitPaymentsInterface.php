@@ -16,9 +16,14 @@ namespace Adyen\ExpressCheckout\Api;
 interface GuestAdyenInitPaymentsInterface
 {
     /**
-     * @param string $maskedQuoteId
      * @param string $stateData
+     * @param string|null $guestMaskedId
+     * @param string|null $adyenMaskedQuoteId
      * @return string
      */
-    public function execute(string $maskedQuoteId, string $stateData): string;
+    public function execute(
+        string $stateData,
+        ?string $guestMaskedId = null,
+        ?string $adyenMaskedQuoteId = null
+    ): string;
 }

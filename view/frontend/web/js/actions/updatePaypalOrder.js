@@ -1,23 +1,32 @@
 define([
     'mage/storage',
     'Magento_Checkout/js/model/url-builder',
-    'Magento_Customer/js/model/customer',
-    'Adyen_ExpressCheckout/js/helpers/formatAmount',
-    'Adyen_ExpressCheckout/js/model/config',
     'Adyen_ExpressCheckout/js/helpers/getIsLoggedIn',
-], function (storage, urlBuilder, customer, formatAmount, configModel, getIsLoggedIn) {
+    'Adyen_ExpressCheckout/js/model/maskedId',
+    'Adyen_ExpressCheckout/js/helpers/getMaskedIdFromCart',
+], function (
+    storage,
+    urlBuilder,
+    getIsLoggedIn,
+    maskedIdModel,
+    getMaskedIdFromCart
+) {
     'use strict';
 
-    function updateOrder(cartId, paymentData, shippingMethods, currency, selectedShippingMethod = null) {
-        const isLoggedIn = getIsLoggedIn();
-        const updateOrderUrl = isLoggedIn
+    function updateOrder(isProductView, paymentData, shippingMethods, currency, selectedShippingMethod = null) {
+        let updateOrderUrl = getIsLoggedIn()
             ? urlBuilder.createUrl('/adyen/express/paypal-update-order/mine', {})
             : urlBuilder.createUrl('/adyen/express/paypal-update-order/guest', {});
 
         const updateOrderPayload = {
-            maskedQuoteId: cartId,
             paymentData: paymentData
         };
+
+        if (isProductView) {
+            updateOrderPayload.adyenMaskedQuoteId = maskedIdModel().getMaskedId();
+        } else {
+            updateOrderPayload.guestMaskedId = getMaskedIdFromCart();
+        }
 
         let deliveryMethods = [];
         if (selectedShippingMethod) {

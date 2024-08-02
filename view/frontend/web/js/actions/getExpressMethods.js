@@ -22,47 +22,44 @@ define([
         getRequest: function (element) {
             const existingRequest = this.request();
 
-            if (existingRequest) {
-                return existingRequest;
-            }
+            if (!existingRequest) {
+                const pdpForm = getPdpForm(element);
+                const formData = getFormData(pdpForm);
+                const cartMaskedId = getMaskedIdFromCart();
+                const adyenMaskedQuoteId = maskedIdModel().getMaskedId();
+                const payload = {
+                    productCartParams: {
+                        product: formData['product'],
+                        qty: formData['qty'],
+                        super_attribute: formData['super_attribute']
+                    }
+                };
+                const url = getIsLoggedIn()
+                    ? 'rest/V1/adyen/express/init/mine'
+                    : 'rest/V1/adyen/express/init/guest';
 
-            const pdpForm = getPdpForm(element);
-            const formData = getFormData(pdpForm);
-            const cartMaskedId = getMaskedIdFromCart();
-
-            const previousQuoteId = localStorage.getItem("quoteId");
-            const adyenMaskedQuoteId = previousQuoteId != null ? previousQuoteId : maskedIdModel().getMaskedId();
-
-            const payload = {
-                productCartParams: {
-                    product: formData['product'],
-                    qty: formData['qty'],
-                    super_attribute: formData['super_attribute']
+                if (cartMaskedId) {
+                    payload.guestMaskedId = cartMaskedId;
                 }
-            };
-            const url = getIsLoggedIn()
-                ? 'rest/V1/adyen/express/init/mine'
-                : 'rest/V1/adyen/express/init/guest';
 
-            if (cartMaskedId) {
-                payload.guestMaskedId = cartMaskedId;
+                if (adyenMaskedQuoteId) {
+                    payload.adyenMaskedQuoteId = adyenMaskedQuoteId;
+                }
+
+                const request = storage.post(
+                    url,
+                    JSON.stringify(payload)
+                ).done(function (response) {
+                    this.request(null);
+                    return response;
+                }.bind(this));
+
+                this.request(request);
+
+                return request;
             }
 
-            if (adyenMaskedQuoteId) {
-                payload.adyenMaskedQuoteId = adyenMaskedQuoteId;
-            }
-
-            const request = storage.post(
-                url,
-                JSON.stringify(payload)
-            ).done(function (response) {
-                this.request(null);
-                return response;
-            }.bind(this));
-
-            this.request(request);
-
-            return request;
+            return existingRequest;
         }
     });
 });
