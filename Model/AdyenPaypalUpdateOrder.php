@@ -25,6 +25,8 @@ use Magento\Framework\Exception\NoSuchEntityException;
 use Magento\Framework\Exception\ValidatorException;
 use Magento\Quote\Api\CartRepositoryInterface;
 use Magento\Quote\Model\Quote;
+use Magento\Quote\Model\QuoteIdMask;
+use Magento\Quote\Model\QuoteIdMaskFactory;
 
 class AdyenPaypalUpdateOrder implements AdyenPaypalUpdateOrderInterface
 {
@@ -59,12 +61,18 @@ class AdyenPaypalUpdateOrder implements AdyenPaypalUpdateOrderInterface
     private AdyenPaymentResponseCollection $paymentResponseCollection;
 
     /**
+     * @var QuoteIdMaskFactory
+     */
+    private QuoteIdMaskFactory $quoteIdMaskFactory;
+
+    /**
      * @param PaypalUpdateOrder $updatePaypalOrderHelper
      * @param CartRepositoryInterface $cartRepository
      * @param PaypalDeliveryMethodValidator $deliveryMethodValidator
      * @param ChargedCurrency $chargedCurrency
      * @param Data $adyenHelper
      * @param AdyenPaymentResponseCollection $paymentResponseCollection
+     * @param QuoteIdMaskFactory $quoteIdMaskFactory
      */
     public function __construct(
         PaypalUpdateOrder $updatePaypalOrderHelper,
@@ -72,7 +80,8 @@ class AdyenPaypalUpdateOrder implements AdyenPaypalUpdateOrderInterface
         PaypalDeliveryMethodValidator $deliveryMethodValidator,
         ChargedCurrency $chargedCurrency,
         Data $adyenHelper,
-        AdyenPaymentResponseCollection $paymentResponseCollection
+        AdyenPaymentResponseCollection $paymentResponseCollection,
+        QuoteIdMaskFactory $quoteIdMaskFactory
     ) {
         $this->paypalUpdateOrderHelper = $updatePaypalOrderHelper;
         $this->cartRepository = $cartRepository;
@@ -80,18 +89,33 @@ class AdyenPaypalUpdateOrder implements AdyenPaypalUpdateOrderInterface
         $this->chargedCurrency = $chargedCurrency;
         $this->adyenHelper = $adyenHelper;
         $this->paymentResponseCollection = $paymentResponseCollection;
+        $this->quoteIdMaskFactory = $quoteIdMaskFactory;
     }
 
     /**
-     * @param int $adyenCartId
      * @param string $paymentData
+     * @param int|null $adyenCartId
+     * @param string|null $adyenMaskedQuoteId
      * @param string $deliveryMethods
      * @return string
      * @throws NoSuchEntityException
      * @throws ValidatorException
      */
-    public function execute(int $adyenCartId, string $paymentData, string $deliveryMethods = ''): string
-    {
+    public function execute(
+        string $paymentData,
+        ?int $adyenCartId = null,
+        ?string $adyenMaskedQuoteId = null,
+        string $deliveryMethods = ''
+    ): string {
+        if (is_null($adyenCartId)) {
+            /** @var $quoteIdMask QuoteIdMask */
+            $quoteIdMask = $this->quoteIdMaskFactory->create()->load(
+                $adyenMaskedQuoteId,
+                'masked_id'
+            );
+            $adyenCartId = (int) $quoteIdMask->getQuoteId();
+        }
+
         /** @var Quote $quote */
         $quote = $this->cartRepository->get($adyenCartId);
         $merchantReference = $quote->getReservedOrderId();
@@ -143,7 +167,15 @@ class AdyenPaypalUpdateOrder implements AdyenPaypalUpdateOrderInterface
         $storeId = $quote->getStoreId();
         $quoteAmountCurrency = $this->chargedCurrency->getQuoteAmountCurrency($quote);
         $amountCurrency = $quoteAmountCurrency->getCurrencyCode();
-        $amountValue = $this->adyenHelper->formatAmount($quoteAmountCurrency->getAmount(), $amountCurrency);
+        $amountValue = $this->adyenHelper->formatAmount($quote->getGrandTotal(), $amountCurrency);
+
+        if ($quote->isVirtual()) {
+            $taxAmount = $quote->getBillingAddress()->getTaxAmount();
+        } else {
+            $taxAmount = $quote->getShippingAddress()->getTaxAmount();
+        }
+
+        $formattedTaxAmount = $this->adyenHelper->formatAmount($taxAmount, $amountCurrency);
 
         try {
             $paypalUpdateOrderService = $this->paypalUpdateOrderHelper->createAdyenUtilityApiService($storeId);
@@ -151,6 +183,7 @@ class AdyenPaypalUpdateOrder implements AdyenPaypalUpdateOrderInterface
                 $pspReference,
                 $paymentData,
                 $amountValue,
+                $formattedTaxAmount,
                 $amountCurrency,
                 $deliveryMethods
             );

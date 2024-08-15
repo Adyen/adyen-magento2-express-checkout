@@ -42,15 +42,22 @@ class GuestAdyenPaypalUpdateOrder implements GuestAdyenPaypalUpdateOrderInterfac
         $this->adyenUpdatePaypalOrder = $adyenUpdatePaypalOrder;
     }
 
-    public function execute(string $maskedQuoteId, string $paymentData, string $deliveryMethods = ''): string
-    {
-        /** @var $quoteIdMask QuoteIdMask */
-        $quoteIdMask = $this->quoteIdMaskFactory->create()->load(
-            $maskedQuoteId,
-            'masked_id'
-        );
-        $quoteId = (int) $quoteIdMask->getQuoteId();
+    public function execute(
+        string $paymentData,
+        ?string $guestMaskedId = null,
+        ?string $adyenMaskedQuoteId = null,
+        string $deliveryMethods = ''
+    ): string {
+        $quoteId = null;
+        if ($guestMaskedId !== null) {
+            /** @var $quoteIdMask QuoteIdMask */
+            $quoteIdMask = $this->quoteIdMaskFactory->create()->load(
+                $guestMaskedId,
+                'masked_id'
+            );
+            $quoteId = (int) $quoteIdMask->getQuoteId();
+        }
 
-        return $this->adyenUpdatePaypalOrder->execute($quoteId, $paymentData, $deliveryMethods);
+        return $this->adyenUpdatePaypalOrder->execute($paymentData, $quoteId, $adyenMaskedQuoteId, $deliveryMethods);
     }
 }

@@ -5,8 +5,6 @@ define([
     'Adyen_Payment/js/model/adyen-configuration',
     'Adyen_Payment/js/adyen',
     'Adyen_ExpressCheckout/js/actions/activateCart',
-    'Adyen_ExpressCheckout/js/actions/cancelCart',
-    'Adyen_ExpressCheckout/js/actions/createPayment',
     'Adyen_ExpressCheckout/js/actions/createOrder',
     'Adyen_ExpressCheckout/js/actions/getShippingMethods',
     'Adyen_ExpressCheckout/js/actions/getExpressMethods',
@@ -15,11 +13,9 @@ define([
     'Adyen_ExpressCheckout/js/helpers/formatAmount',
     'Adyen_ExpressCheckout/js/helpers/getPaypalStyles',
     'Adyen_ExpressCheckout/js/helpers/getCartSubtotal',
-    'Adyen_ExpressCheckout/js/helpers/getExtensionAttributes',
     'Adyen_ExpressCheckout/js/helpers/getPaymentMethod',
     'Adyen_ExpressCheckout/js/helpers/getPdpForm',
     'Adyen_ExpressCheckout/js/helpers/getPdpPriceBox',
-    'Adyen_ExpressCheckout/js/helpers/getSupportedNetworks',
     'Adyen_ExpressCheckout/js/helpers/isConfigSet',
     'Adyen_ExpressCheckout/js/helpers/getRegionId',
     'Adyen_ExpressCheckout/js/helpers/redirectToSuccess',
@@ -32,18 +28,16 @@ define([
     'knockout',
     'Magento_Customer/js/model/customer',
     'Magento_Checkout/js/model/quote',
-    'mage/url',
     'Adyen_ExpressCheckout/js/actions/initPayments',
     'Adyen_ExpressCheckout/js/actions/updatePaypalOrder',
     'Adyen_ExpressCheckout/js/actions/setBillingAddress',
     'Magento_Checkout/js/model/full-screen-loader',
     'Adyen_ExpressCheckout/js/model/adyen-payment-service',
-    'Adyen_ExpressCheckout/js/helpers/getApiUrl',
     'jquery',
     'Adyen_ExpressCheckout/js/model/virtualQuote',
     'Adyen_ExpressCheckout/js/model/maskedId',
-    'Adyen_ExpressCheckout/js/helpers/manageQuoteIdOnPageRefresh',
-    'Adyen_ExpressCheckout/js/helpers/getCurrentPage'
+    'Adyen_ExpressCheckout/js/helpers/getCurrentPage',
+    'Adyen_ExpressCheckout/js/helpers/getMaskedIdFromCart',
 ], function (
     Component,
     $t,
@@ -51,8 +45,6 @@ define([
     AdyenConfiguration,
     AdyenCheckout,
     activateCart,
-    cancelCart,
-    createPayment,
     createOrder,
     getShippingMethods,
     getExpressMethods,
@@ -61,11 +53,9 @@ define([
     formatAmount,
     getPaypalStyles,
     getCartSubtotal,
-    getExtensionAttributes,
     getPaymentMethod,
     getPdpForm,
     getPdpPriceBox,
-    getSupportedNetworks,
     isConfigSet,
     getRegionId,
     redirectToSuccess,
@@ -78,18 +68,16 @@ define([
     ko,
     customer,
     quote,
-    urlBuilder,
     initPayments,
     updatePaypalOrder,
     setBillingAddress,
     fullScreenLoader,
     adyenPaymentService,
-    getApiUrl,
     $,
     virtualQuoteModel,
     maskedIdModel,
-    manageQuoteIdOnPageRefresh,
-    getCurrentPage
+    getCurrentPage,
+    getMaskedIdFromCart
 ) {
     'use strict';
 
@@ -116,7 +104,6 @@ define([
             // Set the config and countries model
             configModel().setConfig(config);
             countriesModel();
-            await manageQuoteIdOnPageRefresh();
 
             // Determine if this is a product view page
             this.isProductView = config.isProductView;
@@ -127,7 +114,6 @@ define([
                 virtualQuoteModel().setIsVirtual(false);
 
                 if (!paypalPaymentMethod) {
-                    paypalPaymentMethod.configuration.intent = 'authorize';
                     // Subscribe to cart updates if PayPal method is not immediately available
                     const cart = customerData.get('cart');
                     cart.subscribe(function () {
@@ -150,9 +136,8 @@ define([
             // Configuration setup
             try {
                 const response = await getExpressMethods().getRequest(element);
-                localStorage.setItem("quoteId", response.masked_quote_id);
-                this.quoteId = response.masked_quote_id;
                 const cart = customerData.get('cart');
+
                 virtualQuoteModel().setIsVirtual(true, response);
 
                 cart.subscribe(function () {
@@ -189,7 +174,6 @@ define([
 
                 if (!isConfigSet(paypalPaymentMethod, ['gatewayMerchantId', 'merchantId'])) {
                 }
-                paypalPaymentMethod.configuration.intent = 'authorize';
 
                 this.initialisePaypalComponent(paypalPaymentMethod, element);
             } catch (error) {
@@ -287,7 +271,7 @@ define([
 
             this.unmountPaypal();
 
-            if (!isConfigSet(paypalPaymentMethod, ['merchantId', 'merchantName'])) {
+            if (!isConfigSet(paypalPaymentMethod, ['merchantId'])) {
                 return;
             }
 
@@ -316,11 +300,7 @@ define([
                 countryCode: countryCode,
                 environment: config.checkoutenv.toUpperCase(),
                 isExpress: true,
-                configuration: {
-                    domainName: window.location.hostname,
-                    merchantId: paypalPaymentMethod.configuration.merchantId,
-                    merchantName: config.merchantAccount
-                },
+                configuration: paypalPaymentMethod.configuration,
                 amount: {
                     currency: currency,
                     value: this.isProductView
@@ -330,12 +310,6 @@ define([
                 onSubmit: (state, component) => {
                     const paymentData = state.data;
                     const cartData = customerData.get('cart')();
-                    if(!this.isProductView)
-                    {
-                        this.quoteId = cartData.guest_masked_id
-                            ? cartData.guest_masked_id
-                            : maskedIdModel().getMaskedId();
-                    }
 
                     paymentData.merchantAccount = config.merchantAccount;
                     initPayments(paymentData, this.isProductView).then((responseJSON) => {
@@ -348,13 +322,12 @@ define([
                     }).catch((error) => {
                         console.error('Payment initiation failed', error);
                     });
-
                 },
                 onShippingAddressChange: async (data, actions, component) => {
                     try {
                         this.shippingAddress = data.shippingAddress;
                         if(this.isProductView) {
-                            await activateCart(true);
+                            await activateCart(this.isProductView);
                         }
 
                         const shippingMethods = await this.getShippingMethods(data.shippingAddress);
@@ -363,16 +336,20 @@ define([
 
                         const currentPaymentData = component.paymentData;
 
-                        let response = await updatePaypalOrder.updateOrder(
-                            this.quoteId,
+                        await updatePaypalOrder.updateOrder(
+                            this.isProductView,
                             currentPaymentData,
                             shippingMethods,
                             currency
-                        );
-                        response = JSON.parse(response);
-                        component.updatePaymentData(response.paymentData);
+                        ).then(function (response) {
+                            let parsedResponse = JSON.parse(response);
+                            component.updatePaymentData(parsedResponse.paymentData);
+                        }).catch(function () {
+                            component.updatePaymentData(currentPaymentData);
+                            return actions.reject();
+                        });
                     } catch (error) {
-                        console.error('Failed to update PayPal order:', error);
+                        return actions.reject();
                     }
                 },
                 onShippingOptionsChange: async (data, actions, component) => {
@@ -393,15 +370,19 @@ define([
                     }
                     await this.setShippingAndTotals(shippingMethod, this.shippingAddress);
 
-                    let response = await updatePaypalOrder.updateOrder(
-                        this.quoteId,
+                    await updatePaypalOrder.updateOrder(
+                        this.isProductView,
                         currentPaymentData,
                         this.shippingMethods,
                         currency,
                         data.selectedShippingOption
-                    );
-                    response = JSON.parse(response);
-                    component.updatePaymentData(response.paymentData);
+                    ).then(function (response) {
+                        let parsedResponse = JSON.parse(response);
+                        component.updatePaymentData(parsedResponse.paymentData);
+                    }).catch(function () {
+                        component.updatePaymentData(currentPaymentData);
+                        return actions.reject();
+                    });
                 },
                 onShopperDetails: async (shopperDetails, rawData, actions) => {
                     try {
@@ -428,7 +409,7 @@ define([
                             })
                             .then(() => {
                                 if (!isVirtual) {
-                                    return setShippingInformation(shippingInformationPayload)
+                                    return setShippingInformation(shippingInformationPayload, this.isProductView)
                                         .then(() => {
                                             return this.createOrder();
                                         })
@@ -456,7 +437,9 @@ define([
                     fullScreenLoader.startLoader();
                     request.orderId = this.orderId;
 
-                    adyenPaymentService.paymentDetails(request,this.orderId,this.quoteId).
+                    let quoteId = this.isProductView ? maskedIdModel().getMaskedId() : getMaskedIdFromCart();
+
+                    adyenPaymentService.paymentDetails(request, this.orderId, quoteId).
                     done(function(responseJSON) {
                         fullScreenLoader.stopLoader();
                         self.handleAdyenResult(responseJSON, self.orderId);
@@ -467,10 +450,9 @@ define([
                     });
 
                 },
-                style: paypalStyles,
-                isVirtual: isVirtual,
-                isGuest: isGuest
+                style: paypalStyles
             };
+
             return paypalBaseConfiguration;
         },
 

@@ -16,10 +16,16 @@ namespace Adyen\ExpressCheckout\Api;
 interface GuestAdyenPaypalUpdateOrderInterface
 {
     /**
-     * @param string $maskedQuoteId
      * @param string $paymentData
+     * @param string|null $guestMaskedId
+     * @param string|null $adyenMaskedQuoteId
      * @param string $deliveryMethods
      * @return mixed
      */
-    public function execute(string $maskedQuoteId, string $paymentData, string $deliveryMethods = ''): string;
+    public function execute(
+        string $paymentData,
+        ?string $guestMaskedId = null,
+        ?string $adyenMaskedQuoteId = null,
+        string $deliveryMethods = ''
+    ): string;
 }
