@@ -144,7 +144,7 @@ define([
 
                 setExpressMethods(response);
                 totalsModel().setTotal(response.totals.grand_total);
-                currencyModel().setCurrency(response.totals.quote_currency_code)
+                currencyModel().setCurrency(response.totals.quote_currency_code);
 
                 const $priceBox = getPdpPriceBox();
                 const pdpForm = getPdpForm(element);
