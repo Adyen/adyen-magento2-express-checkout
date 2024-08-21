@@ -172,10 +172,7 @@ define([
                     return;
                 }
 
-                if (!isConfigSet(paypalPaymentMethod, ['gatewayMerchantId', 'merchantId'])) {
-                }
-
-                this.initialisePaypalComponent(paypalPaymentMethod, element);
+                await this.initialisePaypalComponent(paypalPaymentMethod, element);
             } catch (error) {
                 console.error('Error in initialiseonPDP:', error);
             }

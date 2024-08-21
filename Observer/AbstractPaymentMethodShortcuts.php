@@ -98,11 +98,14 @@ abstract class AbstractPaymentMethodShortcuts implements ObserverInterface
         }
 
         //Check Cart Page or PDP
-        if(in_array('catalog_product_view', $handles))
+        if(in_array('catalog_product_view', $handles)) {
             return ShortcutAreas::PRODUCT_VIEW_VALUE;
-        elseif(in_array('checkout_cart_index', $handles))
+        }
+        elseif(in_array('checkout_cart_index', $handles)) {
             return ShortcutAreas::CART_PAGE_VALUE;
-        else
+        }
+        else {
             return 0;
+        }
     }
 }
