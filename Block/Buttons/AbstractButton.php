@@ -13,18 +13,17 @@ declare(strict_types=1);
 
 namespace Adyen\ExpressCheckout\Block\Buttons;
 
-use Adyen\Payment\Helper\Config;
 use Adyen\Payment\Helper\Data as AdyenHelper;
+use Exception;
+use Magento\Checkout\Model\DefaultConfigProvider;
 use Magento\Checkout\Model\Session;
 use Magento\Customer\Model\Session as CustomerSession;
-use Magento\Framework\Exception\InputException;
 use Magento\Framework\Exception\LocalizedException;
 use Magento\Framework\Exception\NoSuchEntityException;
 use Magento\Framework\UrlInterface;
 use Magento\Framework\View\Element\Template;
 use Magento\Framework\View\Element\Template\Context;
 use Magento\Payment\Model\MethodInterface;
-use Magento\Store\Model\ScopeInterface;
 use Magento\Store\Model\Store;
 use Magento\Store\Model\StoreManagerInterface;
 use Magento\Framework\App\Config\ScopeConfigInterface;
@@ -38,42 +37,42 @@ abstract class AbstractButton extends Template
     /**
      * @var Session
      */
-    private $checkoutSession;
+    private Session $checkoutSession;
 
     /**
      * @var MethodInterface
      */
-    private $payment;
+    private MethodInterface $payment;
 
     /**
      * @var UrlInterface $url
      */
-    private $url;
+    private UrlInterface $url;
 
     /**
      * @var CustomerSession $customerSession
      */
-    private $customerSession;
+    private CustomerSession $customerSession;
 
     /**
      * @var StoreManagerInterface $storeManager
      */
-    private $storeManager;
+    private StoreManagerInterface $storeManager;
 
     /**
      * @var ScopeConfigInterface $scopeConfig
      */
-    private $scopeConfig;
+    private ScopeConfigInterface $scopeConfig;
 
     /**
      * @var AdyenHelper
      */
-    private $adyenHelper;
+    private AdyenHelper $adyenHelper;
 
     /**
-     * @var Config
+     * @var DefaultConfigProvider
      */
-    private $adyenConfigHelper;
+    private DefaultConfigProvider $defaultConfigProvider;
 
     /**
      * Button constructor.
@@ -85,7 +84,7 @@ abstract class AbstractButton extends Template
      * @param StoreManagerInterface $storeManagerInterface
      * @param ScopeConfigInterface $scopeConfig
      * @param AdyenHelper $adyenHelper
-     * @param Config $adyenConfigHelper
+     * @param DefaultConfigProvider $defaultConfigProvider
      * @param array $data
      */
     public function __construct(
@@ -97,7 +96,7 @@ abstract class AbstractButton extends Template
         StoreManagerInterface $storeManagerInterface,
         ScopeConfigInterface $scopeConfig,
         AdyenHelper $adyenHelper,
-        Config $adyenConfigHelper,
+        DefaultConfigProvider $defaultConfigProvider,
         array $data = []
     ) {
         parent::__construct($context, $data);
@@ -108,7 +107,7 @@ abstract class AbstractButton extends Template
         $this->storeManager = $storeManagerInterface;
         $this->scopeConfig = $scopeConfig;
         $this->adyenHelper = $adyenHelper;
-        $this->adyenConfigHelper = $adyenConfigHelper;
+        $this->defaultConfigProvider = $defaultConfigProvider;
     }
 
     /**
@@ -254,5 +253,79 @@ abstract class AbstractButton extends Template
     public function getContainerId(): string
     {
         return $this->getData(self::BUTTON_ELEMENT_INDEX) ?: '';
+    }
+
+    public function getRandomElementId(): string
+    {
+        try {
+            $id = sprintf('%s%s', $this->getContainerId(), random_int(PHP_INT_MIN, PHP_INT_MAX));
+        } catch (Exception $e) {
+            /**
+             * Exception only thrown if an appropriate source of randomness cannot be found.
+             * https://www.php.net/manual/en/function.random-int.php
+             */
+            $id = "0";
+        }
+
+        return $id;
+    }
+
+    /**
+     * Current Quote ID for guests
+     *
+     * @return string
+     * @throws LocalizedException
+     * @throws NoSuchEntityException
+     */
+    public function getQuoteId(): string
+    {
+        try {
+            $config = $this->defaultConfigProvider->getConfig();
+            if (!empty($config['quoteData']['entity_id'])) {
+                return $config['quoteData']['entity_id'];
+            }
+        } catch (NoSuchEntityException $e) {
+            if ($e->getMessage() !== 'No such entity with cartId = ') {
+                throw $e;
+            }
+        }
+        return '';
+    }
+
+    /**
+     * Returns Adyen payment method variant
+     *
+     * @return string
+     */
+    public function getPaymentMethodVariant(): string
+    {
+        return static::PAYMENT_METHOD_VARIANT;
+    }
+
+    /**
+     * Returns the base configuration for express frontend
+     *
+     * @return array[]
+     * @throws LocalizedException
+     * @throws NoSuchEntityException
+     */
+    public function buildConfiguration(): array
+    {
+        $variant = $this->getPaymentMethodVariant();
+
+        return [
+            "Adyen_ExpressCheckout/js/$variant/button" => [
+                'actionSuccess' => $this->getActionSuccess(),
+                'storeCode' => $this->getStorecode(),
+                'countryCode' => $this->getDefaultCountryCode(),
+                'currency' => $this->getCurrency(),
+                'merchantAccount' => $this->getMerchantAccount(),
+                'format' => $this->getFormat(),
+                'locale' => $this->getLocale(),
+                'originkey' => $this->getOriginKey(),
+                'checkoutenv' => $this->getCheckoutEnvironment(),
+                'isProductView' => (bool) $this->getIsProductView()
+            ]
+        ];
     }
 }
