@@ -282,8 +282,7 @@ define([
             const paypalStyles = getPaypalStyles();
             const config = configModel().getConfig();
             const countryCode = config.countryCode;
-            const isVirtual = virtualQuoteModel().getIsVirtual();
-            const isGuest = ko.observable(!customer.isLoggedIn());
+
             let currency;
             let paypalBaseConfiguration;
 
@@ -309,7 +308,6 @@ define([
                 },
                 onSubmit: (state, component) => {
                     const paymentData = state.data;
-                    const cartData = customerData.get('cart')();
 
                     paymentData.merchantAccount = config.merchantAccount;
                     initPayments(paymentData, this.isProductView).then((responseJSON) => {
