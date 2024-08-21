@@ -32,13 +32,13 @@ define([
     'Adyen_ExpressCheckout/js/helpers/setExpressMethods',
     'Adyen_ExpressCheckout/js/helpers/validatePdpForm',
     'Adyen_ExpressCheckout/js/helpers/getMaskedIdFromCart',
-    'Adyen_ExpressCheckout/js/helpers/manageQuoteIdOnPageRefresh',
     'Adyen_ExpressCheckout/js/model/maskedId',
     'Adyen_ExpressCheckout/js/model/config',
     'Adyen_ExpressCheckout/js/model/countries',
     'Adyen_ExpressCheckout/js/model/totals',
     'Adyen_ExpressCheckout/js/model/currency',
-    'Adyen_ExpressCheckout/js/model/virtualQuote'
+    'Adyen_ExpressCheckout/js/model/virtualQuote',
+    'Adyen_ExpressCheckout/js/helpers/getCurrentPage'
 ],
     function (
         $,
@@ -75,12 +75,12 @@ define([
         validatePdpForm,
         getMaskedIdFromCart,
         maskedIdModel,
-        manageQuoteIdOnPageRefresh,
         configModel,
         countriesModel,
         totalsModel,
         currencyModel,
-        virtualQuoteModel
+        virtualQuoteModel,
+        getCurrentPage
     ) {
         'use strict';
 
@@ -109,7 +109,6 @@ define([
                 configModel().setConfig(config);
                 countriesModel();
 
-                await manageQuoteIdOnPageRefresh();
                 this.isProductView = config.isProductView;
 
                 // If express methods is not set then set it.
@@ -136,8 +135,6 @@ define([
 
             initializeOnPDP: async function (config, element) {
                 const response = await getExpressMethods().getRequest(element);
-
-                localStorage.setItem("quoteId", response.masked_quote_id);
                 const cart = customerData.get('cart');
                 virtualQuoteModel().setIsVirtual(true, response);
 
@@ -147,7 +144,7 @@ define([
 
                 setExpressMethods(response);
                 totalsModel().setTotal(response.totals.grand_total);
-                currencyModel().setCurrency(response.totals.quote_currency_code)
+                currencyModel().setCurrency(response.totals.quote_currency_code);
 
                 const $priceBox = getPdpPriceBox();
                 const pdpForm = getPdpForm(element);
@@ -177,6 +174,7 @@ define([
             initialiseGooglePayComponent: async function (googlePaymentMethod, element) {
                 const config = configModel().getConfig();
                 const adyenData = window.adyenData;
+                let currentPage = getCurrentPage(this.isProductView, element);
 
                 this.checkoutComponent = await new AdyenCheckout({
                     locale: config.locale,
@@ -198,6 +196,8 @@ define([
                     },
                     paymentMethodsResponse: getPaymentMethod('googlepay', this.isProductView),
                     onAdditionalDetails: this.handleOnAdditionalDetails.bind(this),
+                    isExpress: true,
+                    expressPage: currentPage,
                     risk: {
                         enabled: false
                     }
