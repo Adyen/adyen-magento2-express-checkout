@@ -29,6 +29,7 @@ define([
     'Adyen_ExpressCheckout/js/model/countries',
     'Adyen_ExpressCheckout/js/model/totals',
     'Adyen_ExpressCheckout/js/model/currency',
+    'Adyen_ExpressCheckout/js/helpers/getCurrentPage',
     'Adyen_ExpressCheckout/js/model/virtualQuote'
 ],
     function (
@@ -62,6 +63,7 @@ define([
         countriesModel,
         totalsModel,
         currencyModel,
+        getCurrentPage,
         virtualQuoteModel
     ) {
         'use strict';
@@ -95,7 +97,7 @@ define([
 
                     setExpressMethods(response);
                     totalsModel().setTotal(response.totals.grand_total);
-                    currencyModel().setCurrency(response.totals.quote_currency_code)
+                    currencyModel().setCurrency(response.totals.quote_currency_code);
 
                     const $priceBox = getPdpPriceBox();
                     const pdpForm = getPdpForm(element);
@@ -142,13 +144,31 @@ define([
 
             initialiseApplePayComponent: async function (applePaymentMethod, element) {
                 const config = configModel().getConfig();
+                const adyenData = window.adyenData;
+                let currentPage = getCurrentPage(this.isProductView, element);
+
                 const adyenCheckoutComponent = await new AdyenCheckout({
                     locale: config.locale,
-                    originKey: config.originkey,
                     environment: config.checkoutenv,
+                    analytics: {
+                        analyticsData: {
+                            applicationInfo: {
+                                merchantApplication: {
+                                    name: adyenData['merchant-application-name'],
+                                    version: adyenData['merchant-application-version']
+                                },
+                                externalPlatform: {
+                                    name: adyenData['external-platform-name'],
+                                    version: adyenData['external-platform-version']
+                                }
+                            }
+                        }
+                    },
                     risk: {
                         enabled: false
                     },
+                    isExpress: true,
+                    expressPage: currentPage,
                     clientKey: AdyenConfiguration.getClientKey()
                 });
                 const applePayConfiguration = this.getApplePayConfiguration(applePaymentMethod, element);
@@ -249,6 +269,7 @@ define([
                             : formatAmount(getCartSubtotal() * 100),
                         currency: currency
                     },
+                    isExpress: true,
                     supportedNetworks: getSupportedNetworks(),
                     merchantCapabilities: ['supports3DS'],
                     requiredShippingContactFields: ['postalAddress', 'name', 'email', 'phone'],
