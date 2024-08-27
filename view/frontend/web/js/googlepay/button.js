@@ -8,7 +8,7 @@ define([
     'Magento_Checkout/js/model/quote',
     'Adyen_Payment/js/adyen',
     'Adyen_Payment/js/model/adyen-payment-modal',
-    'Adyen_Payment/js/model/adyen-payment-service',
+    'Adyen_ExpressCheckout/js/model/adyen-payment-service',
     'Adyen_ExpressCheckout/js/actions/activateCart',
     'Adyen_ExpressCheckout/js/actions/cancelCart',
     'Adyen_ExpressCheckout/js/actions/createPayment',
