@@ -12,9 +12,6 @@
 -->
 <payment xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Payment:etc/payment.xsd">
     <groups>
-        <group id="adyen">
-            <label>Adyen Payment Methods</label>
-        </group>
         <group id="adyen-express-payment-method">
             <label>Adyen Express Checkout Payment Methods</label>
         </group>
