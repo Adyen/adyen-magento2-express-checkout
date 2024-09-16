@@ -4,6 +4,7 @@ This module gives our customers the ability to use Apple Pay and Google Pay as a
 ## Features
 * Apple Pay express checkout options on the product page, mini cart and cart.
 * Google Pay express checkout options on the product page, mini cart and cart.
+* Paypal express checkout options on the product page, mini cart and cart.
 
 More express flows will be coming in 2023.
 
