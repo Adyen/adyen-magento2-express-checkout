@@ -1,0 +1,117 @@
+type Mutation {
+    expressInit (
+        productCartParams: String! @doc(description: "JSON encoded product cart parameters")
+        adyenCartId: Int @doc(description: "Real cart ID of a logged in shopper")
+        adyenMaskedQuoteId: String @doc(description: "Generated masked quote ID for PDP")
+    ): ExpressData @resolver(class: "Adyen\\ExpressCheckout\\Model\\Resolver\\ExpressInitResolver")
+}
+
+type ExpressData {
+    masked_quote_id: String @doc(description: "Generated masked quote ID for PDP")
+    is_virtual_quote: Boolean @doc(description: "Shows whether if the quote is virtual or not")
+    adyen_payment_methods: AdyenPaymentMethods @doc(description: "Lists Adyen payment methods with extra details")
+    totals: Totals @doc(description: "Cart totals")
+}
+
+type AdyenPaymentMethods {
+    extra_details: [ExtraDetail] @doc(description: "Provides icon, method name, configuration and shows whether if the it is open invoice or not")
+    methods_response: [MethodResponse] @doc(description: "Provides configuration from /paymentMethods call as well as method name and supported card brands")
+}
+
+type ExtraDetail {
+    icon: Icon @doc(description: "Payment method icon")
+    configuration: ExtraDetailConfiguration @doc(description: "Configuration object contaning amount and currency")
+    method: String @doc(description: "Payment method name")
+    is_open_invoice: Boolean @doc(description: "Shows whether if it is open invoice or not")
+}
+
+type ExtraDetailConfiguration {
+    amount: Amount @doc(description: "Amount and currency")
+    currency: String @doc(description: "Currency")
+}
+
+type Amount {
+    value: Int @doc(description: "Amount value in minor units")
+    currency: String @doc(description: "Currency")
+}
+
+type Icon {
+    url: String @doc(description: "Payment method icon URL")
+    width: Int @doc(description: "Icon width in pixels")
+    height: Int @doc(description: "Icon height in pixels")
+}
+
+type MethodResponse {
+    configuration: MethodResponseConfiguration @doc(description: "Configuration object returning from /paymentMethods call")
+    name: String @doc(description: "Payment method title")
+    brands: [String] @doc(description: "Supported card networks")
+    type: String @doc(description: "Payment method tx_variant")
+}
+
+type MethodResponseConfiguration {
+    merchant_id: String @doc(description: "Merchant ID from Customer Area")
+    gateway_merchant_id: String @doc(description: "Gateway Merchant ID from Customer Area")
+    intent: String @doc(description: "Intent of payment")
+    merchant_name: String @doc(description: "Merchant account name")
+}
+
+type Totals {
+    grand_total: Float @doc(description: "Grand total in quote currency")
+    base_grand_total: Float @doc(description: "Grand total in base currency")
+    subtotal: Float @doc(description: "Subtotal in quote currency")
+    base_subtotal: Float @doc(description: "Subtotal in quote currency")
+    discount_amount: Float @doc(description: "Discount amount in quote currency")
+    base_discount_amount: Float @doc(description: "Discount amount in base currency")
+    subtotal_with_discount: Float @doc(description: "Subtotal in quote currency with applied discount")
+    base_subtotal_with_discount: Float @doc(description: "Subtotal in base currency with applied discount")
+    shipping_amount: Float @doc(description: "Shipping amount in quote currency")
+    base_shipping_amount: Float @doc(description: "Shipping amount in base currency")
+    shipping_discount_amount: Float @doc(description: "Shipping discount amount in quote currency")
+    base_shipping_discount_amount: Float @doc(description: "Shipping discount amount in base currency")
+    tax_amount: Float @doc(description: "Tax amount in quote currency")
+    base_tax_amount: Float @doc(description: "Tax amount in base currency")
+    weee_tax_applied_amount: Float @doc(description: "The total weee tax applied amount in quote currency")
+    shipping_tax_amount: Float @doc(description: "Shipping tax amount in quote currency")
+    base_shipping_tax_amount: Float @doc(description: "Shipping tax amount in base currency")
+    subtotal_incl_tax: Float @doc(description: "Subtotal including tax in quote currency")
+    base_subtotal_incl_tax: Float @doc(description: "Subtotal including tax in base currency")
+    shipping_incl_tax: Float @doc(description: "Shipping including tax in quote currency")
+    base_shipping_incl_tax: Float @doc(description: "Shipping including tax in base currency")
+    base_currency_code: String @doc(description: "Base currency code")
+    quote_currency_code: String @doc(description: "Quote currency code")
+    coupon_code: String @doc(description: "Applied coupon code")
+    items: [TotalsItem] @doc(description: "Totals by items")
+    total_segments: [TotalSegment] @doc(description: "Dynamically calculated totals")
+    items_qty: Int @doc(description: "Items qty")
+}
+
+type TotalsItem {
+    item_id: Int @doc(description: "Item id")
+    price: Float @doc(description: "Price")
+    base_price: Float @doc(description: "Base price")
+    qty: Float @doc(description: "Quantity")
+    row_total: Float @doc(description: "Row total")
+    base_row_total: Float @doc(description: "Base row total")
+    row_total_with_discount: Float @doc(description: "Row total with discount")
+    discount_amount: Float @doc(description: "Discount amount")
+    base_discount_amount: Float @doc(description: "Base discount amount")
+    discount_percent: Float @doc(description: "Discount percent")
+    tax_amount: Float @doc(description: "Tax amount")
+    base_tax_amount: Float @doc(description: "Base tax amount")
+    tax_percent: Float @doc(description: "Tax percent")
+    price_incl_tax: Float @doc(description: "Price including tax")
+    base_price_incl_tax: Float @doc(description: "Base price including tax")
+    row_total_incl_tax: Float @doc(description: "Row total including tax")
+    base_row_total_incl_tax: Float @doc(description: "Base row total including tax")
+    options: String @doc(description: "Item options data")
+    weee_tax_applied_amount: Float @doc(description: "Item Weee Tax Applied Amount")
+    weee_tax_applied: String @doc(description: "Item Weee Tax Applied Amount")
+    name: String @doc(description: "Item name")
+}
+
+type TotalSegment {
+    code: String @doc(description: "Total code")
+    title: String @doc(description: "Total title")
+    value: Float @doc(description: "Total value")
+    area: String @doc(description: "Display area code")
+}
