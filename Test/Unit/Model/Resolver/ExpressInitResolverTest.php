@@ -37,6 +37,8 @@ class ExpressInitResolverTest extends AbstractAdyenTestCase
     protected MockObject&Context $contextMock;
     protected MockObject&ResolveInfo $infoMock;
 
+    const SUCCESSFUL_CART_PARAMS = "{\"product\":1562,\"qty\":\"5\",\"super_attribute\":{\"93\":56,\"144\":166}}";
+
     public function setUp(): void
     {
         $this->expressInitMock = $this->createMock(ExpressInit::class);
@@ -116,28 +118,28 @@ class ExpressInitResolverTest extends AbstractAdyenTestCase
         return [
             [
                 'args' => [
-                    'productCartParams' => "{\"product\":1562,\"qty\":\"5\",\"super_attribute\":{\"93\":56,\"144\":166}}",
+                    'productCartParams' => self::SUCCESSFUL_CART_PARAMS,
                     'adyenCartId' => 'Mock_adyenCartId',
                     'adyenMaskedQuoteId' => 'Mock_adyenMaskedQuoteId'
                 ]
             ],
             [
                 'args' => [
-                    'productCartParams' => "{\"product\":1562,\"qty\":\"5\",\"super_attribute\":{\"93\":56,\"144\":166}}",
+                    'productCartParams' => self::SUCCESSFUL_CART_PARAMS,
                     'adyenCartId' => null,
                     'adyenMaskedQuoteId' => null
                 ]
             ],
             [
                 'args' => [
-                    'productCartParams' => "{\"product\":1562,\"qty\":\"5\",\"super_attribute\":{\"93\":56,\"144\":166}}",
+                    'productCartParams' => self::SUCCESSFUL_CART_PARAMS,
                     'adyenCartId' => "",
                     'adyenMaskedQuoteId' => ""
                 ]
             ],
             [
                 'args' => [
-                    'productCartParams' => "{\"product\":1562,\"qty\":\"5\",\"super_attribute\":{\"93\":56,\"144\":166}}"
+                    'productCartParams' => self::SUCCESSFUL_CART_PARAMS
                 ]
             ]
         ];
