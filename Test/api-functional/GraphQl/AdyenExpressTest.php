@@ -147,4 +147,41 @@ QUERY;
         $this->assertArrayHasKey('expressActivate', $response);
         $this->assertTrue($response['expressActivate']);
     }
+
+    /**
+     * Test case for expressCancel mutation with valid adyenCartId
+     * should activate the quote and return TRUE.
+     *
+     * @return void
+     * @throws Exception
+     */
+    public function testSuccessfulExpressQuoteCancellation(): void
+    {
+        // Generate express quote for PDP
+        $query = <<<QUERY
+mutation {
+    expressInit(
+        productCartParams: "{\"product\":1562,\"qty\":\"1\",\"super_attribute\":{\"93\":56,\"144\":166}}"
+    ) {
+        masked_quote_id
+    }
+}
+QUERY;
+
+        $initiateQuote = $this->graphQlMutation($query);
+        $expressMaskedQuoteId = $initiateQuote['expressInit']['masked_quote_id'];
+
+        $query = <<<QUERY
+mutation {
+    expressCancel(
+        adyenCartId: "$expressMaskedQuoteId"
+    )
+}
+QUERY;
+
+        $response = $this->graphQlMutation($query);
+
+        $this->assertArrayHasKey('expressCancel', $response);
+        $this->assertTrue($response['expressCancel']);
+    }
 }
