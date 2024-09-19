@@ -14,7 +14,7 @@
     "adyen/module-payment": "^9.7.1"
   },
   "require-dev": {
-    "phpunit/phpunit": "*",
+    "phpunit/phpunit": "~9.6.1",
     "magento/magento-coding-standard": "*",
     "squizlabs/php_codesniffer": "*"
   },
@@ -25,5 +25,16 @@
     "psr-4": {
       "Adyen\\ExpressCheckout\\": ""
     }
+  },
+  "autoload-dev": {
+    "psr-4": {
+      "Adyen\\ExpressCheckout\\Tests\\": "Test"
+    }
+  },
+  "scripts": {
+    "test": [
+      "Composer\\Config::disableProcessTimeout",
+      "vendor/bin/phpunit -c Test/phpunit.xml"
+    ]
   }
 }
