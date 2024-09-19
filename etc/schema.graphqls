@@ -4,6 +4,11 @@ type Mutation {
         adyenCartId: Int @doc(description: "Real cart ID of a logged in shopper")
         adyenMaskedQuoteId: String @doc(description: "Generated masked quote ID for PDP")
     ): ExpressData @resolver(class: "Adyen\\ExpressCheckout\\Model\\Resolver\\ExpressInitResolver")
+
+    expressActivate (
+        adyenMaskedQuoteId: String! @doc(description: "Generated masked quote ID for PDP")
+        adyenCartId: Int @doc(description: "Real cart ID of a logged in shopper")
+    ): Boolean @resolver(class: "Adyen\\ExpressCheckout\\Model\\Resolver\\ExpressActivateResolver")
 }
 
 type ExpressData {

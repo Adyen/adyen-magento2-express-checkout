@@ -111,4 +111,40 @@ QUERY;
         $this->assertArrayHasKey('masked_quote_id', $updateCallResponse['expressInit']);
         $this->assertEquals($maskedQuoteId, $updateCallResponse['expressInit']['masked_quote_id']);
     }
+
+    /**
+     * Test case for expressActivate mutation with valid adyenMaskedQuoteId
+     * should activate the quote and return TRUE.
+     *
+     * @return void
+     * @throws Exception
+     */
+    public function testSuccessfulExpressQuoteActivation(): void
+    {
+        $query = <<<QUERY
+mutation {
+    expressInit(
+        productCartParams: "{\"product\":1562,\"qty\":\"1\",\"super_attribute\":{\"93\":56,\"144\":166}}"
+    ) {
+        masked_quote_id
+    }
+}
+QUERY;
+
+        $initiateQuote = $this->graphQlMutation($query);
+        $maskedQuoteId = $initiateQuote['expressInit']['masked_quote_id'];
+
+        $query = <<<QUERY
+mutation {
+    expressActivate(
+        adyenMaskedQuoteId: "$maskedQuoteId"
+    )
+}
+QUERY;
+
+        $response = $this->graphQlMutation($query);
+
+        $this->assertArrayHasKey('expressActivate', $response);
+        $this->assertTrue($response['expressActivate']);
+    }
 }
