@@ -7,7 +7,7 @@ type Mutation {
 
     expressActivate (
         adyenMaskedQuoteId: String! @doc(description: "Adyen express quote ID for PDP")
-        adyenCartId: Int @doc(description: "Original quote ID of the cart")
+        adyenCartId: String @doc(description: "Original quote ID of the cart")
     ): Boolean @resolver(class: "Adyen\\ExpressCheckout\\Model\\Resolver\\ExpressActivateResolver")
 
     expressCancel (
