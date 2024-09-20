@@ -17,10 +17,8 @@ use Adyen\ExpressCheckout\Model\ExpressCancel;
 use Adyen\Payment\Logger\AdyenLogger;
 use Exception;
 use Magento\Framework\Exception\LocalizedException;
-use Magento\Framework\Exception\NoSuchEntityException;
 use Magento\Framework\GraphQl\Config\Element\Field;
 use Magento\Framework\GraphQl\Exception\GraphQlInputException;
-use Magento\Framework\GraphQl\Exception\GraphQlNoSuchEntityException;
 use Magento\Framework\GraphQl\Query\Resolver\Value;
 use Magento\Framework\GraphQl\Query\Resolver\ValueFactory;
 use Magento\Framework\GraphQl\Query\ResolverInterface;
@@ -48,12 +46,11 @@ class ExpressCancelResolver implements ResolverInterface
      * @param ResolveInfo $info
      * @param array|null $value
      * @param array|null $args
-     * @return Value|mixed
+     * @return Value
      * @throws GraphQlInputException
-     * @throws GraphQlNoSuchEntityException
      * @throws LocalizedException
      */
-    public function resolve(Field $field, $context, ResolveInfo $info, array $value = null, array $args = null)
+    public function resolve(Field $field, $context, ResolveInfo $info, array $value = null, array $args = null): Value
     {
         if (empty($args['adyenCartId'])) {
             throw new GraphQlInputException(__('Required parameter "adyenCartId" is missing!'));
@@ -76,8 +73,6 @@ class ExpressCancelResolver implements ResolverInterface
             };
 
             return $this->valueFactory->create($result);
-        } catch (NoSuchEntityException $e) {
-            throw new GraphQlNoSuchEntityException(__($e->getMessage()));
         } catch (Exception $e) {
             $errorMessage = "An error occurred while cancelling the express quote";
             $logMessage = sprintf("%s: %s", $errorMessage, $e->getMessage());
