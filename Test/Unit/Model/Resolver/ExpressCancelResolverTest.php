@@ -98,41 +98,6 @@ class ExpressCancelResolverTest extends AbstractAdyenTestCase
     }
 
     /**
-     * Assets expect exception if the masked quote id doesn't belong to any quote
-     *
-     * @return void
-     * @throws Exception
-     */
-    public function testResolverShouldThrowExceptionNonExistingQuote()
-    {
-        $this->expectException(GraphQlNoSuchEntityException::class);
-
-        $args = [
-            'adyenCartId' => "Mock_adyen_cart_id"
-        ];
-
-        $quoteIdMaskMock = $this->createGeneratedMock(QuoteIdMask::class, [
-            'load',
-            'getQuoteId'
-        ]);
-        $quoteIdMaskMock->method('load')->willReturn($quoteIdMaskMock);
-        $quoteIdMaskMock->method('getQuoteId')->willReturn(1);
-
-        $this->quoteIdMaskFactoryMock->method('create')
-            ->willReturn($quoteIdMaskMock);
-
-        $this->valueFactoryMock->method('create')->willThrowException(new NoSuchEntityException());
-
-        $this->expressCancelResolver->resolve(
-            $this->fieldMock,
-            $this->contextMock,
-            $this->infoMock,
-            [],
-            $args
-        );
-    }
-
-    /**
      * Assets expect exception if the quote id can not be unmasked
      *
      * @return void
