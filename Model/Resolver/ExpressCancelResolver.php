@@ -52,15 +52,15 @@ class ExpressCancelResolver implements ResolverInterface
      */
     public function resolve(Field $field, $context, ResolveInfo $info, array $value = null, array $args = null): Value
     {
-        if (empty($args['adyenCartId'])) {
-            throw new GraphQlInputException(__('Required parameter "adyenCartId" is missing!'));
+        if (empty($args['adyenMaskedQuoteId'])) {
+            throw new GraphQlInputException(__('Required parameter "adyenMaskedQuoteId" is missing!'));
         }
 
         try {
             // Extract unmasked quote id
-            $adyenCartId = $args['adyenCartId'];
+            $adyenMaskedQuoteId = $args['adyenMaskedQuoteId'];
             $quoteIdMask = $this->quoteMaskFactory->create()->load(
-                $adyenCartId,
+                $adyenMaskedQuoteId,
                 'masked_id'
             );
             $quoteId = (int) $quoteIdMask->getQuoteId();

@@ -17,10 +17,8 @@ use Adyen\Payment\Logger\AdyenLogger;
 use Adyen\Payment\Test\Unit\AbstractAdyenTestCase;
 use Exception;
 use Magento\Framework\Exception\LocalizedException;
-use Magento\Framework\Exception\NoSuchEntityException;
 use Magento\Framework\GraphQl\Config\Element\Field;
 use Magento\Framework\GraphQl\Exception\GraphQlInputException;
-use Magento\Framework\GraphQl\Exception\GraphQlNoSuchEntityException;
 use Magento\Framework\GraphQl\Query\Resolver\Value;
 use Magento\Framework\GraphQl\Query\Resolver\ValueFactory;
 use Magento\Framework\GraphQl\Schema\Type\ResolveInfo;
@@ -42,7 +40,6 @@ class ExpressCancelResolverTest extends AbstractAdyenTestCase
     protected MockObject&Field $fieldMock;
     protected MockObject&Context $contextMock;
     protected MockObject&ResolveInfo $infoMock;
-
 
     public function setUp(): void
     {
@@ -75,7 +72,7 @@ class ExpressCancelResolverTest extends AbstractAdyenTestCase
     }
 
     /**
-     * Assets expect exception if the required parameter `adyenCartId` is an empty string.
+     * Assets expect exception if the required parameter `adyenMaskedQuoteId` is an empty string.
      *
      * @return void
      * @throws GraphQlInputException|Exception
@@ -85,7 +82,7 @@ class ExpressCancelResolverTest extends AbstractAdyenTestCase
         $this->expectException(GraphQlInputException::class);
 
         $args = [
-            'adyenCartId' => ""
+            'adyenMaskedQuoteId' => ""
         ];
 
         $this->expressCancelResolver->resolve(
@@ -108,7 +105,7 @@ class ExpressCancelResolverTest extends AbstractAdyenTestCase
         $this->expectException(LocalizedException::class);
 
         $args = [
-            'adyenCartId' => "Mock_adyen_cart_id"
+            'adyenMaskedQuoteId' => "mock_adyen_masked_quote_id"
         ];
 
         $quoteIdMaskMock = $this->createGeneratedMock(QuoteIdMask::class, [
@@ -139,7 +136,7 @@ class ExpressCancelResolverTest extends AbstractAdyenTestCase
      */
     public function testSuccessfulResolving()
     {
-        $args['adyenCartId'] = "Mock_adyenCartId";
+        $args['adyenMaskedQuoteId'] = "mock_adyen_masked_quote_id";
 
         $quoteIdMaskMock = $this->createGeneratedMock(QuoteIdMask::class, [
             'load',

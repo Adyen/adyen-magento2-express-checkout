@@ -174,7 +174,7 @@ QUERY;
         $query = <<<QUERY
 mutation {
     expressCancel(
-        adyenCartId: "$expressMaskedQuoteId"
+        adyenMaskedQuoteId: "$expressMaskedQuoteId"
     )
 }
 QUERY;
