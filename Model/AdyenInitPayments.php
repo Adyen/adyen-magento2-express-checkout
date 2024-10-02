@@ -161,8 +161,10 @@ class AdyenInitPayments implements AdyenInitPaymentsInterface
 
         try {
             $response = $this->transactionPaymentClient->placeRequest($transfer);
+            $paymentsResponse = $this->returnFirstTransactionPaymentResponse($response);
+
             return json_encode(
-                $this->paymentResponseHandler->formatPaymentResponse($response['resultCode'], $response['action'])
+                $this->paymentResponseHandler->formatPaymentResponse($paymentsResponse['resultCode'], $paymentsResponse['action'])
             );
         } catch (Exception $e) {
             throw new ClientException(
@@ -199,5 +201,21 @@ class AdyenInitPayments implements AdyenInitPaymentsInterface
         ];
 
         return array_merge($request, $stateData);
+    }
+
+    /**
+     * This method cleans up the unnecessary gift card response data
+     * and returns the actual `/payments` API response.
+     *
+     * @param array $response
+     * @return array
+     */
+    private function returnFirstTransactionPaymentResponse(array $response): array
+    {
+        if (array_key_exists('hasOnlyGiftCards', $response)) {
+            unset($response['hasOnlyGiftCards']);
+        }
+
+        return reset($response);
     }
 }
