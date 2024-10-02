@@ -11,7 +11,7 @@
     }
   ],
   "require": {
-    "adyen/module-payment": "^9.7.1"
+    "adyen/module-payment": "^9.8.1"
   },
   "require-dev": {
     "phpunit/phpunit": "~9.6.1",
