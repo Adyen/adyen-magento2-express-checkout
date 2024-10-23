@@ -17,9 +17,28 @@ namespace Adyen\ExpressCheckout\Observer;
 use Magento\Framework\Event\ObserverInterface;
 use Magento\Framework\Event\Observer;
 use Magento\Sales\Model\Order;
+use Magento\Sales\Api\Data\OrderPaymentInterface;
+use Magento\Sales\Api\OrderRepositoryInterface;
+use Adyen\Payment\Helper\PaymentMethods as PaymentMethodsHelper;
 
 class SubmitQuoteObserver implements ObserverInterface
 {
+    protected PaymentMethodsHelper $paymentMethodsHelper;
+    protected OrderRepositoryInterface $orderRepository;
+
+    /**
+     * @param PaymentMethodsHelper $paymentMethodsHelper
+     */
+    public function __construct
+    (
+        OrderRepositoryInterface $orderRepository,
+        PaymentMethodsHelper $paymentMethodsHelper
+    )
+    {
+        $this->paymentMethodsHelper = $paymentMethodsHelper;
+        $this->orderRepository = $orderRepository;
+    }
+
     /**
      * Execute method for the observer.
      *
@@ -28,15 +47,27 @@ class SubmitQuoteObserver implements ObserverInterface
      */
     public function execute(Observer $observer)
     {
+        /** @var Order $order */
         $order = $observer->getEvent()->getOrder();
         $payment = $order->getPayment();
+        if (!$payment instanceof OrderPaymentInterface)
+        {
+            return;
+        }
 
-        if ($payment->getMethod() == 'adyen_paypal_express') {
+        $paymentMethod = $payment->getMethod();
+
+        if (!$this->paymentMethodsHelper->isAdyenPayment($paymentMethod))
+        {
+            return;
+        }
+
+        if ($paymentMethod == 'adyen_paypal_express') {
             $payment->setMethod('adyen_paypal');
         }
 
         $order->setState(Order::STATE_NEW);
         $order->setStatus($order->getConfig()->getStateDefaultStatus(Order:: STATE_NEW));
-        $order->save();
+        $this->orderRepository->save($order);
     }
 }
