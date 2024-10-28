@@ -14,11 +14,11 @@ type Mutation {
         adyenMaskedQuoteId: String! @doc(description: "Adyen express quote ID for PDP")
     ): Boolean @resolver(class: "Adyen\\ExpressCheckout\\Model\\Resolver\\ExpressCancelResolver")
 
-    initPayments (
+    adyenExpressInitPayments (
         stateData: String! @doc(description: "JSON encoded `data` object obtained from the payment component")
         adyenCartId: String @doc(description: "Original quote ID of the cart")
         adyenMaskedQuoteId: String @doc(description: "Adyen express quote ID for PDP")
-    ): AdyenPaymentStatus @resolver(class: "Adyen\\ExpressCheckout\\Model\\Resolver\\ExpressInitPaymentsResolver")
+    ): AdyenPaymentStatus @resolver(class: "Adyen\\ExpressCheckout\\Model\\Resolver\\AdyenExpressInitPaymentsResolver")
 }
 
 type ExpressData {

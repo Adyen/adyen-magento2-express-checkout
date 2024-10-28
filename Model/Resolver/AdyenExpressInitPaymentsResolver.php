@@ -26,7 +26,7 @@ use Magento\Framework\GraphQl\Query\ResolverInterface;
 use Magento\Framework\GraphQl\Schema\Type\ResolveInfo;
 use Magento\Quote\Model\QuoteIdMaskFactory;
 
-class ExpressInitPaymentsResolver implements ResolverInterface
+class AdyenExpressInitPaymentsResolver implements ResolverInterface
 {
     /**
      * @param AdyenInitPaymentsInterface $adyenInitPaymentsApi
