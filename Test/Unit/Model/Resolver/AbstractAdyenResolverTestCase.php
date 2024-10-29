@@ -31,6 +31,7 @@ abstract class AbstractAdyenResolverTestCase extends AbstractAdyenTestCase
 {
     abstract protected static function emptyArgumentAssertionDataProvider(): array;
     abstract protected static function successfulResolverDataProvider(): array;
+    abstract protected static function missingQuoteAssertionDataProvider(): array;
 
     protected ?ResolverInterface $resolver;
     protected MockObject&Field $fieldMock;
@@ -101,28 +102,12 @@ abstract class AbstractAdyenResolverTestCase extends AbstractAdyenTestCase
      * Assets expect exception if the required parameter is an empty string.
      * `emptyArgumentAssertionDataProvider()` data provider should be implemented in the test class.
      *
-     * Method argument `parameter` can be string or array.
-     * Provide an array to assert either one of those values should be set.
-     * Provide a string to assert single required argument.
-     *
      * @return void
      * @throws GraphQlInputException|Exception
      */
-    public function testResolverShouldThrowExceptionWithEmptyArgument(string|array $parameter)
+    public function testResolverShouldThrowExceptionWithEmptyArgument(array $args)
     {
         $this->expectException(GraphQlInputException::class);
-
-        $args = [];
-
-        if (is_array($parameter)) {
-            foreach ($parameter as $value) {
-                $args[$value] = '';
-            }
-        } else {
-            $args = [
-                "$parameter" => ''
-            ];
-        }
 
         $this->resolver->resolve(
             $this->fieldMock,
@@ -136,16 +121,14 @@ abstract class AbstractAdyenResolverTestCase extends AbstractAdyenTestCase
     /**
      * Asserts exception if the quote entity not found
      *
+     * @dataProvider missingQuoteAssertionDataProvider
+     *
      * @return void
      * @throws Exception
      */
-    public function testMissingQuoteShouldThrowException()
+    public function testMissingQuoteShouldThrowException($args)
     {
         $this->expectException(LocalizedException::class);
-
-        $args = [
-            'adyenMaskedQuoteId' => 'mock_product_cart_params'
-        ];
 
         $this->valueFactoryMock->method('create')
             ->willThrowException(new ExpressInitException(__('Localized test exception!')));

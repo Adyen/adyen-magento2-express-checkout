@@ -53,8 +53,29 @@ class AdyenExpressInitPaymentsResolverTest extends AbstractAdyenResolverTestCase
     protected static function emptyArgumentAssertionDataProvider(): array
     {
         return [
-            ['parameter' => ['adyenCartId', 'adyenMaskedQuoteId']],
-            ['parameter' => 'stateData']
+            [
+                'args' => [
+                    'adyenCartId', 'adyenMaskedQuoteId'
+                ]
+            ],
+            [
+                'args' => [
+                    'stateData' => 'mock_state_data'
+                ]
+            ],
+            [
+                'args' => [
+                    'stateData' => 'mock_state_data',
+                    'adyenCartId' => '',
+                    'adyenMaskedQuoteId' => ''
+                ]
+            ],
+            [
+                'args' => [
+                    'stateData' => 'mock_state_data',
+                    'adyenMaskedQuoteId' => ''
+                ]
+            ]
         ];
     }
 
@@ -83,6 +104,23 @@ class AdyenExpressInitPaymentsResolverTest extends AbstractAdyenResolverTestCase
                 'args' => [
                     'stateData' => 'json_encoded_state_data',
                     'adyenCartId' => 'adyenCartId'
+                ]
+            ]
+        ];
+    }
+
+    /**
+     * Data provider for abstract test case testMissingQuoteShouldThrowException()
+     *
+     * @return array
+     */
+    protected static function missingQuoteAssertionDataProvider(): array
+    {
+        return [
+            [
+                'args' => [
+                    'stateData' => 'adyen_state_data_mock',
+                    'adyenMaskedQuoteId' => 'mock_product_cart_params'
                 ]
             ]
         ];
