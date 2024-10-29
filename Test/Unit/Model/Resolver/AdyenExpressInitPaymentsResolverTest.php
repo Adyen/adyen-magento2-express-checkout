@@ -55,7 +55,7 @@ class AdyenExpressInitPaymentsResolverTest extends AbstractAdyenResolverTestCase
         return [
             [
                 'args' => [
-                    'adyenCartId', 'adyenMaskedQuoteId'
+                    'adyenCartId' => 'adyenMaskedQuoteId'
                 ]
             ],
             [
