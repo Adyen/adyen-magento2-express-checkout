@@ -82,11 +82,13 @@ class AdyenExpressInitPaymentsResolver implements ResolverInterface
 
             $provider = $this->adyenInitPaymentsApi;
 
-            return $this->valueFactory->create(function () use ($stateData, $adyenMaskedQuoteId, $quoteId, $provider) {
+            $result = function () use ($stateData, $adyenMaskedQuoteId, $quoteId, $provider) {
                 return $this->adyenPaymentStatusDataProvider->formatResponse(
                     json_decode($provider->execute($stateData, $quoteId, $adyenMaskedQuoteId), true)
                 );
-            });
+            };
+
+            return $this->valueFactory->create($result);
         } catch (Exception $e) {
             $errorMessage = "An error occurred during initializing API call to `/payments` endpoint!";
             $logMessage = sprintf("%s: %s", $errorMessage, $e->getMessage());
