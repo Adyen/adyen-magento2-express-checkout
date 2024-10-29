@@ -29,10 +29,6 @@ use PHPUnit\Framework\MockObject\MockObject;
 
 abstract class AbstractAdyenResolverTestCase extends AbstractAdyenTestCase
 {
-    abstract protected static function emptyArgumentAssertionDataProvider(): array;
-    abstract protected static function successfulResolverDataProvider(): array;
-    abstract protected static function missingQuoteAssertionDataProvider(): array;
-
     protected ?ResolverInterface $resolver;
     protected MockObject&Field $fieldMock;
     protected MockObject&Context $contextMock;
@@ -40,6 +36,27 @@ abstract class AbstractAdyenResolverTestCase extends AbstractAdyenTestCase
     protected MockObject&ValueFactory $valueFactoryMock;
     protected MockObject&QuoteIdMaskFactory $quoteIdMaskFactoryMock;
     protected MockObject&AdyenLogger $loggerMock;
+
+    /**
+     * Data provider for abstract test case testResolverShouldThrowExceptionWithEmptyArgument()
+     *
+     * @return array[]
+     */
+    abstract protected static function emptyArgumentAssertionDataProvider(): array;
+
+    /**
+     * Data provider for abstract test case testSuccessfulResolving()
+     *
+     * @return array
+     */
+    abstract protected static function successfulResolverDataProvider(): array;
+
+    /**
+     * Data provider for abstract test case testMissingQuoteShouldThrowException()
+     *
+     * @return array
+     */
+    abstract protected static function missingQuoteAssertionDataProvider(): array;
 
     public function setUp(): void
     {
