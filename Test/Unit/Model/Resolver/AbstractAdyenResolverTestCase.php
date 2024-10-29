@@ -147,8 +147,14 @@ abstract class AbstractAdyenResolverTestCase extends AbstractAdyenTestCase
     {
         $this->expectException(LocalizedException::class);
 
-        $this->valueFactoryMock->method('create')
+        $quoteIdMaskMock = $this->createGeneratedMock(QuoteIdMask::class, [
+            'load',
+            'getQuoteId'
+        ]);
+        $quoteIdMaskMock->method('load')->willReturn($quoteIdMaskMock);
+        $quoteIdMaskMock->method('getQuoteId')
             ->willThrowException(new ExpressInitException(__('Localized test exception!')));
+        $this->quoteIdMaskFactoryMock->method('create')->willReturn($quoteIdMaskMock);
 
         $this->resolver->resolve(
             $this->fieldMock,

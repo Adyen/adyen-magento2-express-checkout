@@ -44,6 +44,11 @@ class AdyenExpressPaypalUpdateOrderResolverTest extends AbstractAdyenResolverTes
         );
     }
 
+    /**
+     * Data provider for abstract test case testResolverShouldThrowExceptionWithEmptyArgument()
+     *
+     * @return array[]
+     */
     protected static function emptyArgumentAssertionDataProvider(): array
     {
         return [
@@ -71,6 +76,11 @@ class AdyenExpressPaypalUpdateOrderResolverTest extends AbstractAdyenResolverTes
         ];
     }
 
+    /**
+     * Data provider for abstract test case testSuccessfulResolving()
+     *
+     * @return array
+     */
     protected static function successfulResolverDataProvider(): array
     {
         return [
@@ -100,13 +110,19 @@ class AdyenExpressPaypalUpdateOrderResolverTest extends AbstractAdyenResolverTes
         ];
     }
 
+    /**
+     * Data provider for abstract test case testMissingQuoteShouldThrowException()
+     *
+     * @return array
+     */
     protected static function missingQuoteAssertionDataProvider(): array
     {
         return [
             [
                 'args' => [
                     'paymentData' => 'mock_payment_data',
-                    'adyenMaskedQuoteId' => 'mock_product_cart_params'
+                    'adyenMaskedQuoteId' => 'mock_product_cart_params',
+                    'adyenCartId' => 'mock_adyenCartId'
                 ]
             ]
         ];

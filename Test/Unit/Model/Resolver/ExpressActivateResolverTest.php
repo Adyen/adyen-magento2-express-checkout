@@ -11,51 +11,28 @@
 
 namespace Adyen\ExpressCheckout\Test\Unit\Model\Resolver;
 
-use Adyen\ExpressCheckout\Exception\ExpressInitException;
 use Adyen\ExpressCheckout\Model\ExpressActivate;
 use Adyen\ExpressCheckout\Model\Resolver\ExpressActivateResolver;
-use Adyen\Payment\Logger\AdyenLogger;
-use Adyen\Payment\Test\Unit\AbstractAdyenTestCase;
-use Exception;
-use Magento\Framework\Exception\LocalizedException;
-use Magento\Framework\GraphQl\Config\Element\Field;
-use Magento\Framework\GraphQl\Exception\GraphQlInputException;
-use Magento\Framework\GraphQl\Query\Resolver\Value;
-use Magento\Framework\GraphQl\Query\Resolver\ValueFactory;
-use Magento\Framework\GraphQl\Schema\Type\ResolveInfo;
-use Magento\GraphQl\Model\Query\Context;
-use Magento\Quote\Model\QuoteIdMask;
-use Magento\Quote\Model\QuoteIdMaskFactory;
 use PHPUnit\Framework\MockObject\MockObject;
 
-class ExpressActivateResolverTest extends AbstractAdyenTestCase
+class ExpressActivateResolverTest extends AbstractAdyenResolverTestCase
 {
-    // Mocks for class builder
-    protected ?ExpressActivateResolver $expressActivateResolver;
     protected MockObject&ExpressActivate $expressActivateMock;
-    protected MockObject&ValueFactory $valueFactoryMock;
-    protected MockObject&QuoteIdMaskFactory $quoteIdMaskFactoryMock;
-    protected MockObject&AdyenLogger $loggerMock;
 
-    // Mocks for `resolve()` method
-    protected MockObject&Field $fieldMock;
-    protected MockObject&Context $contextMock;
-    protected MockObject&ResolveInfo $infoMock;
-
+    /**
+     * Build the class under test and the dependencies
+     *
+     * @return void
+     */
     public function setUp(): void
     {
+        // Build generic mocks for Adyen resolver tests
+        parent::setUp();
+
+        // Build class specific mocks
         $this->expressActivateMock = $this->createMock(ExpressActivate::class);
 
-        $this->valueFactoryMock = $this->createMock(ValueFactory::class);
-        $this->fieldMock = $this->createMock(Field::class);
-        $this->contextMock = $this->createMock(Context::class);
-        $this->infoMock = $this->createMock(ResolveInfo::class);
-        $this->quoteIdMaskFactoryMock = $this->createGeneratedMock(QuoteIdMaskFactory::class, [
-            'create'
-        ]);
-        $this->loggerMock = $this->createMock(AdyenLogger::class);
-
-        $this->expressActivateResolver = new ExpressActivateResolver(
+        $this->resolver = new ExpressActivateResolver(
             $this->expressActivateMock,
             $this->valueFactoryMock,
             $this->quoteIdMaskFactoryMock,
@@ -64,38 +41,10 @@ class ExpressActivateResolverTest extends AbstractAdyenTestCase
     }
 
     /**
-     * Reset the target class after each test
+     * Data provider for abstract test case testSuccessfulResolving()
      *
-     * @return void
+     * @return array
      */
-    public function tearDown(): void
-    {
-        $this->expressActivateResolver = null;
-    }
-
-    /**
-     * Assets expect exception if the required parameter `adyenMaskedQuoteId` is an empty string.
-     *
-     * @return void
-     * @throws GraphQlInputException|Exception
-     */
-    public function testResolverShouldThrowExceptionWithEmptyArgument()
-    {
-        $this->expectException(GraphQlInputException::class);
-
-        $args = [
-            'adyenMaskedQuoteId' => ""
-        ];
-
-        $this->expressActivateResolver->resolve(
-            $this->fieldMock,
-            $this->contextMock,
-            $this->infoMock,
-            [],
-            $args
-        );
-    }
-
     public static function successfulResolverDataProvider(): array
     {
         return [
@@ -120,64 +69,38 @@ class ExpressActivateResolverTest extends AbstractAdyenTestCase
     }
 
     /**
-     * Assets successful generation of the Value class after resolving
-     * the mutation with correct set of inputs.
+     * Data provider for abstract test case testResolverShouldThrowExceptionWithEmptyArgument()
      *
-     * @dataProvider successfulResolverDataProvider
-     *
-     * @return void
-     * @throws Exception
+     * @return array[]
      */
-    public function testSuccessfulResolving($args)
+    protected static function emptyArgumentAssertionDataProvider(): array
     {
-        $returnValueMock = $this->createMock(Value::class);
-        $this->valueFactoryMock->method('create')->willReturn($returnValueMock);
-
-        $quoteIdMaskMock = $this->createGeneratedMock(QuoteIdMask::class, [
-            'load',
-            'getQuoteId'
-        ]);
-        $quoteIdMaskMock->method('load')->willReturn($quoteIdMaskMock);
-        $quoteIdMaskMock->method('getQuoteId')->willReturn(1);
-        $this->quoteIdMaskFactoryMock->method('create')->willReturn($quoteIdMaskMock);
-
-        $result = $this->expressActivateResolver->resolve(
-            $this->fieldMock,
-            $this->contextMock,
-            $this->infoMock,
-            [],
-            $args
-        );
-
-        $this->assertInstanceOf(Value::class, $result);
+        return [
+            [
+                'args' => []
+            ],
+            [
+                'args' => [
+                    'adyenMaskedQuoteId' => ''
+                ]
+            ]
+        ];
     }
 
     /**
-     * Asserts exception if the quote entity not found
+     * Data provider for abstract test case testMissingQuoteShouldThrowException()
      *
-     * @return void
-     * @throws GraphQlInputException
-     * @throws LocalizedException
+     * @return array
      */
-    public function testMissingQuoteShouldThrowException()
+    protected static function missingQuoteAssertionDataProvider(): array
     {
-        $this->expectException(LocalizedException::class);
-
-        $args = [
-            'adyenMaskedQuoteId' => 'mock_product_cart_params'
+        return [
+            [
+                'args' => [
+                    'adyenMaskedQuoteId' => 'mock_product_cart_params',
+                    'adyenCartId' => 'Mock_adyenCartId'
+                ]
+            ]
         ];
-
-        $this->valueFactoryMock->method('create')
-            ->willThrowException(new ExpressInitException(__('Localized test exception!')));
-
-        $this->expressActivateResolver->resolve(
-            $this->fieldMock,
-            $this->contextMock,
-            $this->infoMock,
-            [],
-            $args
-        );
-
-        $this->loggerMock->expects($this->once())->method('error');
     }
 }

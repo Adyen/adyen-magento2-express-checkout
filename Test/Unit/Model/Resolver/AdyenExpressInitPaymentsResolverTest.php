@@ -120,7 +120,8 @@ class AdyenExpressInitPaymentsResolverTest extends AbstractAdyenResolverTestCase
             [
                 'args' => [
                     'stateData' => 'adyen_state_data_mock',
-                    'adyenMaskedQuoteId' => 'mock_product_cart_params'
+                    'adyenMaskedQuoteId' => 'mock_product_cart_params',
+                    'adyenCartId' => 'mock_adyenCartId'
                 ]
             ]
         ];
