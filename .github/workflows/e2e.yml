@@ -10,10 +10,8 @@ jobs:
     strategy:
       matrix:
         php-version: ["8.3"]
-        magento-version: ["2.4.7-p2"]
-    runs-on:
-      group: larger-runners
-      labels: ubuntu-latest-8-cores
+        magento-version: ["2.4.6-p8"]
+    runs-on: ubuntu-latest
     timeout-minutes: 25
     env:
       PHP_VERSION: ${{ matrix.php-version }}
