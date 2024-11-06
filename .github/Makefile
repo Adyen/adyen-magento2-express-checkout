@@ -39,6 +39,10 @@ flush:
 # Full plugin setup
 plugin: install configure flush
 
+# Production mode
+production:
+	bin/magento deploy:mode:set production
+
 # Setup permissions
 fs:
 	find var generated vendor pub/static pub/media app/etc -type f -exec chmod g+w {} +
