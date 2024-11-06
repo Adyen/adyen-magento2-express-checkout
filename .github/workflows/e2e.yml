@@ -1,4 +1,4 @@
-name: Adyen Magento 2 Express Checkout Plugin E2E Trigger Workflow
+name: E2E test workflow
 run-name: Headless E2E tests for ${{ github.event.pull_request.head.ref }}
 
 on:
