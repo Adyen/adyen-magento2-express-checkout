@@ -11,8 +11,10 @@ jobs:
       matrix:
         php-version: ["8.2"]
         magento-version: ["2.4.6-p8"]
-    runs-on: ubuntu-latest
-    timeout-minutes: 25
+    runs-on:
+      group: larger-runners
+      labels: ubuntu-latest-8-cores
+    timeout-minutes: 10
     env:
       PHP_VERSION: ${{ matrix.php-version }}
       MAGENTO_VERSION: ${{ matrix.magento-version }}
