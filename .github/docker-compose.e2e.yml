@@ -20,8 +20,6 @@ services:
       - ADYEN_MERCHANT
       - GOOGLE_USERNAME
       - GOOGLE_PASSWORD
-      - AMAZON_USERNAME
-      - AMAZON_PASSWORD
       - WEBHOOK_USERNAME
       - WEBHOOK_PASSWORD
       - CI
