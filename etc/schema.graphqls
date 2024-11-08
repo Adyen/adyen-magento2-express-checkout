@@ -13,6 +13,19 @@ type Mutation {
     expressCancel (
         adyenMaskedQuoteId: String! @doc(description: "Adyen express quote ID for PDP")
     ): Boolean @resolver(class: "Adyen\\ExpressCheckout\\Model\\Resolver\\ExpressCancelResolver")
+
+    adyenExpressInitPayments (
+        stateData: String! @doc(description: "JSON encoded `data` object obtained from the payment component")
+        adyenCartId: String @doc(description: "Original quote ID of the cart")
+        adyenMaskedQuoteId: String @doc(description: "Adyen express quote ID for PDP")
+    ): AdyenPaymentStatus @resolver(class: "Adyen\\ExpressCheckout\\Model\\Resolver\\AdyenExpressInitPaymentsResolver")
+
+    adyenExpressPaypalUpdateOrder (
+        paymentData: String! @doc(description: "`paymentData` field from the `/payments` response or previous `/paypal/updateOrder` response")
+        deliveryMethods: [PaypalDeliveryMethodInput] @doc(description: "Delivery methods to be shown on the PayPal pop-up")
+        adyenCartId: String @doc(description: "Original quote ID of the cart")
+        adyenMaskedQuoteId: String @doc(description: "Adyen express quote ID for PDP")
+    ): AdyenExpressPaypalUpdateOrderStatus @resolver(class: "Adyen\\ExpressCheckout\\Model\\Resolver\\AdyenExpressPaypalUpdateOrderResolver")
 }
 
 type ExpressData {
@@ -123,4 +136,22 @@ type TotalSegment {
     title: String @doc(description: "Total title")
     value: Float @doc(description: "Total value")
     area: String @doc(description: "Display area code")
+}
+
+type AdyenExpressPaypalUpdateOrderStatus {
+    status: String @doc(description: "")
+    paymentData: String @doc(description: "")
+}
+
+input PaypalDeliveryMethodInput {
+    reference: String @doc(description: "Unique reference number of the delivery method")
+    description: String @doc(description: "The description shown on the pop-up")
+    type: String @doc(description: "Order delivery type")
+    amount: AmountInput @doc(description: "Amount and currency of the row totals (without tax and shipping amounts)")
+    selected: Boolean @doc(description: "Default delivery method")
+}
+
+input AmountInput {
+    value: Int @doc(description: "Amount value in minor units")
+    currency: String @doc(description: "Currency")
 }
