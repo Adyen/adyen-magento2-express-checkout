@@ -261,7 +261,7 @@ define([
                     currency = paymentMethodExtraDetails.configuration.amount.currency;
                 }
 
-                return {
+                let configuration = {
                     showPayButton: true,
                     countryCode: config.countryCode,
                     environment: config.checkoutenv.toUpperCase(),
@@ -278,16 +278,12 @@ define([
                         phoneNumberRequired: true
                     },
                     isExpress: true,
-                    callbackIntents: !isVirtual ? ['SHIPPING_ADDRESS', 'SHIPPING_OPTION'] : ['OFFER'],
                     transactionInfo: {
                         totalPriceStatus: 'ESTIMATED',
                         totalPrice: this.isProductView
                             ? formatAmount(totalsModel().getTotal())
                             : formatAmount(getCartSubtotal()),
                         currencyCode: currency
-                    },
-                    paymentDataCallbacks: {
-                        onPaymentDataChanged: this.onPaymentDataChanged.bind(this)
                     },
                     allowedPaymentMethods: ['CARD'],
                     phoneNumberRequired: true,
@@ -302,6 +298,15 @@ define([
                     onError: () => cancelCart(this.isProductView),
                     ...googlePayStyles
                 };
+
+                if (!isVirtual) {
+                    configuration.callbackIntents = ['SHIPPING_ADDRESS', 'SHIPPING_OPTION'];
+                    configuration.paymentDataCallbacks = {
+                        onPaymentDataChanged: this.onPaymentDataChanged.bind(this)
+                    };
+                }
+
+                return configuration;
             },
 
             onPaymentDataChanged: function (data) {
