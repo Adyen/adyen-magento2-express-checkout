@@ -29,6 +29,7 @@ configure: n98-magerun2.phar
 	bin/magento config:set payment/adyen_abstract/payment_methods_active 1
 	bin/magento config:set payment/adyen_googlepay/express_show_on "1,2,3"
 	bin/magento config:set payment/adyen_applepay/express_show_on "1,2,3"
+	bin/magento config:set payment/adyen_paypal_express/express_show_on "1,2,3"
 	./n98-magerun2.phar config:store:set --encrypt payment/adyen_abstract/notification_password '1234'  > /dev/null
 	./n98-magerun2.phar config:store:set --encrypt payment/adyen_abstract/api_key_test "${ADYEN_API_KEY}" > /dev/null
 
