@@ -364,7 +364,7 @@ define([
                     setShippingInformation(shippingInformationPayload, self.isProductView).then(() => {
                         setTotalsInfo(totalsPayload, self.isProductView)
                             .done((response) => {
-                                self.afterSetTotalsInfo(response, shippingMethods[0], self.isProductView, resolve);
+                                self.afterSetTotalsInfo(response, shippingMethods, self.isProductView, resolve);
                             })
                             .fail((e) => {
                                 console.error('Adyen ApplePay: Unable to get totals', e);
@@ -420,6 +420,13 @@ define([
                     label: this.getMerchantName(),
                     amount: (response.grand_total).toString()
                 };
+
+                // If the shipping methods is an array pass all methods to Apple Pay to show in payment window.
+                if (Array.isArray(shippingMethod)) {
+                    applePayShippingMethodUpdate.newShippingMethods = shippingMethod;
+                    shippingMethod = shippingMethod[0];
+                }
+
                 applePayShippingMethodUpdate.newLineItems = [
                     {
                         type: 'final',
