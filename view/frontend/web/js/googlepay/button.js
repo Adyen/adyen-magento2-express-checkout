@@ -14,7 +14,9 @@ define([
     'Adyen_ExpressCheckout/js/actions/createPayment',
     'Adyen_ExpressCheckout/js/actions/getShippingMethods',
     'Adyen_ExpressCheckout/js/actions/getExpressMethods',
+    'Adyen_ExpressCheckout/js/actions/getPaymentStatus',
     'Adyen_ExpressCheckout/js/actions/setShippingInformation',
+    'Adyen_ExpressCheckout/js/actions/setBillingAddress',
     'Adyen_ExpressCheckout/js/actions/setTotalsInfo',
     'Adyen_ExpressCheckout/js/helpers/formatAmount',
     'Adyen_ExpressCheckout/js/helpers/formatCurrency',
@@ -35,7 +37,8 @@ define([
     'Adyen_ExpressCheckout/js/model/countries',
     'Adyen_ExpressCheckout/js/model/totals',
     'Adyen_ExpressCheckout/js/model/currency',
-    'mage/cookies',
+    'Adyen_ExpressCheckout/js/model/virtualQuote',
+    'Adyen_ExpressCheckout/js/helpers/getCurrentPage'
 ],
     function (
         $,
@@ -53,7 +56,9 @@ define([
         createPayment,
         getShippingMethods,
         getExpressMethods,
+        getPaymentStatus,
         setShippingInformation,
+        setBillingAddress,
         setTotalsInfo,
         formatAmount,
         formatCurrency,
@@ -73,7 +78,9 @@ define([
         configModel,
         countriesModel,
         totalsModel,
-        currencyModel
+        currencyModel,
+        virtualQuoteModel,
+        getCurrentPage
     ) {
         'use strict';
 
@@ -109,6 +116,7 @@ define([
                     this.initializeOnPDP(config, element);
                 } else {
                     let googlePaymentMethod = await getPaymentMethod('googlepay', this.isProductView);
+                    virtualQuoteModel().setIsVirtual(false);
 
                     if (!googlePaymentMethod) {
                         const cart = customerData.get('cart');
@@ -128,6 +136,7 @@ define([
             initializeOnPDP: async function (config, element) {
                 const response = await getExpressMethods().getRequest(element);
                 const cart = customerData.get('cart');
+                virtualQuoteModel().setIsVirtual(true, response);
 
                 cart.subscribe(function () {
                     this.reloadGooglePayButton(element);
@@ -135,7 +144,7 @@ define([
 
                 setExpressMethods(response);
                 totalsModel().setTotal(response.totals.grand_total);
-                currencyModel().setCurrency(response.totals.quote_currency_code)
+                currencyModel().setCurrency(response.totals.quote_currency_code);
 
                 const $priceBox = getPdpPriceBox();
                 const pdpForm = getPdpForm(element);
@@ -164,12 +173,31 @@ define([
 
             initialiseGooglePayComponent: async function (googlePaymentMethod, element) {
                 const config = configModel().getConfig();
+                const adyenData = window.adyenData;
+                let currentPage = getCurrentPage(this.isProductView, element);
+
                 this.checkoutComponent = await new AdyenCheckout({
                     locale: config.locale,
                     clientKey: config.originkey,
                     environment: config.checkoutenv,
+                    analytics: {
+                        analyticsData: {
+                            applicationInfo: {
+                                merchantApplication: {
+                                    name: adyenData['merchant-application-name'],
+                                    version: adyenData['merchant-application-version']
+                                },
+                                externalPlatform: {
+                                    name: adyenData['external-platform-name'],
+                                    version: adyenData['external-platform-version']
+                                }
+                            }
+                        }
+                    },
                     paymentMethodsResponse: getPaymentMethod('googlepay', this.isProductView),
                     onAdditionalDetails: this.handleOnAdditionalDetails.bind(this),
+                    isExpress: true,
+                    expressPage: currentPage,
                     risk: {
                         enabled: false
                     }
@@ -201,8 +229,11 @@ define([
                 if (this.isProductView) {
                     const pdpResponse = await getExpressMethods().getRequest(element);
 
+                    virtualQuoteModel().setIsVirtual(true, pdpResponse);
                     setExpressMethods(pdpResponse);
                     totalsModel().setTotal(pdpResponse.totals.grand_total);
+                } else {
+                    virtualQuoteModel().setIsVirtual(false);
                 }
 
                 this.unmountGooglePay();
@@ -218,6 +249,7 @@ define([
                 const googlePayStyles = getGooglePayStyles();
                 const config = configModel().getConfig();
                 const pdpForm = getPdpForm(element);
+                const isVirtual = virtualQuoteModel().getIsVirtual();
                 let currency;
 
                 if (this.isProductView) {
@@ -235,8 +267,8 @@ define([
                     environment: config.checkoutenv.toUpperCase(),
                     showButton: true,
                     emailRequired: true,
-                    shippingAddressRequired: true,
-                    shippingOptionRequired: true,
+                    shippingAddressRequired: !isVirtual,
+                    shippingOptionRequired: !isVirtual,
                     shippingAddressParameters: {
                         phoneNumberRequired: true
                     },
@@ -245,7 +277,8 @@ define([
                         format: 'FULL',
                         phoneNumberRequired: true
                     },
-                    callbackIntents: ['SHIPPING_ADDRESS', 'SHIPPING_OPTION'],
+                    isExpress: true,
+                    callbackIntents: !isVirtual ? ['SHIPPING_ADDRESS', 'SHIPPING_OPTION'] : ['OFFER'],
                     transactionInfo: {
                         totalPriceStatus: 'ESTIMATED',
                         totalPrice: this.isProductView
@@ -254,7 +287,7 @@ define([
                         currencyCode: currency
                     },
                     paymentDataCallbacks: {
-                    onPaymentDataChanged: this.onPaymentDataChanged.bind(this)
+                        onPaymentDataChanged: this.onPaymentDataChanged.bind(this)
                     },
                     allowedPaymentMethods: ['CARD'],
                     phoneNumberRequired: true,
@@ -273,6 +306,10 @@ define([
 
             onPaymentDataChanged: function (data) {
                 return new Promise((resolve, reject) => {
+                    if (virtualQuoteModel().getIsVirtual()) {
+                        resolve();
+                    }
+
                     const payload = {
                         address: {
                             country_id: data.shippingAddress.countryCode,
@@ -383,45 +420,56 @@ define([
 
             startPlaceOrder: function (paymentData) {
                 let self = this;
-                let componentData = self.googlePayComponent.data;
+                const isVirtual = virtualQuoteModel().getIsVirtual();
 
-                this.setShippingInformation(paymentData)
-                    .done(function () {
-                        const payload = {
-                            email: paymentData.email,
-                            shippingAddress: this.mapAddress(paymentData.shippingAddress),
-                            billingAddress: this.mapAddress(paymentData.paymentMethodData.info.billingAddress),
-                            paymentMethod: {
-                                method: 'adyen_googlepay',
-                                additional_data: {
-                                    brand_code: self.googlePayComponent.props.type,
-                                    stateData: JSON.stringify(componentData)
-                                },
-                                extension_attributes: getExtensionAttributes(paymentData)
-                            }
-                        };
-
-                        if (window.checkout && window.checkout.agreementIds) {
-                            payload.paymentMethod.extension_attributes = {
-                                agreement_ids: window.checkout.agreementIds
-                            };
-                        }
-
-                        createPayment(JSON.stringify(payload), this.isProductView)
-                            .done( function (orderId) {
-                                if (!!orderId) {
-                                    self.orderId = orderId;
-                                    let quoteId = self.isProductView ? maskedIdModel().getMaskedId() : getMaskedIdFromCart();
-                                    adyenPaymentService.getOrderPaymentStatus(orderId, quoteId).
-                                    done(function (responseJSON) {
-                                        self.handleAdyenResult(responseJSON, orderId);
-                                    })
-                                }
-                            })
-                            .fail(function (e) {
-                                console.error('Adyen GooglePay Unable to take payment', e);
+                activateCart(this.isProductView).then(function () {
+                    self.setBillingAddress(paymentData).done(function () {
+                        if (!isVirtual) {
+                            self.setShippingInformation(paymentData).done(function () {
+                                self.placeOrder(paymentData);
                             });
-                    }.bind(this));
+                        } else {
+                            self.placeOrder(paymentData);
+                        }
+                    });
+                });
+            },
+
+            placeOrder: function (paymentData) {
+                let self = this;
+                let componentData = this.googlePayComponent.data;
+
+                const payload = {
+                    email: paymentData.email,
+                    paymentMethod: {
+                        method: 'adyen_googlepay',
+                        additional_data: {
+                            brand_code: this.googlePayComponent.props.type,
+                            stateData: JSON.stringify(componentData)
+                        },
+                        extension_attributes: getExtensionAttributes(paymentData)
+                    }
+                };
+
+                if (window.checkout && window.checkout.agreementIds) {
+                    payload.paymentMethod.extension_attributes = {
+                        agreement_ids: window.checkout.agreementIds
+                    };
+                }
+
+                createPayment(JSON.stringify(payload), this.isProductView)
+                    .done(function (orderId) {
+                        if (!!orderId) {
+                            self.orderId = orderId;
+
+                            getPaymentStatus(orderId, self.isProductView).then(function (responseJSON) {
+                                self.handleAdyenResult(responseJSON, orderId);
+                            });
+                        }
+                    })
+                    .fail(function (e) {
+                        console.error('Adyen GooglePay Unable to take payment', e);
+                    });
             },
 
             setShippingInformation: function (paymentData) {
@@ -436,12 +484,6 @@ define([
                             'customer_address_id': 0,
                             'save_in_address_book': 0
                         },
-                        'billing_address': {
-                            ...this.mapAddress(paymentData.paymentMethodData.info.billingAddress),
-                            'same_as_billing': 0,
-                            'customer_address_id': 0,
-                            'save_in_address_book': 0
-                        },
                         'shipping_method_code': shippingMethod.method_code,
                         'shipping_carrier_code': shippingMethod.carrier_code,
                         'extension_attributes': getExtensionAttributes(paymentData)
@@ -449,6 +491,15 @@ define([
                 };
 
                 return setShippingInformation(payload, this.isProductView);
+            },
+
+            setBillingAddress: function (paymentData) {
+                let payload = {
+                    'address': this.mapAddress(paymentData.paymentMethodData.info.billingAddress),
+                    'useForShipping': false
+                };
+
+                return setBillingAddress(payload, this.isProductView);
             },
 
             handleOnAdditionalDetails: function (result) {

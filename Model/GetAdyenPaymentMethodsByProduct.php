@@ -106,7 +106,7 @@ class GetAdyenPaymentMethodsByProduct implements GetAdyenPaymentMethodsByProduct
             "countryCode" => $this->getCurrentCountryCode($store),
             "shopperLocale" => $this->adyenHelper->getCurrentLocaleCode($store->getId()),
             "amount" => [
-                "value" => (float) $adyenAmountCurrency->getAmount(),
+                "value" => $this->adyenHelper->formatAmount($adyenAmountCurrency->getAmount(), $currencyCode),
                 "currency" => $currencyCode
             ],
             "store" => $store->getId()
