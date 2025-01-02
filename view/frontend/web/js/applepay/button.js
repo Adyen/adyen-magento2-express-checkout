@@ -1,37 +1,38 @@
 define([
-    'uiComponent',
-    'mage/translate',
-    'Magento_Customer/js/customer-data',
-    'Adyen_Payment/js/model/adyen-configuration',
-    'Adyen_Payment/js/adyen',
-    'Adyen_ExpressCheckout/js/actions/activateCart',
-    'Adyen_ExpressCheckout/js/actions/cancelCart',
-    'Adyen_ExpressCheckout/js/actions/createPayment',
-    'Adyen_ExpressCheckout/js/actions/getShippingMethods',
-    'Adyen_ExpressCheckout/js/actions/getExpressMethods',
-    'Adyen_ExpressCheckout/js/actions/setShippingInformation',
-    'Adyen_ExpressCheckout/js/actions/setBillingAddress',
-    'Adyen_ExpressCheckout/js/actions/setTotalsInfo',
-    'Adyen_ExpressCheckout/js/helpers/formatAmount',
-    'Adyen_ExpressCheckout/js/helpers/getApplePayStyles',
-    'Adyen_ExpressCheckout/js/helpers/getCartSubtotal',
-    'Adyen_ExpressCheckout/js/helpers/getExtensionAttributes',
-    'Adyen_ExpressCheckout/js/helpers/getPaymentMethod',
-    'Adyen_ExpressCheckout/js/helpers/getPdpForm',
-    'Adyen_ExpressCheckout/js/helpers/getPdpPriceBox',
-    'Adyen_ExpressCheckout/js/helpers/getSupportedNetworks',
-    'Adyen_ExpressCheckout/js/helpers/isConfigSet',
-    'Adyen_ExpressCheckout/js/helpers/getRegionId',
-    'Adyen_ExpressCheckout/js/helpers/redirectToSuccess',
-    'Adyen_ExpressCheckout/js/helpers/setExpressMethods',
-    'Adyen_ExpressCheckout/js/helpers/validatePdpForm',
-    'Adyen_ExpressCheckout/js/model/config',
-    'Adyen_ExpressCheckout/js/model/countries',
-    'Adyen_ExpressCheckout/js/model/totals',
-    'Adyen_ExpressCheckout/js/model/currency',
-    'Adyen_ExpressCheckout/js/helpers/getCurrentPage',
-    'Adyen_ExpressCheckout/js/model/virtualQuote'
-],
+        'uiComponent',
+        'mage/translate',
+        'Magento_Customer/js/customer-data',
+        'Adyen_Payment/js/model/adyen-configuration',
+        'Adyen_Payment/js/adyen',
+        'Adyen_ExpressCheckout/js/actions/activateCart',
+        'Adyen_ExpressCheckout/js/actions/cancelCart',
+        'Adyen_ExpressCheckout/js/actions/createPayment',
+        'Adyen_ExpressCheckout/js/actions/getShippingMethods',
+        'Adyen_ExpressCheckout/js/actions/getExpressMethods',
+        'Adyen_ExpressCheckout/js/actions/setShippingInformation',
+        'Adyen_ExpressCheckout/js/actions/setBillingAddress',
+        'Adyen_ExpressCheckout/js/actions/setTotalsInfo',
+        'Adyen_ExpressCheckout/js/helpers/formatAmount',
+        'Adyen_ExpressCheckout/js/helpers/getApplePayStyles',
+        'Adyen_ExpressCheckout/js/helpers/getCartSubtotal',
+        'Adyen_ExpressCheckout/js/helpers/getExtensionAttributes',
+        'Adyen_ExpressCheckout/js/helpers/getPaymentMethod',
+        'Adyen_ExpressCheckout/js/helpers/getPdpForm',
+        'Adyen_ExpressCheckout/js/helpers/getPdpPriceBox',
+        'Adyen_ExpressCheckout/js/helpers/getSupportedNetworks',
+        'Adyen_ExpressCheckout/js/helpers/isConfigSet',
+        'Adyen_ExpressCheckout/js/helpers/getRegionId',
+        'Adyen_ExpressCheckout/js/helpers/redirectToSuccess',
+        'Adyen_ExpressCheckout/js/helpers/setExpressMethods',
+        'Adyen_ExpressCheckout/js/helpers/validatePdpForm',
+        'Adyen_ExpressCheckout/js/model/config',
+        'Adyen_ExpressCheckout/js/model/countries',
+        'Adyen_ExpressCheckout/js/model/totals',
+        'Adyen_ExpressCheckout/js/model/currency',
+        'Adyen_ExpressCheckout/js/helpers/getCurrentPage',
+        'Adyen_ExpressCheckout/js/model/virtualQuote',
+        'Adyen_Payment/js/helper/currencyHelper'
+    ],
     function (
         Component,
         $t,
@@ -64,7 +65,8 @@ define([
         totalsModel,
         currencyModel,
         getCurrentPage,
-        virtualQuoteModel
+        virtualQuoteModel,
+        currencyHelper
     ) {
         'use strict';
 
@@ -265,8 +267,14 @@ define([
                     },
                     amount: {
                         value: this.isProductView
-                            ? formatAmount(totalsModel().getTotal() * 100)
-                            : formatAmount(getCartSubtotal() * 100),
+                            ? currencyHelper.formatAmount(
+                                totalsModel().getTotal(),
+                                currency
+                            )
+                            : currencyHelper.formatAmount(
+                                getCartSubtotal(),
+                                currency
+                            ),
                         currency: currency
                     },
                     isExpress: true,
@@ -295,16 +303,16 @@ define([
 
                 // Get the address.
                 let address = event.shippingContact,
-                // Create a payload.
+                    // Create a payload.
                     payload = {
-                    address: {
-                        city: address.locality,
-                        region: address.administrativeArea,
-                        country_id: address.countryCode.toUpperCase(),
-                        postcode: address.postalCode,
-                        save_in_address_book: 0
-                    }
-                };
+                        address: {
+                            city: address.locality,
+                            region: address.administrativeArea,
+                            country_id: address.countryCode.toUpperCase(),
+                            postcode: address.postalCode,
+                            save_in_address_book: 0
+                        }
+                    };
 
                 self.shippingAddress = payload.address;
 
@@ -406,9 +414,9 @@ define([
                         .done((response) => {
                             self.afterSetTotalsInfo(response, shippingMethod, self.isProductView, resolve);
                         }).fail((e) => {
-                            console.error('Adyen ApplePay: Unable to get totals', e);
-                            reject($t('We\'re unable to fetch the cart totals for you. Please try an alternative payment method.'));
-                        });
+                        console.error('Adyen ApplePay: Unable to get totals', e);
+                        reject($t('We\'re unable to fetch the cart totals for you. Please try an alternative payment method.'));
+                    });
                 });
             },
 
