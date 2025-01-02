@@ -30,8 +30,9 @@ define([
     'Adyen_ExpressCheckout/js/model/totals',
     'Adyen_ExpressCheckout/js/model/currency',
     'Adyen_ExpressCheckout/js/helpers/getCurrentPage',
-    'Adyen_ExpressCheckout/js/model/virtualQuote'
-],
+    'Adyen_ExpressCheckout/js/model/virtualQuote',
+    'Adyen_Payment/js/helper/currencyHelper'
+    ],
     function (
         Component,
         $t,
@@ -64,7 +65,8 @@ define([
         totalsModel,
         currencyModel,
         getCurrentPage,
-        virtualQuoteModel
+        virtualQuoteModel,
+        currencyHelper
     ) {
         'use strict';
 
@@ -265,8 +267,14 @@ define([
                     },
                     amount: {
                         value: this.isProductView
-                            ? formatAmount(totalsModel().getTotal() * 100)
-                            : formatAmount(getCartSubtotal() * 100),
+                            ? currencyHelper.formatAmount(
+                                totalsModel().getTotal(),
+                                currency
+                            )
+                            : currencyHelper.formatAmount(
+                                getCartSubtotal(),
+                                currency
+                            ),
                         currency: currency
                     },
                     isExpress: true,
@@ -295,16 +303,16 @@ define([
 
                 // Get the address.
                 let address = event.shippingContact,
-                // Create a payload.
+                    // Create a payload.
                     payload = {
-                    address: {
-                        city: address.locality,
-                        region: address.administrativeArea,
-                        country_id: address.countryCode.toUpperCase(),
-                        postcode: address.postalCode,
-                        save_in_address_book: 0
-                    }
-                };
+                        address: {
+                            city: address.locality,
+                            region: address.administrativeArea,
+                            country_id: address.countryCode.toUpperCase(),
+                            postcode: address.postalCode,
+                            save_in_address_book: 0
+                        }
+                    };
 
                 self.shippingAddress = payload.address;
 
@@ -406,9 +414,9 @@ define([
                         .done((response) => {
                             self.afterSetTotalsInfo(response, shippingMethod, self.isProductView, resolve);
                         }).fail((e) => {
-                            console.error('Adyen ApplePay: Unable to get totals', e);
-                            reject($t('We\'re unable to fetch the cart totals for you. Please try an alternative payment method.'));
-                        });
+                        console.error('Adyen ApplePay: Unable to get totals', e);
+                        reject($t('We\'re unable to fetch the cart totals for you. Please try an alternative payment method.'));
+                    });
                 });
             },
 
