@@ -38,7 +38,6 @@ define([
     'Adyen_ExpressCheckout/js/model/maskedId',
     'Adyen_ExpressCheckout/js/helpers/getCurrentPage',
     'Adyen_ExpressCheckout/js/helpers/getMaskedIdFromCart',
-    'Adyen_Payment/js/helper/currencyHelper'
 ], function (
     Component,
     $t,
@@ -78,8 +77,7 @@ define([
     virtualQuoteModel,
     maskedIdModel,
     getCurrentPage,
-    getMaskedIdFromCart,
-    currencyHelper
+    getMaskedIdFromCart
 ) {
     'use strict';
 
@@ -302,14 +300,8 @@ define([
                 amount: {
                     currency: currency,
                     value: this.isProductView
-                        ? currencyHelper.formatAmount(
-                            totalsModel().getTotal(),
-                            currency
-                        )
-                        : currencyHelper.formatAmount(
-                            getCartSubtotal(),
-                            currency
-                        )
+                        ? formatAmount(totalsModel().getTotal() * 100)
+                        : formatAmount(getCartSubtotal() * 100)
                 },
                 onSubmit: (state, component) => {
                     const paymentData = state.data;
