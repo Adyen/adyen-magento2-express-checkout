@@ -30,7 +30,8 @@ define([
     'Adyen_ExpressCheckout/js/model/totals',
     'Adyen_ExpressCheckout/js/model/currency',
     'Adyen_ExpressCheckout/js/helpers/getCurrentPage',
-    'Adyen_ExpressCheckout/js/model/virtualQuote'
+    'Adyen_ExpressCheckout/js/model/virtualQuote',
+    'Adyen_Payment/js/helper/currencyHelper'
 ],
     function (
         Component,
@@ -64,7 +65,8 @@ define([
         totalsModel,
         currencyModel,
         getCurrentPage,
-        virtualQuoteModel
+        virtualQuoteModel,
+        currencyHelper
     ) {
         'use strict';
 
@@ -265,8 +267,14 @@ define([
                     },
                     amount: {
                         value: this.isProductView
-                            ? formatAmount(totalsModel().getTotal() * 100)
-                            : formatAmount(getCartSubtotal() * 100),
+                            ? currencyHelper.formatAmount(
+                                totalsModel().getTotal(),
+                                currency
+                            )
+                            : currencyHelper.formatAmount(
+                                getCartSubtotal(),
+                                currency
+                            ),
                         currency: currency
                     },
                     isExpress: true,
