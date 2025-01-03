@@ -36,7 +36,7 @@ define([
             if (!selectedShippingMethod && i === 0) {
                 isSelected = true;
             } else if (selectedShippingMethod && selectedShippingMethod.label === shippingMethods[i].detail) {
-                isSelected = true
+                isSelected = true;
             }
 
             let method = {
