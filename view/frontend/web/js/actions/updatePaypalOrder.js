@@ -29,37 +29,31 @@ define([
         }
 
         let deliveryMethods = [];
-        if (selectedShippingMethod) {
+
+        for (let i = 0; i < shippingMethods.length; i++) {
+            let isSelected = false;
+
+            if (!selectedShippingMethod && i === 0) {
+                isSelected = true;
+            } else if (selectedShippingMethod && selectedShippingMethod.label === shippingMethods[i].detail) {
+                isSelected = true
+            }
+
             let method = {
-                reference: selectedShippingMethod.id,
-                description: selectedShippingMethod.label,
+                reference: (i + 1).toString(),
+                description: shippingMethods[i].detail,
                 type: 'Shipping',
                 amount: {
                     currency: currency,
-                    value: Math.round(selectedShippingMethod.amount.value * 100)
+                    value: Math.round(shippingMethods[i].amount * 100)
                 },
-                selected: true
+                selected: isSelected
             };
+            // Add method object to array.
             deliveryMethods.push(method);
-            updateOrderPayload.deliveryMethods = JSON.stringify(deliveryMethods);
         }
-        else {
-            for (let i = 0; i < shippingMethods.length; i++) {
-                let method = {
-                    reference: (i + 1).toString(),
-                    description: shippingMethods[i].detail,
-                    type: 'Shipping',
-                    amount: {
-                        currency: currency,
-                        value: Math.round(shippingMethods[i].amount * 100)
-                    },
-                    selected: i === 0
-                };
-                // Add method object to array.
-                deliveryMethods.push(method);
-            }
-            updateOrderPayload.deliveryMethods = JSON.stringify(deliveryMethods);
-        }
+
+        updateOrderPayload.deliveryMethods = JSON.stringify(deliveryMethods);
 
         return storage.post(
             updateOrderUrl,
