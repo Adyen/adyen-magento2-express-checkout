@@ -21,6 +21,7 @@ use Magento\Framework\Exception\LocalizedException;
 use Magento\Framework\Exception\ValidatorException;
 use Magento\Quote\Api\CartRepositoryInterface;
 use Magento\Quote\Model\Quote;
+use Magento\Quote\Model\QuoteIdMask;
 use Magento\Quote\Model\QuoteIdMaskFactory;
 use Adyen\Payment\Helper\Requests;
 
@@ -32,6 +33,9 @@ class AdyenInitPaymentsTest extends AbstractAdyenTestCase
     private TransferFactory $transferFactory;
     private TransactionPayment $transactionPaymentClient;
     private PaymentResponseHandler $paymentResponseHandler;
+    private QuoteIdMaskFactory $quoteIdMaskFactoryMock;
+    private Vault $vaultHelper;
+    private Requests $requestHelper;
 
     protected function setUp(): void
     {
@@ -43,12 +47,17 @@ class AdyenInitPaymentsTest extends AbstractAdyenTestCase
         $this->transferFactory = $this->createMock(TransferFactory::class);
         $this->transactionPaymentClient = $this->createMock(TransactionPayment::class);
         $adyenHelper = $this->createMock(Data::class);
+        $this->vaultHelper = $this->createMock(Vault::class);
+        $this->requestHelper = $this->createMock(Requests::class);
         $this->paymentResponseHandler = $this->createMock(PaymentResponseHandler::class);
-        $this->quoteIdMaskFactoryMock = $this->createGeneratedMock(QuoteIdMaskFactory::class, [
-            'create'
-        ]);
+        $this->quoteIdMaskFactoryMock = $this->createGeneratedMock(
+            QuoteIdMaskFactory::class,
+            ['create']
+        );
+        $this->quoteIdMaskMock = $this->createMock(QuoteIdMask::class);
+        $this->quoteIdMaskFactoryMock->method('create')->willReturn($this->quoteIdMaskMock);
         $vaultHelper = $this->createMock(Vault::class);
-        $userContext = $this->createMock(UserContextInterface::class);
+        $this->userContext = $this->createMock(UserContextInterface::class);
         $requestHelper = $this->createMock(Requests::class);
         $this->quote = $this->createMock(Quote::class);
 
@@ -71,6 +80,28 @@ class AdyenInitPaymentsTest extends AbstractAdyenTestCase
             'clientStateDataIndicator' => true
         ];
 
+        $this->paymentsRequestLoggedInUser = [
+            'amount' => [
+                'currency' => null,
+                'value' => null
+            ],
+            'reference' => '1000001',
+            'returnUrl' => '?merchantReference=1000001',
+            'merchantAccount' => 'TestMerchant',
+            'channel' => 'web',
+            'paymentMethod' => [
+                'type' => 'paypal',
+                'userAction' => 'pay',
+                'subtype' => 'express',
+                'checkoutAttemptId' => '3'
+            ],
+            'clientStateDataIndicator' => true,
+            'storePaymentMethod' => null,
+            'shopperReference' => '',
+            'recurringProcessingModel' => null,
+            'shopperInteraction' => 'Ecommerce'
+        ];
+
         $this->adyenInitPayments = new AdyenInitPayments(
             $this->cartRepository,
             $configHelper,
@@ -82,7 +113,7 @@ class AdyenInitPaymentsTest extends AbstractAdyenTestCase
             $this->paymentResponseHandler,
             $this->quoteIdMaskFactoryMock,
             $vaultHelper,
-            $userContext,
+            $this->userContext,
             $requestHelper
         );
 
@@ -151,4 +182,97 @@ class AdyenInitPaymentsTest extends AbstractAdyenTestCase
         $this->assertJson($response);
         $this->assertStringContainsString('success', $response);
     }
+
+    public function testExecuteHandlesLoggedInUser(): void
+    {
+        $customerId = 12345;
+        $this->cartRepository->method('get')->willReturn($this->quote);
+        $paymentMethodCode = 'adyen_paypal';
+        $storeId = $this->quote
+            ->method('getStoreId')
+            ->willReturn(1);
+        $this->userContext->expects($this->once())
+            ->method('getUserType')
+            ->willReturn(UserContextInterface::USER_TYPE_CUSTOMER);
+
+        $this->userContext->expects($this->once())
+            ->method('getUserId')
+            ->willReturn($customerId);
+
+        $this->checkoutStateDataValidator->method('getValidatedAdditionalData')
+            ->willReturn(json_decode($this->stateData, true)
+        );
+
+        // Mock VaultHelper methods
+        $this->vaultHelper
+            ->method('getPaymentMethodRecurringActive')
+            ->with($paymentMethodCode, $storeId)
+            ->willReturn(true);
+
+        $this->vaultHelper
+            ->method('getPaymentMethodRecurringProcessingModel')
+            ->with($paymentMethodCode, $storeId)
+            ->willReturn('CardOnFile');
+
+        // Mock RequestHelper method
+        $this->requestHelper
+            ->method('getShopperReference')
+            ->with($customerId, null)
+            ->willReturn('12345');
+
+        $this->transferFactory->method('create')->with([
+            'body' => $this->paymentsRequestLoggedInUser,
+            'clientConfig' => ['storeId' => $this->quote->getStoreId()]
+        ])
+            ->willReturn($this->transferMock);
+
+        $this->transactionPaymentClient->method('placeRequest')->willReturn([
+            ['resultCode' => 'Authorised', 'action' => null]
+        ]);
+
+        $this->paymentResponseHandler->method('formatPaymentResponse')->willReturn(['status' => 'success']);
+
+        $response = $this->adyenInitPayments->execute($this->stateData, 1);
+
+        $this->assertJson($response);
+        $this->assertStringContainsString('success', $response);
+    }
+
+    public function testExecuteHandlesMaskedQuoteId()
+    {
+        $adyenMaskedQuoteId = '231';
+        $expectedQuoteId = 99;
+
+        $this->quoteIdMaskMock->expects($this->once())
+            ->method('load')
+            ->with($adyenMaskedQuoteId, 'masked_id')
+            ->willReturn($this->quoteIdMaskMock);
+
+
+        $this->quoteIdMaskMock = $this->createGeneratedMock(QuoteIdMask::class, ['load', 'getQuoteId']);
+        $this->quoteIdMaskMock->method('load')->willReturn($this->quoteIdMaskMock);
+        $this->quoteIdMaskMock->method('getQuoteId')->willReturn($expectedQuoteId);
+
+        $this->cartRepository->method('get')->willReturn($this->quote);
+        $this->checkoutStateDataValidator->method('getValidatedAdditionalData')
+            ->willReturn(json_decode($this->stateData, true)
+            );
+
+        $this->transferFactory->method('create')->with([
+            'body' => $this->paymentsRequest,
+            'clientConfig' => ['storeId' => $this->quote->getStoreId()]
+        ])
+            ->willReturn($this->transferMock);
+
+        $this->transactionPaymentClient->method('placeRequest')->willReturn([
+            ['resultCode' => 'Authorised', 'action' => null]
+        ]);
+
+
+        // Call the method under test
+        $response = $this->adyenInitPayments->execute($this->stateData, null, $adyenMaskedQuoteId);
+
+        $this->assertJson($response);
+    }
+
 }
