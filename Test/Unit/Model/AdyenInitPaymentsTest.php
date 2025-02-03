@@ -44,7 +44,9 @@ class AdyenInitPaymentsTest extends AbstractAdyenTestCase
         $this->transactionPaymentClient = $this->createMock(TransactionPayment::class);
         $adyenHelper = $this->createMock(Data::class);
         $this->paymentResponseHandler = $this->createMock(PaymentResponseHandler::class);
-        $quoteIdMaskFactory = $this->createMock(QuoteIdMaskFactory::class);
+        $this->quoteIdMaskFactoryMock = $this->createGeneratedMock(QuoteIdMaskFactory::class, [
+            'create'
+        ]);
         $vaultHelper = $this->createMock(Vault::class);
         $userContext = $this->createMock(UserContextInterface::class);
         $requestHelper = $this->createMock(Requests::class);
@@ -78,7 +80,7 @@ class AdyenInitPaymentsTest extends AbstractAdyenTestCase
             $this->transactionPaymentClient,
             $adyenHelper,
             $this->paymentResponseHandler,
-            $quoteIdMaskFactory,
+            $this->quoteIdMaskFactoryMock,
             $vaultHelper,
             $userContext,
             $requestHelper
