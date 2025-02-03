@@ -21,7 +21,9 @@ use Adyen\Payment\Helper\Data;
 use Adyen\Payment\Helper\PaymentResponseHandler;
 use Adyen\Payment\Helper\ReturnUrlHelper;
 use Adyen\Payment\Helper\Util\CheckoutStateDataValidator;
+use Adyen\Payment\Helper\Vault;
 use Exception;
+use Magento\Authorization\Model\UserContextInterface;
 use Magento\Framework\Exception\LocalizedException;
 use Magento\Framework\Exception\NoSuchEntityException;
 use Magento\Framework\Exception\ValidatorException;
@@ -30,6 +32,7 @@ use Magento\Quote\Api\CartRepositoryInterface;
 use Magento\Quote\Model\Quote;
 use Magento\Quote\Model\QuoteIdMask;
 use Magento\Quote\Model\QuoteIdMaskFactory;
+use Adyen\Payment\Helper\Requests;
 
 class AdyenInitPayments implements AdyenInitPaymentsInterface
 {
@@ -79,6 +82,21 @@ class AdyenInitPayments implements AdyenInitPaymentsInterface
     private QuoteIdMaskFactory $quoteIdMaskFactory;
 
     /**
+     * @var Vault
+     */
+    private Vault $vaultHelper;
+
+    /**
+     * @var UserContextInterface
+     */
+    private UserContextInterface $userContext;
+
+    /**
+     * @var Requests
+     */
+    private Requests $requestHelper;
+
+    /**
      * @param CartRepositoryInterface $cartRepository
      * @param Config $configHelper
      * @param ReturnUrlHelper $returnUrlHelper
@@ -88,6 +106,9 @@ class AdyenInitPayments implements AdyenInitPaymentsInterface
      * @param Data $adyenHelper
      * @param PaymentResponseHandler $paymentResponseHandler
      * @param QuoteIdMaskFactory $quoteIdMaskFactory
+     * @param Vault $vaultHelper
+     * @param UserContextInterface $userContext
+     * @param Requests $requestHelper
      */
     public function __construct(
         CartRepositoryInterface $cartRepository,
@@ -98,7 +119,10 @@ class AdyenInitPayments implements AdyenInitPaymentsInterface
         TransactionPayment $transactionPaymentClient,
         Data $adyenHelper,
         PaymentResponseHandler $paymentResponseHandler,
-        QuoteIdMaskFactory $quoteIdMaskFactory
+        QuoteIdMaskFactory $quoteIdMaskFactory,
+        Vault $vaultHelper,
+        UserContextInterface $userContext,
+        Requests $requestHelper
     ) {
         $this->cartRepository = $cartRepository;
         $this->configHelper = $configHelper;
@@ -109,6 +133,9 @@ class AdyenInitPayments implements AdyenInitPaymentsInterface
         $this->adyenHelper = $adyenHelper;
         $this->paymentResponseHandler = $paymentResponseHandler;
         $this->quoteIdMaskFactory = $quoteIdMaskFactory;
+        $this->vaultHelper = $vaultHelper;
+        $this->userContext = $userContext;
+        $this->requestHelper = $requestHelper;
     }
 
     /**
@@ -144,21 +171,28 @@ class AdyenInitPayments implements AdyenInitPaymentsInterface
         }
 
         $stateData = json_decode($stateData, true);
+
         // Validate JSON that has just been parsed if it was in a valid format
         if (json_last_error() !== JSON_ERROR_NONE) {
             throw new ValidatorException(
                 __('Payments call failed because stateData was not a valid JSON!')
             );
         }
+
+        // Validate payment method
+        if (!isset($stateData['paymentMethod']['type']) || $stateData['paymentMethod']['type'] !== 'paypal') {
+            throw new ValidatorException(
+                __('Invalid payment method. Only PayPal payments are allowed.')
+            );
+        }
+
         // Validate the keys in stateData and remove invalid keys
         $stateData = $this->checkoutStateDataValidator->getValidatedAdditionalData($stateData);
         $paymentsRequest = $this->buildPaymentsRequest($quote, $stateData);
-
         $transfer = $this->transferFactory->create([
             'body' => $paymentsRequest,
             'clientConfig' => ['storeId' => $quote->getStoreId()]
         ]);
-
         try {
             $response = $this->transactionPaymentClient->placeRequest($transfer);
             $paymentsResponse = $this->returnFirstTransactionPaymentResponse($response);
@@ -189,6 +223,11 @@ class AdyenInitPayments implements AdyenInitPaymentsInterface
         );
         $currency = $quote->getQuoteCurrencyCode();
         $amount = $quote->getSubtotalWithDiscount();
+        $paymentMethodCode = "adyen_{$stateData['paymentMethod']['type']}";
+        $userType = $this->userContext->getUserType();
+        $customerId = $this->userContext->getUserId();
+        $isLoggedIn = (int)$userType === UserContextInterface::USER_TYPE_CUSTOMER;
+
         $request = [
             'amount' => [
                 'currency' => $currency,
@@ -199,6 +238,28 @@ class AdyenInitPayments implements AdyenInitPaymentsInterface
             'merchantAccount' => $this->configHelper->getMerchantAccount($storeId),
             'channel' => self::PAYMENT_CHANNEL_WEB
         ];
+
+        // Only add these parameters if the user is logged in
+        if ($isLoggedIn) {
+            $isRecurringEnabled = $this->vaultHelper->getPaymentMethodRecurringActive(
+                $paymentMethodCode,
+                $storeId
+            );
+
+            $recurringProcessingModel = $this->vaultHelper->getPaymentMethodRecurringProcessingModel(
+                $paymentMethodCode,
+                $storeId
+            );
+
+            $shopperReference = $this->requestHelper->getShopperReference($customerId, null);
+
+            $request = array_merge($request, [
+                'storePaymentMethod' => $isRecurringEnabled,
+                'shopperReference' => $shopperReference,
+                'recurringProcessingModel' => $recurringProcessingModel,
+                'shopperInteraction' => 'Ecommerce'
+            ]);
+        }
 
         return array_merge($request, $stateData);
     }
