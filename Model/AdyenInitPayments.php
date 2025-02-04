@@ -96,6 +96,8 @@ class AdyenInitPayments implements AdyenInitPaymentsInterface
      */
     private Requests $requestHelper;
 
+    const PAYPAL = 'paypal';
+
     /**
      * @param CartRepositoryInterface $cartRepository
      * @param Config $configHelper
@@ -180,9 +182,9 @@ class AdyenInitPayments implements AdyenInitPaymentsInterface
         }
 
         // Validate payment method
-        if (!isset($stateData['paymentMethod']['type']) || $stateData['paymentMethod']['type'] !== 'paypal') {
+        if (!isset($stateData['paymentMethod']['type']) || $stateData['paymentMethod']['type'] !== self::PAYPAL) {
             throw new ValidatorException(
-                __('Invalid payment method. Only PayPal payments are allowed.')
+                __('Error with payment method please select different payment method.')
             );
         }
 
@@ -226,7 +228,7 @@ class AdyenInitPayments implements AdyenInitPaymentsInterface
         $paymentMethodCode = "adyen_{$stateData['paymentMethod']['type']}";
         $userType = $this->userContext->getUserType();
         $customerId = $this->userContext->getUserId();
-        $isLoggedIn = (int)$userType === UserContextInterface::USER_TYPE_CUSTOMER;
+        $isLoggedIn = $userType === UserContextInterface::USER_TYPE_CUSTOMER;
 
         $request = [
             'amount' => [
@@ -256,9 +258,15 @@ class AdyenInitPayments implements AdyenInitPaymentsInterface
             $request = array_merge($request, [
                 'storePaymentMethod' => $isRecurringEnabled,
                 'shopperReference' => $shopperReference,
-                'recurringProcessingModel' => $recurringProcessingModel,
                 'shopperInteraction' => 'Ecommerce'
             ]);
+
+            if($isRecurringEnabled)
+            {
+                $request = array_merge($request, [
+                    'recurringProcessingModel' => $recurringProcessingModel
+                    ]);
+            }
         }
 
         return array_merge($request, $stateData);

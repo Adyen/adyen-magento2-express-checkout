@@ -98,7 +98,6 @@ class AdyenInitPaymentsTest extends AbstractAdyenTestCase
             'clientStateDataIndicator' => true,
             'storePaymentMethod' => null,
             'shopperReference' => '',
-            'recurringProcessingModel' => null,
             'shopperInteraction' => 'Ecommerce'
         ];
 
