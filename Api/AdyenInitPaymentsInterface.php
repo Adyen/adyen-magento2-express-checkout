@@ -16,6 +16,7 @@ namespace Adyen\ExpressCheckout\Api;
 interface AdyenInitPaymentsInterface
 {
     const PAYMENT_CHANNEL_WEB = 'web';
+    const PAYPAL = 'paypal';
 
     /**
      * @param string $stateData

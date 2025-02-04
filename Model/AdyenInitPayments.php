@@ -96,8 +96,6 @@ class AdyenInitPayments implements AdyenInitPaymentsInterface
      */
     private Requests $requestHelper;
 
-    const PAYPAL = 'paypal';
-
     /**
      * @param CartRepositoryInterface $cartRepository
      * @param Config $configHelper
