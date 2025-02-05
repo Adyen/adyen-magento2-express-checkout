@@ -47,7 +47,10 @@ class AdyenInitPaymentsTest extends AbstractAdyenTestCase
         $this->transferFactory = $this->createMock(TransferFactory::class);
         $this->transactionPaymentClient = $this->createMock(TransactionPayment::class);
         $adyenHelper = $this->createMock(Data::class);
-        $this->vaultHelper = $this->createMock(Vault::class);
+        $this->vaultHelper = $this->createConfiguredMock(Vault::class, [
+            'getPaymentMethodRecurringActive' => true,
+            'getPaymentMethodRecurringProcessingModel' => 'CardOnFile'
+        ]);
         $this->requestHelper = $this->createMock(Requests::class);
         $this->paymentResponseHandler = $this->createMock(PaymentResponseHandler::class);
         $this->quoteIdMaskFactoryMock = $this->createGeneratedMock(
@@ -56,7 +59,6 @@ class AdyenInitPaymentsTest extends AbstractAdyenTestCase
         );
         $this->quoteIdMaskMock = $this->createMock(QuoteIdMask::class);
         $this->quoteIdMaskFactoryMock->method('create')->willReturn($this->quoteIdMaskMock);
-        $vaultHelper = $this->createMock(Vault::class);
         $this->userContext = $this->createMock(UserContextInterface::class);
         $requestHelper = $this->createMock(Requests::class);
         $this->quote = $this->createMock(Quote::class);
@@ -96,9 +98,10 @@ class AdyenInitPaymentsTest extends AbstractAdyenTestCase
                 'checkoutAttemptId' => '3'
             ],
             'clientStateDataIndicator' => true,
-            'storePaymentMethod' => null,
+            'storePaymentMethod' => true,
             'shopperReference' => '',
-            'shopperInteraction' => 'Ecommerce'
+            'shopperInteraction' => 'Ecommerce',
+            'recurringProcessingModel' => 'CardOnFile'
         ];
 
         $this->adyenInitPayments = new AdyenInitPayments(
@@ -111,7 +114,7 @@ class AdyenInitPaymentsTest extends AbstractAdyenTestCase
             $adyenHelper,
             $this->paymentResponseHandler,
             $this->quoteIdMaskFactoryMock,
-            $vaultHelper,
+            $this->vaultHelper,
             $this->userContext,
             $requestHelper
         );
@@ -203,15 +206,15 @@ class AdyenInitPaymentsTest extends AbstractAdyenTestCase
         );
 
         // Mock VaultHelper methods
-        $this->vaultHelper
-            ->method('getPaymentMethodRecurringActive')
-            ->with($paymentMethodCode, $storeId)
-            ->willReturn(true);
-
-        $this->vaultHelper
-            ->method('getPaymentMethodRecurringProcessingModel')
-            ->with($paymentMethodCode, $storeId)
-            ->willReturn('CardOnFile');
+//        $this->vaultHelper
+//            ->method('getPaymentMethodRecurringActive')
+//            ->with($paymentMethodCode, $storeId)
+//            ->willReturn(true);
+//
+//        $this->vaultHelper
+//            ->method('getPaymentMethodRecurringProcessingModel')
+//            ->with($paymentMethodCode, $storeId)
+//            ->willReturn('CardOnFile');
 
         // Mock RequestHelper method
         $this->requestHelper
@@ -273,76 +276,5 @@ class AdyenInitPaymentsTest extends AbstractAdyenTestCase
 
         $this->assertJson($response);
     }
-
-    public function testRecurringProcessingModelAddedToRequestWhenRecurringIsEnabled(): void
-    {
-        $paymentMethodCode = 'adyen_paypal';
-        $storeId = 1;
-        $isRecurringEnabled = true; // Simulate that recurring is enabled
-
-        // Set up the mock for the vaultHelper to return a value for the recurring processing model
-        $this->vaultHelper->method('getPaymentMethodRecurringProcessingModel')
-            ->with($paymentMethodCode, $storeId)
-            ->willReturn('CardOnFile');
-
-        // Simulate the request array before modification
-        $request = [
-            'amount' => ['currency' => null, 'value' => null],
-            'reference' => '1000001',
-            'returnUrl' => '?merchantReference=1000001',
-            'merchantAccount' => 'TestMerchant',
-            'channel' => 'web',
-            'paymentMethod' => ['type' => 'paypal', 'userAction' => 'pay', 'subtype' => 'express'],
-        ];
-
-        // Run the code under test
-        if ($isRecurringEnabled) {
-            $recurringProcessingModel = $this->vaultHelper->getPaymentMethodRecurringProcessingModel(
-                $paymentMethodCode,
-                $storeId
-            );
-
-            $request = array_merge($request, [
-                'recurringProcessingModel' => $recurringProcessingModel
-            ]);
-        }
-
-        // Assert that the recurringProcessingModel is added to the request
-        $this->assertArrayHasKey('recurringProcessingModel', $request);
-        $this->assertEquals('CardOnFile', $request['recurringProcessingModel']);
-    }
-
-    public function testRecurringProcessingModelNotAddedToRequestWhenRecurringIsNotEnabled(): void
-    {
-        $paymentMethodCode = 'adyen_paypal';
-        $storeId = 1;
-        $isRecurringEnabled = false; // Simulate that recurring is not enabled
-
-        // Simulate the request array before modification
-        $request = [
-            'amount' => ['currency' => null, 'value' => null],
-            'reference' => '1000001',
-            'returnUrl' => '?merchantReference=1000001',
-            'merchantAccount' => 'TestMerchant',
-            'channel' => 'web',
-            'paymentMethod' => ['type' => 'paypal', 'userAction' => 'pay', 'subtype' => 'express'],
-        ];
-
-        // Run the code under test (skip adding recurringProcessingModel since it's not enabled)
-        if ($isRecurringEnabled) {
-            $recurringProcessingModel = $this->vaultHelper->getPaymentMethodRecurringProcessingModel(
-                $paymentMethodCode,
-                $storeId
-            );
-
-            $request = array_merge($request, [
-                'recurringProcessingModel' => $recurringProcessingModel
-            ]);
-        }
-
-        // Assert that the recurringProcessingModel is not added to the request
-        $this->assertArrayNotHasKey('recurringProcessingModel', $request);
-    }
-
 
 }
