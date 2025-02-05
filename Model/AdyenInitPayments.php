@@ -260,7 +260,7 @@ class AdyenInitPayments implements AdyenInitPaymentsInterface
                     $paymentMethodCode,
                     $storeId
                 );
-                
+
                 $request = array_merge($request, [
                     'recurringProcessingModel' => $recurringProcessingModel
                     ]);

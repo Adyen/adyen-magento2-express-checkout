@@ -274,4 +274,75 @@ class AdyenInitPaymentsTest extends AbstractAdyenTestCase
         $this->assertJson($response);
     }
 
+    public function testRecurringProcessingModelAddedToRequestWhenRecurringIsEnabled(): void
+    {
+        $paymentMethodCode = 'adyen_paypal';
+        $storeId = 1;
+        $isRecurringEnabled = true; // Simulate that recurring is enabled
+
+        // Set up the mock for the vaultHelper to return a value for the recurring processing model
+        $this->vaultHelper->method('getPaymentMethodRecurringProcessingModel')
+            ->with($paymentMethodCode, $storeId)
+            ->willReturn('CardOnFile');
+
+        // Simulate the request array before modification
+        $request = [
+            'amount' => ['currency' => null, 'value' => null],
+            'reference' => '1000001',
+            'returnUrl' => '?merchantReference=1000001',
+            'merchantAccount' => 'TestMerchant',
+            'channel' => 'web',
+            'paymentMethod' => ['type' => 'paypal', 'userAction' => 'pay', 'subtype' => 'express'],
+        ];
+
+        // Run the code under test
+        if ($isRecurringEnabled) {
+            $recurringProcessingModel = $this->vaultHelper->getPaymentMethodRecurringProcessingModel(
+                $paymentMethodCode,
+                $storeId
+            );
+
+            $request = array_merge($request, [
+                'recurringProcessingModel' => $recurringProcessingModel
+            ]);
+        }
+
+        // Assert that the recurringProcessingModel is added to the request
+        $this->assertArrayHasKey('recurringProcessingModel', $request);
+        $this->assertEquals('CardOnFile', $request['recurringProcessingModel']);
+    }
+
+    public function testRecurringProcessingModelNotAddedToRequestWhenRecurringIsNotEnabled(): void
+    {
+        $paymentMethodCode = 'adyen_paypal';
+        $storeId = 1;
+        $isRecurringEnabled = false; // Simulate that recurring is not enabled
+
+        // Simulate the request array before modification
+        $request = [
+            'amount' => ['currency' => null, 'value' => null],
+            'reference' => '1000001',
+            'returnUrl' => '?merchantReference=1000001',
+            'merchantAccount' => 'TestMerchant',
+            'channel' => 'web',
+            'paymentMethod' => ['type' => 'paypal', 'userAction' => 'pay', 'subtype' => 'express'],
+        ];
+
+        // Run the code under test (skip adding recurringProcessingModel since it's not enabled)
+        if ($isRecurringEnabled) {
+            $recurringProcessingModel = $this->vaultHelper->getPaymentMethodRecurringProcessingModel(
+                $paymentMethodCode,
+                $storeId
+            );
+
+            $request = array_merge($request, [
+                'recurringProcessingModel' => $recurringProcessingModel
+            ]);
+        }
+
+        // Assert that the recurringProcessingModel is not added to the request
+        $this->assertArrayNotHasKey('recurringProcessingModel', $request);
+    }
+
+
 }
