@@ -246,11 +246,6 @@ class AdyenInitPayments implements AdyenInitPaymentsInterface
                 $storeId
             );
 
-            $recurringProcessingModel = $this->vaultHelper->getPaymentMethodRecurringProcessingModel(
-                $paymentMethodCode,
-                $storeId
-            );
-
             $shopperReference = $this->requestHelper->getShopperReference($customerId, null);
 
             $request = array_merge($request, [
@@ -261,6 +256,11 @@ class AdyenInitPayments implements AdyenInitPaymentsInterface
 
             if($isRecurringEnabled)
             {
+                $recurringProcessingModel = $this->vaultHelper->getPaymentMethodRecurringProcessingModel(
+                    $paymentMethodCode,
+                    $storeId
+                );
+                
                 $request = array_merge($request, [
                     'recurringProcessingModel' => $recurringProcessingModel
                     ]);
