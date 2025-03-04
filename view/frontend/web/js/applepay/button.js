@@ -498,7 +498,8 @@ define([
                         method: 'adyen_applepay',
                         additional_data: {
                             brand_code: 'applepay',
-                            stateData: JSON.stringify(componentData)
+                            stateData: JSON.stringify(componentData),
+                            frontendType: 'expresscheckout'
                         },
                         extension_attributes: getExtensionAttributes(event.payment)
                     }

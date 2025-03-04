@@ -16,6 +16,8 @@ namespace Adyen\ExpressCheckout\Model;
 use Adyen\ExpressCheckout\Api\AdyenInitPaymentsInterface;
 use Adyen\Payment\Gateway\Http\Client\TransactionPayment;
 use Adyen\Payment\Gateway\Http\TransferFactory;
+use Adyen\Payment\Gateway\Request\Header\HeaderDataBuilder;
+use Adyen\Payment\Gateway\Request\Header\HeaderDataBuilderInterface;
 use Adyen\Payment\Helper\Config;
 use Adyen\Payment\Helper\Data;
 use Adyen\Payment\Helper\PaymentResponseHandler;
@@ -33,6 +35,7 @@ use Magento\Quote\Model\Quote;
 use Magento\Quote\Model\QuoteIdMask;
 use Magento\Quote\Model\QuoteIdMaskFactory;
 use Adyen\Payment\Helper\Requests;
+use Magento\Payment\Gateway\Data\PaymentDataObjectFactory;
 
 class AdyenInitPayments implements AdyenInitPaymentsInterface
 {
@@ -97,6 +100,16 @@ class AdyenInitPayments implements AdyenInitPaymentsInterface
     private Requests $requestHelper;
 
     /**
+     * @var HeaderDataBuilder
+     */
+    private HeaderDataBuilder $headerDataBuilder;
+
+    /**
+     * @var PaymentDataObjectFactory
+     */
+    private PaymentDataObjectFactory $paymentDataObjectFactory;
+
+    /**
      * @param CartRepositoryInterface $cartRepository
      * @param Config $configHelper
      * @param ReturnUrlHelper $returnUrlHelper
@@ -109,6 +122,8 @@ class AdyenInitPayments implements AdyenInitPaymentsInterface
      * @param Vault $vaultHelper
      * @param UserContextInterface $userContext
      * @param Requests $requestHelper
+     * @param HeaderDataBuilder $headerDataBuilder
+     * @param PaymentDataObjectFactory $paymentDataObjectFactory
      */
     public function __construct(
         CartRepositoryInterface $cartRepository,
@@ -186,12 +201,15 @@ class AdyenInitPayments implements AdyenInitPaymentsInterface
             );
         }
 
+        $headers = $this->adyenHelper->buildRequestHeaders();
+        $headers[HeaderDataBuilderInterface::EXTERNAL_PLATFORM_FRONTEND_TYPE] = 'expresscheckout';
         // Validate the keys in stateData and remove invalid keys
         $stateData = $this->checkoutStateDataValidator->getValidatedAdditionalData($stateData);
         $paymentsRequest = $this->buildPaymentsRequest($quote, $stateData);
         $transfer = $this->transferFactory->create([
             'body' => $paymentsRequest,
-            'clientConfig' => ['storeId' => $quote->getStoreId()]
+            'clientConfig' => ['storeId' => $quote->getStoreId()],
+            'headers' => $headers
         ]);
         try {
             $response = $this->transactionPaymentClient->placeRequest($transfer);

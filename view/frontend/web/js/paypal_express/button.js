@@ -550,9 +550,9 @@ define([
             const payload = {
                 paymentMethod: {
                     method: 'adyen_paypal_express',
-                    additional_data: [
-                        'brand_code:paypal'
-                    ]
+                    additional_data: {
+                        brand_code: 'paypal'
+                    },
                 }
             };
 
