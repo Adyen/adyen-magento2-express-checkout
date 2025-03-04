@@ -450,7 +450,8 @@ define([
                         method: 'adyen_googlepay',
                         additional_data: {
                             brand_code: this.googlePayComponent.props.type,
-                            stateData: JSON.stringify(componentData)
+                            stateData: JSON.stringify(componentData),
+                            frontendType: 'expresscheckout'
                         },
                         extension_attributes: getExtensionAttributes(paymentData)
                     }
