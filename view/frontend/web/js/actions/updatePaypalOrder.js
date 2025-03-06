@@ -47,10 +47,7 @@ define([
                 type: 'Shipping',
                 amount: {
                     currency: currency,
-                    value: currencyHelper.formatAmount(
-                        Math.round(selectedShippingMethod.amount.value),
-                        currency
-                    )
+                        value: currencyHelper.formatAmount(Math.round(shippingMethods[i].amount), currency)
                 },
                 selected: isSelected
             };
