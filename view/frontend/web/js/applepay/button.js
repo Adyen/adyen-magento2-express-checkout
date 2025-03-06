@@ -316,7 +316,9 @@ define([
 
                 self.shippingAddress = payload.address;
 
-                getShippingMethods(payload, this.isProductView).then((result) => {
+                activateCart(this.isProductView)
+                    .then(() => getShippingMethods(payload, this.isProductView))
+                    .then((result) => {
                     // Stop if no shipping methods.
                     if (result.length === 0) {
                         reject($t('There are no shipping methods available for you right now. Please try again or use an alternative payment method.'));
