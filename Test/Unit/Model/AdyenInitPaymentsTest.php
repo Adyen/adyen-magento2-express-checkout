@@ -110,7 +110,7 @@ class AdyenInitPaymentsTest extends AbstractAdyenTestCase
             'external-platform-edition' => 'Community',
             'merchant-application-name' => 'adyen-magento2',
             'merchant-application-version' => '1.2.3',
-            'external-platform-frontendtype' => 'expresscheckout'
+            'external-platform-frontendtype' => 'default'
         ];
         $this->adyenInitPayments = new AdyenInitPayments(
             $this->cartRepository,

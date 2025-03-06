@@ -499,7 +499,7 @@ define([
                         additional_data: {
                             brand_code: 'applepay',
                             stateData: JSON.stringify(componentData),
-                            frontendType: 'expresscheckout'
+                            frontendType: 'default'
                         },
                         extension_attributes: getExtensionAttributes(event.payment)
                     }

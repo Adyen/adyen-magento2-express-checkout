@@ -99,15 +99,7 @@ class AdyenInitPayments implements AdyenInitPaymentsInterface
      */
     private Requests $requestHelper;
 
-    /**
-     * @var HeaderDataBuilder
-     */
-    private HeaderDataBuilder $headerDataBuilder;
-
-    /**
-     * @var PaymentDataObjectFactory
-     */
-    private PaymentDataObjectFactory $paymentDataObjectFactory;
+    private const FRONTEND_TYPE = 'default';
 
     /**
      * @param CartRepositoryInterface $cartRepository
@@ -122,8 +114,6 @@ class AdyenInitPayments implements AdyenInitPaymentsInterface
      * @param Vault $vaultHelper
      * @param UserContextInterface $userContext
      * @param Requests $requestHelper
-     * @param HeaderDataBuilder $headerDataBuilder
-     * @param PaymentDataObjectFactory $paymentDataObjectFactory
      */
     public function __construct(
         CartRepositoryInterface $cartRepository,
@@ -202,7 +192,8 @@ class AdyenInitPayments implements AdyenInitPaymentsInterface
         }
 
         $headers = $this->adyenHelper->buildRequestHeaders();
-        $headers[HeaderDataBuilderInterface::EXTERNAL_PLATFORM_FRONTEND_TYPE] = 'expresscheckout';
+        $headers[HeaderDataBuilderInterface::EXTERNAL_PLATFORM_FRONTEND_TYPE] = self::FRONTEND_TYPE;
+
         // Validate the keys in stateData and remove invalid keys
         $stateData = $this->checkoutStateDataValidator->getValidatedAdditionalData($stateData);
         $paymentsRequest = $this->buildPaymentsRequest($quote, $stateData);

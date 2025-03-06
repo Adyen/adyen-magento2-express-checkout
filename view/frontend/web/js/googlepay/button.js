@@ -451,7 +451,7 @@ define([
                         additional_data: {
                             brand_code: this.googlePayComponent.props.type,
                             stateData: JSON.stringify(componentData),
-                            frontendType: 'expresscheckout'
+                            frontendType: 'default'
                         },
                         extension_attributes: getExtensionAttributes(paymentData)
                     }
