@@ -4,12 +4,14 @@ define([
     'Adyen_ExpressCheckout/js/helpers/getIsLoggedIn',
     'Adyen_ExpressCheckout/js/model/maskedId',
     'Adyen_ExpressCheckout/js/helpers/getMaskedIdFromCart',
+    'Adyen_Payment/js/helper/currencyHelper'
 ], function (
     storage,
     urlBuilder,
     getIsLoggedIn,
     maskedIdModel,
-    getMaskedIdFromCart
+    getMaskedIdFromCart,
+    currencyHelper
 ) {
     'use strict';
 
@@ -45,7 +47,10 @@ define([
                 type: 'Shipping',
                 amount: {
                     currency: currency,
-                    value: Math.round(shippingMethods[i].amount * 100)
+                    value: currencyHelper.formatAmount(
+                        Math.round(selectedShippingMethod.amount.value),
+                        currency
+                    )
                 },
                 selected: isSelected
             };
