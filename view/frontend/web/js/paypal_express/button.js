@@ -522,6 +522,9 @@ define([
 
                     let shippingMethods = [];
 
+                    // Reset the selected shipping method after getting available shipping methods every time.
+                    this.shippingMethod = null;
+
                     for (let method of result) {
                         if (typeof method.method_code !== 'string') {
                             continue;
