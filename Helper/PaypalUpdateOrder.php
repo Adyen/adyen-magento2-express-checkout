@@ -58,6 +58,7 @@ class PaypalUpdateOrder
      * @param string $pspReference
      * @param string $paymentData
      * @param int $amountValue
+     * @param int $taxAmount
      * @param string $amountCurrency
      * @param array $deliveryMethods
      * @return PaypalUpdateOrderRequest
