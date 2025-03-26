@@ -522,6 +522,9 @@ define([
 
                     let shippingMethods = [];
 
+                    // Reset the selected shipping method after getting available shipping methods every time.
+                    this.shippingMethod = null;
+
                     for (let method of result) {
                         if (typeof method.method_code !== 'string') {
                             continue;
@@ -550,9 +553,9 @@ define([
             const payload = {
                 paymentMethod: {
                     method: 'adyen_paypal_express',
-                    additional_data: [
-                        'brand_code:paypal'
-                    ]
+                    additional_data: {
+                        brand_code: 'paypal'
+                    },
                 }
             };
 

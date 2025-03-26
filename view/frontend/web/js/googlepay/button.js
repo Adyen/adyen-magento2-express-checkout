@@ -450,7 +450,8 @@ define([
                         method: 'adyen_googlepay',
                         additional_data: {
                             brand_code: this.googlePayComponent.props.type,
-                            stateData: JSON.stringify(componentData)
+                            stateData: JSON.stringify(componentData),
+                            frontendType: 'default'
                         },
                         extension_attributes: getExtensionAttributes(paymentData)
                     }
@@ -512,10 +513,9 @@ define([
                 let request = result.data;
                 adyenPaymentModal.hideModalLabel(this.modalLabel);
                 fullScreenLoader.startLoader();
-                request.orderId = self.orderId;
                 let popupModal = self.showModal();
 
-                adyenPaymentService.paymentDetails(request).
+                adyenPaymentService.paymentDetails(request, self.orderId).
                 done(function(responseJSON) {
                     fullScreenLoader.stopLoader();
                     self.handleAdyenResult(responseJSON, self.orderId);
