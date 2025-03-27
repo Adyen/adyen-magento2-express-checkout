@@ -38,7 +38,8 @@ define([
     'Adyen_ExpressCheckout/js/model/maskedId',
     'Adyen_ExpressCheckout/js/helpers/getCurrentPage',
     'Adyen_ExpressCheckout/js/helpers/getMaskedIdFromCart',
-    'Adyen_Payment/js/helper/currencyHelper'
+    'Adyen_Payment/js/helper/currencyHelper',
+    'Adyen_ExpressCheckout/js/actions/cancelCart',
 ], function (
     Component,
     $t,
@@ -79,7 +80,8 @@ define([
     maskedIdModel,
     getCurrentPage,
     getMaskedIdFromCart,
-    currencyHelper
+    currencyHelper,
+    cancelCart
 ) {
     'use strict';
 
@@ -453,6 +455,9 @@ define([
                     });
 
                 },
+
+                onError: () => cancelCart(this.isProductView),
+
                 style: paypalStyles
             };
 
