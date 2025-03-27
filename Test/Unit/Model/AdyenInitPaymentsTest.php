@@ -46,7 +46,7 @@ class AdyenInitPaymentsTest extends AbstractAdyenTestCase
         $this->checkoutStateDataValidator = $this->createMock(CheckoutStateDataValidator::class);
         $this->transferFactory = $this->createMock(TransferFactory::class);
         $this->transactionPaymentClient = $this->createMock(TransactionPayment::class);
-        $adyenHelper = $this->createMock(Data::class);
+        $this->adyenHelper = $this->createMock(Data::class);
         $this->vaultHelper = $this->createConfiguredMock(Vault::class, [
             'getPaymentMethodRecurringActive' => true,
             'getPaymentMethodRecurringProcessingModel' => 'CardOnFile'
@@ -104,6 +104,14 @@ class AdyenInitPaymentsTest extends AbstractAdyenTestCase
             'recurringProcessingModel' => 'CardOnFile'
         ];
 
+        $this->headers = [
+            'external-platform-name' => 'magento',
+            'external-platform-version' => '2.x.x',
+            'external-platform-edition' => 'Community',
+            'merchant-application-name' => 'adyen-magento2',
+            'merchant-application-version' => '1.2.3',
+            'external-platform-frontendtype' => 'default'
+        ];
         $this->adyenInitPayments = new AdyenInitPayments(
             $this->cartRepository,
             $configHelper,
@@ -111,7 +119,7 @@ class AdyenInitPaymentsTest extends AbstractAdyenTestCase
             $this->checkoutStateDataValidator,
             $this->transferFactory,
             $this->transactionPaymentClient,
-            $adyenHelper,
+            $this->adyenHelper,
             $this->paymentResponseHandler,
             $this->quoteIdMaskFactoryMock,
             $this->vaultHelper,
@@ -139,15 +147,19 @@ class AdyenInitPaymentsTest extends AbstractAdyenTestCase
 
     public function testExecuteHandlesClientException(): void
     {
+
         $this->cartRepository->method('get')->willReturn($this->quote);
         $this->checkoutStateDataValidator->expects($this->once())
             ->method('getValidatedAdditionalData')
             ->willReturn(json_decode($this->stateData, true));
+        $this->adyenHelper->method('buildRequestHeaders')
+            ->willReturn($this->headers);
         $this->transferFactory->expects($this->once())
             ->method('create')
             ->with([
                 'body' => $this->paymentsRequest,
-                'clientConfig' => ['storeId' => $this->quote->getStoreId()]
+                'clientConfig' => ['storeId' => $this->quote->getStoreId()],
+                'headers' => $this->headers
             ])
             ->willReturn($this->transferMock);
 
@@ -166,10 +178,12 @@ class AdyenInitPaymentsTest extends AbstractAdyenTestCase
         $this->cartRepository->method('get')->willReturn($this->quote);
 
         $this->checkoutStateDataValidator->method('getValidatedAdditionalData')->willReturn(json_decode($this->stateData, true));
-
+        $this->adyenHelper->method('buildRequestHeaders')
+            ->willReturn($this->headers);
         $this->transferFactory->method('create')->with([
             'body' => $this->paymentsRequest,
-            'clientConfig' => ['storeId' => $this->quote->getStoreId()]
+            'clientConfig' => ['storeId' => $this->quote->getStoreId()],
+            'headers' => $this->headers
         ])
             ->willReturn($this->transferMock);
 
@@ -205,26 +219,19 @@ class AdyenInitPaymentsTest extends AbstractAdyenTestCase
             ->willReturn(json_decode($this->stateData, true)
         );
 
-        // Mock VaultHelper methods
-//        $this->vaultHelper
-//            ->method('getPaymentMethodRecurringActive')
-//            ->with($paymentMethodCode, $storeId)
-//            ->willReturn(true);
-//
-//        $this->vaultHelper
-//            ->method('getPaymentMethodRecurringProcessingModel')
-//            ->with($paymentMethodCode, $storeId)
-//            ->willReturn('CardOnFile');
-
         // Mock RequestHelper method
         $this->requestHelper
             ->method('getShopperReference')
             ->with($customerId, null)
             ->willReturn('12345');
 
+        $this->adyenHelper->method('buildRequestHeaders')
+            ->willReturn($this->headers);
+
         $this->transferFactory->method('create')->with([
             'body' => $this->paymentsRequestLoggedInUser,
-            'clientConfig' => ['storeId' => $this->quote->getStoreId()]
+            'clientConfig' => ['storeId' => $this->quote->getStoreId()],
+            'headers' => $this->headers
         ])
             ->willReturn($this->transferMock);
 
@@ -260,9 +267,13 @@ class AdyenInitPaymentsTest extends AbstractAdyenTestCase
             ->willReturn(json_decode($this->stateData, true)
             );
 
+        $this->adyenHelper->method('buildRequestHeaders')
+            ->willReturn($this->headers);
+
         $this->transferFactory->method('create')->with([
             'body' => $this->paymentsRequest,
-            'clientConfig' => ['storeId' => $this->quote->getStoreId()]
+            'clientConfig' => ['storeId' => $this->quote->getStoreId()],
+            'headers' => $this->headers
         ])
             ->willReturn($this->transferMock);
 
