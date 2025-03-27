@@ -19,6 +19,9 @@ use Magento\Framework\Event\ObserverInterface;
 use Magento\Framework\Event\Observer;
 use Magento\Sales\Model\Order;
 
+/**
+ * @deprecated
+ */
 class UpdatePaypalOrderStatus implements ObserverInterface
 {
     /**

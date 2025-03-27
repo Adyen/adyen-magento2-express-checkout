@@ -17,7 +17,4 @@
     <event name="checkout_onepage_controller_success_action">
         <observer name="reinstateOriginalQuote" instance="Adyen\ExpressCheckout\Observer\ReinstateQuote" />
     </event>
-    <event name="sales_model_service_quote_submit_success">
-        <observer name="adyen_paypal_update_status_after_quote_submit" instance="Adyen\ExpressCheckout\Observer\UpdatePaypalOrderStatus" />
-    </event>
 </config>
