@@ -74,6 +74,9 @@
             </argument>
         </arguments>
     </type>
+    <type name="Magento\Sales\Model\Order\Payment\State\OrderCommand">
+        <plugin name="adyen_override_order_status_plugin" type="Adyen\ExpressCheckout\Plugin\OverrideOrderStateFromOrderCommand" sortOrder="10" />
+    </type>
     <virtualType name="AdyenPaymentPaypalExpressFacade" type="Adyen\Payment\Model\Method\Adapter">
         <arguments>
             <argument name="code" xsi:type="string">adyen_paypal_express</argument>
