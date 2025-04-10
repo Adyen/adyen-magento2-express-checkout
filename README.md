@@ -29,6 +29,9 @@ bin/magento cache:clean
 4. For Apple Pay: [Use Adyen's Apple Pay Certificate to go live](https://docs.adyen.com/payment-methods/apple-pay/web-component#going-live), without designing your Apple Pay integration.
 5. For Google Pay: Set up [Google Pay](https://docs.adyen.com/payment-methods/google-pay/web-component#before-you-go-live).
 
+## Best Practice
+1. **Managing Quote Table Growth**: The DPD page refresh with a PDP express payment method enabled creates new `quotes` to store updated payment data data. While this is expected behavior and not critical, it may lead to gradual growth of the quotes table. If relevant for your store, consider setting up a scheduled cleanup for old or inactive quotes.
+
 ## Contributing
 We strongly encourage you to join us in contributing to this repository so everyone can benefit from:
 * New features and functionality
