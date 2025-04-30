@@ -170,10 +170,8 @@ class AdyenInitPayments implements AdyenInitPaymentsInterface
         $quote = $this->cartRepository->get($adyenCartId);
 
         // Reserve an order ID for the quote to obtain the reference and save the quote
-        if (is_null($quote->getReservedOrderId())) {
-            $quote->reserveOrderId();
-            $this->cartRepository->save($quote);
-        }
+        $quote->reserveOrderId();
+        $this->cartRepository->save($quote);
 
         $stateData = json_decode($stateData, true);
 
