@@ -11,13 +11,13 @@
 
 namespace Adyen\ExpressCheckout\Test\Unit\Observer;
 
-use Adyen\ExpressCheckout\Block\GooglePay\Shortcut\Button as GooglePayButton;
+use Adyen\ExpressCheckout\Block\ApplePay\Shortcut\Button as ApplePayButton;
 use Adyen\ExpressCheckout\Model\ConfigurationInterface;
-use Adyen\ExpressCheckout\Observer\AddGooglePayShortcuts;
+use Adyen\ExpressCheckout\Observer\AddApplePayShortcuts;
 use Magento\Store\Api\Data\StoreInterface;
 use Magento\Store\Model\StoreManagerInterface;
 
-class AddGooglePayShortcutsTest extends AbstractPaymentMethodShortcutsTestCase
+class AddApplePayShortcutsTest extends AbstractPaymentMethodShortcutsTestCase
 {
     protected function setUp(): void
     {
@@ -25,11 +25,11 @@ class AddGooglePayShortcutsTest extends AbstractPaymentMethodShortcutsTestCase
         $storeMock->method('getId')->willReturn(1);
 
         $this->configurationMock = $this->createMock(ConfigurationInterface::class);
-        $this->buttonMock = $this->createMock(GooglePayButton::class);
+        $this->buttonMock = $this->createMock(ApplePayButton::class);
         $this->storeManagerMock = $this->createMock(StoreManagerInterface::class);
         $this->storeManagerMock->method('getStore')->willReturn($storeMock);
 
-        $this->addShortcuts = new AddGooglePayShortcuts(
+        $this->addShortcuts = new AddApplePayShortcuts(
             $this->configurationMock,
             $this->buttonMock,
             $this->storeManagerMock
