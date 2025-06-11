@@ -14,13 +14,15 @@ namespace Adyen\ExpressCheckout\Observer;
 use Adyen\ExpressCheckout\Block\GooglePay\Shortcut\Button;
 use Adyen\ExpressCheckout\Model\ConfigurationInterface;
 use Magento\Framework\Event\ObserverInterface;
+use Magento\Store\Model\StoreManagerInterface;
 
 class AddGooglePayShortcuts extends AbstractPaymentMethodShortcuts implements ObserverInterface
 {
     public function __construct(
         ConfigurationInterface $configuration,
-        Button $googlepayButton
+        Button $googlepayButton,
+        StoreManagerInterface $storeManager
     ) {
-        parent::__construct($configuration, $googlepayButton);
+        parent::__construct($configuration, $googlepayButton, $storeManager);
     }
 }

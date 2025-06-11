@@ -15,10 +15,11 @@ use Adyen\ExpressCheckout\Model\Config\Source\ShortcutAreas;
 use Adyen\ExpressCheckout\Model\ConfigurationInterface;
 use Magento\Catalog\Block\ShortcutButtons;
 use Magento\Catalog\Block\ShortcutInterface;
-use Magento\Checkout\Block\QuoteShortcutButtons;
 use Magento\Framework\Event\Observer;
 use Magento\Framework\Event\ObserverInterface;
 use Magento\Framework\Exception\LocalizedException;
+use Magento\Store\Model\ScopeInterface;
+use Magento\Store\Model\StoreManagerInterface;
 
 abstract class AbstractPaymentMethodShortcuts implements ObserverInterface
 {
@@ -33,15 +34,23 @@ abstract class AbstractPaymentMethodShortcuts implements ObserverInterface
     private ShortcutInterface $shortcutButton;
 
     /**
+     * @var StoreManagerInterface
+     */
+    private StoreManagerInterface $storeManager;
+
+    /**
      * @param ConfigurationInterface $configuration
      * @param ShortcutInterface $shortcutButton
+     * @param StoreManagerInterface $storeManager
      */
     public function __construct(
         ConfigurationInterface $configuration,
-        ShortcutInterface $shortcutButton
+        ShortcutInterface $shortcutButton,
+        StoreManagerInterface $storeManager
     ) {
         $this->configuration = $configuration;
         $this->shortcutButton = $shortcutButton;
+        $this->storeManager = $storeManager;
     }
 
     /**
@@ -53,7 +62,9 @@ abstract class AbstractPaymentMethodShortcuts implements ObserverInterface
     {
         $currentPageIdentifier = $this->getCurrentPageIdentifier($observer);
         $showPaymentMethodOn = $this->configuration->getShowPaymentMethodOn(
-            $this->shortcutButton->getPaymentMethodVariant()
+            $this->shortcutButton->getPaymentMethodVariant(),
+            ScopeInterface::SCOPE_STORE,
+            $this->storeManager->getStore()->getId()
         );
         if (!in_array(
             $currentPageIdentifier,
