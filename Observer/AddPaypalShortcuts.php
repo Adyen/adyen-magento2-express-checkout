@@ -14,13 +14,15 @@ namespace Adyen\ExpressCheckout\Observer;
 use Adyen\ExpressCheckout\Block\Paypal\Shortcut\Button;
 use Adyen\ExpressCheckout\Model\ConfigurationInterface;
 use Magento\Framework\Event\ObserverInterface;
+use Magento\Store\Model\StoreManagerInterface;
 
 class AddPaypalShortcuts extends AbstractPaymentMethodShortcuts implements ObserverInterface
 {
     public function __construct(
         ConfigurationInterface $configuration,
-        Button $paypalButton
+        Button $paypalButton,
+        StoreManagerInterface $storeManager
     ) {
-        parent::__construct($configuration, $paypalButton);
+        parent::__construct($configuration, $paypalButton, $storeManager);
     }
 }
