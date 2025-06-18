@@ -564,7 +564,7 @@ define([
             },
 
             showModal: function() {
-                let actionModal = AdyenPaymentModal.showModal(
+                let actionModal = adyenPaymentModal.showModal(
                     adyenPaymentService,
                     fullScreenLoader,
                     this.messageContainer,
