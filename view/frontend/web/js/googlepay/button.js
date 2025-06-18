@@ -517,7 +517,6 @@ define([
 
                 adyenPaymentService.paymentDetails(request, self.orderId).
                 done(function(responseJSON) {
-                    fullScreenLoader.stopLoader();
                     self.handleAdyenResult(responseJSON, self.orderId);
                 }).
                 fail(function(response) {
@@ -545,14 +544,19 @@ define([
                 var self = this;
                 let popupModal;
 
-                fullScreenLoader.stopLoader();
-
                 if (action.type === 'threeDS2' || action.type === 'await') {
                     popupModal = self.showModal();
                 }
 
                 try {
-                    self.checkoutComponent.createFromAction(action).mount('#' + this.modalLabel);
+                    self.checkoutComponent.createFromAction(action, {
+                        onActionHandled: function (event) {
+                            if (event.componentType === "3DS2Challenge") {
+                                fullScreenLoader.stopLoader();
+                                popupModal.modal('openModal');
+                            }
+                        }
+                    }).mount('#' + this.modalLabel);
                 } catch (e) {
                     console.log(e);
                     self.closeModal(popupModal);
@@ -560,13 +564,14 @@ define([
             },
 
             showModal: function() {
-                let actionModal = adyenPaymentModal.showModal(
+                let actionModal = AdyenPaymentModal.showModal(
                     adyenPaymentService,
                     fullScreenLoader,
                     this.messageContainer,
                     this.orderId,
                     this.modalLabel,
-                    this.isPlaceOrderActionAllowed
+                    this.isPlaceOrderActionAllowed,
+                    false
                 );
 
                 $("." + this.modalLabel + " .action-close").hide();
