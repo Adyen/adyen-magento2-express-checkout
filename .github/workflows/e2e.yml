@@ -38,7 +38,7 @@ jobs:
         run: docker exec magento2-container make fs
 
       - name: Check install
-        run: docker exec magento2-container make sys-check
+        run: docker exec magento2-container /bin/bash -c "export MAGERUN_ALLOW_ROOT=1 && make sys-check
 
       - name: Install plugin
         run: docker exec -u www-data magento2-container make plugin
