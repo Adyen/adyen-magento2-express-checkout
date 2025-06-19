@@ -3,12 +3,9 @@ n98-magerun2.phar:
 	wget -q https://files.magerun.net/n98-magerun2-7.5.0.phar -O ./n98-magerun2.phar
 	chmod +x ./n98-magerun2.phar
 
-
 # Check Magento installation
 sys-check: n98-magerun2.phar
-	@echo "Running sys:check with root override"
-	@env MAGERUN_ALLOW_ROOT=1 php ./n98-magerun2.phar sys:check
-
+	./n98-magerun2.phar sys:check
 
 # Install Magento (without starting Apache)
 magento:
