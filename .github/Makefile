@@ -5,7 +5,7 @@ n98-magerun2.phar:
 
 # Check Magento installation
 sys-check: n98-magerun2.phar
-	./n98-magerun2.phar sys:check
+	MAGERUN_ALLOW_ROOT=1 ./n98-magerun2.phar sys:check
 
 # Install Magento (without starting Apache)
 magento:
