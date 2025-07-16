@@ -41,16 +41,23 @@ define([
                 isSelected = true;
             }
 
+            // Fallback logic for description
+            let description =
+                shippingMethods[i].detail?.trim() ||
+                shippingMethods[i].label?.trim() ||
+                shippingMethods[i].carrierCode
+
             let method = {
                 reference: (i + 1).toString(),
-                description: shippingMethods[i].detail,
+                description: description,
                 type: 'Shipping',
                 amount: {
                     currency: currency,
-                        value: currencyHelper.formatAmount(Math.round(shippingMethods[i].amount), currency)
+                    value: currencyHelper.formatAmount(Math.round(shippingMethods[i].amount), currency)
                 },
                 selected: isSelected
             };
+
             // Add method object to array.
             deliveryMethods.push(method);
         }

@@ -120,18 +120,19 @@ class AdyenPaypalUpdateOrder implements AdyenPaypalUpdateOrderInterface
         $quote = $this->cartRepository->get($adyenCartId);
         $merchantReference = $quote->getReservedOrderId();
         $deliveryMethods = json_decode($deliveryMethods, true);
-
         foreach ($deliveryMethods as &$method) {
             // Ensure the amount value is an integer
             $method['amount']['value'] = (int) $method['amount']['value'];
 
             // Validate the current method
-            $validatedMethod = $this->deliveryMethodValidator->getValidatedDeliveryMethod([$method]);
-
+            $validatedMethod = $this->deliveryMethodValidator->getValidatedDeliveryMethod($method);
             // Replace the original method with the validated one
-            if (!empty($validatedMethod)) {
-                $method = $validatedMethod[0];
+            if (empty($validatedMethod)) {
+                throw new ValidatorException(
+                    __('Shipping Methods not found.')
+                );
             }
+            $method = $validatedMethod;
         }
         unset($method);
 
