@@ -27,7 +27,6 @@ use Magento\Quote\Api\CartRepositoryInterface;
 use Magento\Quote\Model\Quote;
 use Magento\Quote\Model\QuoteIdMask;
 use Magento\Quote\Model\QuoteIdMaskFactory;
-use phpseclib3\Crypt\EC\Curves\prime192v1;
 
 class AdyenPaypalUpdateOrder implements AdyenPaypalUpdateOrderInterface
 {

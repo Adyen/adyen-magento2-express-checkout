@@ -5,10 +5,10 @@ declare(strict_types=1);
 namespace Adyen\ExpressCheckout\Test\Unit\Helper\Util;
 
 use Adyen\ExpressCheckout\Helper\Util\PaypalDeliveryMethodValidator;
+use Adyen\Payment\Test\Unit\AbstractAdyenTestCase;
 use Magento\Framework\Exception\ValidatorException;
-use PHPUnit\Framework\TestCase;
 
-class PaypalDeliveryMethodValidatorTest extends TestCase
+class PaypalDeliveryMethodValidatorTest extends AbstractAdyenTestCase
 {
     private PaypalDeliveryMethodValidator $validator;
 

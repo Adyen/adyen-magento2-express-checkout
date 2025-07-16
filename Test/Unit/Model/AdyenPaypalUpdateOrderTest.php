@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Adyen\ExpressCheckout\Test\Unit\Model;
 
-use Adyen\AdyenException;
 use Adyen\ExpressCheckout\Helper\PaypalUpdateOrder;
 use Adyen\ExpressCheckout\Helper\Util\PaypalDeliveryMethodValidator;
 use Adyen\ExpressCheckout\Model\AdyenPaypalUpdateOrder;
@@ -16,10 +15,8 @@ use Magento\Framework\Exception\NoSuchEntityException;
 use Magento\Framework\Exception\ValidatorException;
 use Magento\Quote\Api\CartRepositoryInterface;
 use Magento\Quote\Model\Quote;
-use Magento\Quote\Model\QuoteIdMask;
 use Magento\Quote\Model\QuoteIdMaskFactory;
 use PHPUnit\Framework\MockObject\MockObject;
-use PHPUnit\Framework\TestCase;
 
 class AdyenPaypalUpdateOrderTest extends AbstractAdyenTestCase
 {

@@ -14,7 +14,6 @@ declare(strict_types=1);
 namespace Adyen\ExpressCheckout\Helper\Util;
 
 use Magento\Framework\Exception\ValidatorException;
-use Magento\Framework\Phrase;
 
 class PaypalDeliveryMethodValidator implements PaypalDeliveryMethodValidatorInterface
 {
