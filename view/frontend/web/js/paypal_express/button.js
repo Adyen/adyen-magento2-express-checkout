@@ -360,14 +360,21 @@ define([
                 onShippingOptionsChange: async (data, actions, component) => {
                     let shippingMethod = [];
                     const currentPaymentData = component.paymentData;
+
                     for (const method of Object.values(this.shippingMethods)) {
-                        if (method.carrier_title === data.selectedShippingOption.label) {
-                            this.shippingMethod = method.method_code;
+                        if ((method.carrier_code === data.selectedShippingOption.label) || (method.carrier_title === data.selectedShippingOption.label) ) {
+                            this.shippingMethod = method.method_code || method.carrier_code;
+                            let description =
+                                method.carrier_title?.trim() ||
+                                method.method_title?.trim() ||
+                                method.carrier_code;
+                            let label = method.method_title?.trim() ||
+                                method.carrier_code;
                             shippingMethod = {
                                 identifier: method.method_code,
-                                label: method.method_title,
-                                detail: method.carrier_title ? method.carrier_title : '',
-                                amount: parseFloat(method.amount).toFixed(2),
+                                label: label,
+                                detail: description,
+                                amount: method.amount,
                                 carrierCode: method.carrier_code,
                             };
                             break;
@@ -534,11 +541,19 @@ define([
                         if (typeof method.method_code !== 'string') {
                             continue;
                         }
+                        let description =
+                            method.carrier_title?.trim() ||
+                            method.method_title?.trim() ||
+                            method.carrier_code;
+
+                        let label = method.method_title?.trim() ||
+                        method.carrier_code;
+
                         let shippingMethod = {
                             identifier: method.method_code,
-                            label: method.method_title,
-                            detail: method.carrier_title ? method.carrier_title : '',
-                            amount: parseFloat(method.amount).toFixed(2),
+                            label: label,
+                            detail: description,
+                            amount: method.amount,
                             carrierCode: method.carrier_code,
                         };
                         shippingMethods.push(shippingMethod);
