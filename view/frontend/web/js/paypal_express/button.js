@@ -413,7 +413,7 @@ define([
                         return actions.reject();
                     }
                 },
-                onShippingOptionsChange: async function (data, actions, component) {
+                onShippingOptionsChange: async (data, actions, component) => {
                     const currentPaymentData = component.paymentData;
                     const selectedShippingLabel = data.selectedShippingOption.label?.trim();
 
