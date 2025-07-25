@@ -8,8 +8,16 @@ use Magento\Framework\Event\ObserverInterface;
 use Magento\Sales\Model\Order;
 use Adyen\ExpressCheckout\Block\Paypal\Shortcut\Button;
 
+/**
+ * Disables order confirmation email for PayPal Express payments
+ * until payment is authorized via webhook.
+ */
 class DisableOrderEmailForPaypalExpress implements ObserverInterface
 {
+    /**
+     * @param Observer $observer
+     * @return void
+     */
     public function execute(Observer $observer): void
     {
         /** @var Order $order */
