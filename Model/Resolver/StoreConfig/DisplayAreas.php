@@ -48,13 +48,14 @@ class DisplayAreas implements ResolverInterface
             return [];
         }
 
-        return array_filter(array_map(function (mixed $area) {
-            if (!is_numeric($area)) {
-                return null;
+        $displayAreas = [];
+        foreach ($areas as $area) {
+            if (isset(self::AREA_MAPPING[$area])) {
+                $displayAreas[] = self::AREA_MAPPING[$area];
             }
+        }
 
-            return self::AREA_MAPPING[$area] ?? null;
-        }, $areas));
+        return $displayAreas;
     }
 
     /**
