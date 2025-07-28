@@ -71,7 +71,7 @@ class DisplayAreas implements ResolverInterface
          */
         preg_match('/^adyen_express_([a-zA-Z_]+)_display_areas$/', $field->getName(), $matches);
         $variant = $matches[1] ?? null;
-        if ($variant === null || $variant === '') {
+        if ($variant === null) {
             throw new LocalizedException(__("Invalid variant."));
         }
 
