@@ -143,6 +143,18 @@ type AdyenExpressPaypalUpdateOrderStatus {
     paymentData: String @doc(description: "")
 }
 
+type StoreConfig {
+    adyen_express_applepay_display_areas: [AdyenExpressDisplayArea]
+        @doc(description: "Display Apple Pay on.")
+        @resolver(class: "Reflet\\AdyenExpressCheckoutGraphQl\\Model\\Resolver\\StoreConfig\\DisplayAreas")
+    adyen_express_googlepay_display_areas: [AdyenExpressDisplayArea]
+        @doc(description: "Display Google Pay on.")
+        @resolver(class: "Reflet\\AdyenExpressCheckoutGraphQl\\Model\\Resolver\\StoreConfig\\DisplayAreas")
+    adyen_express_paypal_express_display_areas: [AdyenExpressDisplayArea]
+        @doc(description: "Display PayPal Express on.")
+        @resolver(class: "Reflet\\AdyenExpressCheckoutGraphQl\\Model\\Resolver\\StoreConfig\\DisplayAreas")
+}
+
 input PaypalDeliveryMethodInput {
     reference: String @doc(description: "Unique reference number of the delivery method")
     description: String @doc(description: "The description shown on the pop-up")
@@ -154,4 +166,10 @@ input PaypalDeliveryMethodInput {
 input AmountInput {
     value: Int @doc(description: "Amount value in minor units")
     currency: String @doc(description: "Currency")
+}
+
+enum AdyenExpressDisplayArea {
+    CART_PAGE
+    MINI_CART
+    PRODUCT_PAGE
 }
