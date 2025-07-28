@@ -68,7 +68,7 @@ class DisplayAreas implements ResolverInterface
          * Extract a method variant from the field name
          * adyen_express_paypal_express_display_areas => paypal_express
          */
-        preg_match('/^adyen_express_([a-zA-Z_-]+)_display_areas$/', $field->getName(), $matches);
+        preg_match('/^adyen_express_([a-zA-Z_]+)_display_areas$/', $field->getName(), $matches);
         $variant = $matches[1] ?? null;
         if ($variant === null || $variant === '') {
             throw new LocalizedException(__("Invalid variant."));

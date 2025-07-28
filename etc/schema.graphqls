@@ -146,13 +146,13 @@ type AdyenExpressPaypalUpdateOrderStatus {
 type StoreConfig {
     adyen_express_applepay_display_areas: [AdyenExpressDisplayArea]
         @doc(description: "Display Apple Pay on.")
-        @resolver(class: "Reflet\\AdyenExpressCheckoutGraphQl\\Model\\Resolver\\StoreConfig\\DisplayAreas")
+        @resolver(class: "Adyen\\ExpressCheckout\\Model\\Resolver\\StoreConfig\\DisplayAreas")
     adyen_express_googlepay_display_areas: [AdyenExpressDisplayArea]
         @doc(description: "Display Google Pay on.")
-        @resolver(class: "Reflet\\AdyenExpressCheckoutGraphQl\\Model\\Resolver\\StoreConfig\\DisplayAreas")
+        @resolver(class: "Adyen\\ExpressCheckout\\Model\\Resolver\\StoreConfig\\DisplayAreas")
     adyen_express_paypal_express_display_areas: [AdyenExpressDisplayArea]
         @doc(description: "Display PayPal Express on.")
-        @resolver(class: "Reflet\\AdyenExpressCheckoutGraphQl\\Model\\Resolver\\StoreConfig\\DisplayAreas")
+        @resolver(class: "Adyen\\ExpressCheckout\\Model\\Resolver\\StoreConfig\\DisplayAreas")
 }
 
 input PaypalDeliveryMethodInput {
