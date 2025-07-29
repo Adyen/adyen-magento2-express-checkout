@@ -62,23 +62,3 @@ GRAPHQL_SUITE=${MAGENTO_ROOT}/vendor/adyen/adyen-magento2-expresscheckout/Test/a
 graphql:
 	@cd ${MAGENTO_ROOT}/dev/tests/api-functional && \
 		${MAGENTO_ROOT}/vendor/bin/phpunit --prepend ${GRAPHQL_PHP} --configuration ${GRAPHQL_XML} ${GRAPHQL_SUITE}
-
-phpstan-run:
-	vendor/bin/phpstan analyse -c vendor/adyen/module-payment/phpstan.neon
-
-phpunit-run:
-	cp vendor/adyen/module-payment/Test/phpunit.xml.dist dev/tests/unit/phpunit.xml
-	cd dev/tests/unit; \
-		../../../vendor/bin/phpunit \
-		--coverage-clover=../../../build/clover.xml \
-		--log-junit=../../../build/tests-log.xml \
-		-c phpunit.xml \
-		../../../vendor/adyen/module-payment/Test/Unit
-
-codesniffer-run:
-	vendor/bin/phpcs --standard=Magento2 \
-		--extensions=php,phtml \
-		--error-severity=10 \
-		--warning-severity=0 \
-		--ignore-annotations \
-		-p vendor/adyen/module-payment

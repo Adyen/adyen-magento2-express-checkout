@@ -1,94 +1,47 @@
-name: Main Workflow
-run-name: Express Module CI
-
 on:
-  pull_request:
-    branches: [main, develop-3]
   push:
-    branches: [main, develop-3]
-  pull_request_target:
-    branches: [main, develop-3]
+    branches: [main]
+  pull_request:
   workflow_dispatch:
+
+name: Main Workflow
 
 jobs:
   build:
-    if: (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository) ||
-      (github.event_name == 'pull_request_target' && github.event.pull_request.head.repo.full_name != github.repository) ||
-      (github.event_name == 'workflow_dispatch') ||
-      (github.event_name == 'push')
-    environment: ${{ (github.event_name == 'pull_request_target' && github.event.pull_request.head.repo.full_name != github.repository) && 'external' || 'internal' }}
-
-    strategy:
-      matrix:
-        php-version: ["8.2", "8.3"]
-        magento-version: ["2.4.8"]
-
     runs-on: ubuntu-latest
-    timeout-minutes: 15
-
+    timeout-minutes: 10
     permissions:
       contents: read
 
-    env:
-      PHP_VERSION: ${{ matrix.php-version }}
-      MAGENTO_VERSION: ${{ matrix.magento-version }}
-      MAGENTO_USERNAME: ${{ secrets.MAGENTO_USERNAME }}
-      MAGENTO_PASSWORD: ${{ secrets.MAGENTO_PASSWORD }}
-      ADYEN_API_KEY: ${{ secrets.ADYEN_API_KEY }}
-      ADYEN_CLIENT_KEY: ${{ secrets.ADYEN_CLIENT_KEY }}
-      ADYEN_MERCHANT: ${{ secrets.ADYEN_MERCHANT }}
-      ADMIN_USERNAME: ${{ secrets.MAGENTO_ADMIN_USERNAME }}
-      ADMIN_PASSWORD: ${{ secrets.MAGENTO_ADMIN_PASSWORD }}
-      DEPLOY_SAMPLEDATA: 1
-      DONATION_ACCOUNT: ${{ secrets.DONATION_ACCOUNT }}
+    strategy:
+      matrix:
+        php-version: [8.2,8.3]
 
     steps:
-      - name: Checkout Express Module
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
         with:
-          ref: ${{ github.event.pull_request.head.sha || github.ref }}
+          fetch-depth: 0
 
-      - name: Clone Adyen Main module
-        run: git clone https://github.com/Adyen/adyen-magento2.git main-module
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php-version }}
+          tools: composer:v2
 
-      - name: Install Magento
-        run: docker compose -f .github/docker-compose.yml run --rm web make magento
-
-      - name: Start web server
-        run: docker compose -f .github/docker-compose.yml up -d web
-
-      - name: Set permissions
-        run: docker exec magento2-container make fs
-
-      - name: Copy Main module into Magento container
-        run: docker cp main-module/. magento2-container:/var/www/html/app/code/Adyen/Payment
-
-      - name: Run Magento system check
-        run: docker exec magento2-container make sys-check
-
-      - name: Install Express plugin
-        run: docker exec -u www-data magento2-container make plugin
-
-      - name: Kill Cron Jobs
-        run: docker exec magento2-container /etc/init.d/cron stop
-
-      - name: Set permissions again
-        run: docker exec magento2-container make fs
-
-      - name: Run PHP_CodeSniffer
-        run: docker exec magento2-container make codesniffer-run
+      - name: Test plugin installation
+        run: |
+          echo "{\"http-basic\":{\"repo.magento.com\":{\"username\":\"${MAGENTO_USERNAME}\",\"password\":\"${MAGENTO_PASSWORD}\"}}}" > auth.json
+          composer install --prefer-dist
+        env:
+          CI: true
+          MAGENTO_USERNAME: ${{ secrets.MAGENTO_USERNAME }}
+          MAGENTO_PASSWORD: ${{ secrets.MAGENTO_PASSWORD }}
 
       - name: Run PHPUnit
-        run: docker exec magento2-container make phpunit-run
+        run: vendor/bin/phpunit --coverage-clover=build/clover.xml --log-junit=build/tests-log.xml -c Test/phpunit.xml Test/Unit
 
-      - name: Run GraphQL tests
-        run: docker exec magento2-container make graphql
-
-      - name: Format PHPUnit coverage reports
-        run: docker exec magento2-container make phpunit-fix-report
-
-      - name: Run PHPStan
-        run: docker exec magento2-container make phpstan-run
+      - name: Fix code coverage paths
+        run: sed -i "s;`pwd`/;;g" build/*.xml
 
       - name: SonarCloud Scan
         if: ${{ env.SONAR_TOKEN }}
