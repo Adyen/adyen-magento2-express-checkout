@@ -21,7 +21,6 @@ use Adyen\Payment\Helper\Config;
 use Magento\Checkout\Model\DefaultConfigProvider;
 use Magento\Checkout\Model\Session;
 use Magento\Catalog\Block\ShortcutInterface;
-use Magento\Checkout\Model\ConfigProviderInterface;
 use Magento\Customer\Model\Session as CustomerSession;
 use Magento\Framework\App\Config\ScopeConfigInterface;
 use Magento\Framework\UrlInterface;
