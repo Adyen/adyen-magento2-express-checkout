@@ -26,7 +26,7 @@ use Magento\Framework\Exception\ValidatorException;
 use Magento\Quote\Api\CartRepositoryInterface;
 use Magento\Quote\Model\Quote;
 use Magento\Quote\Model\QuoteIdMask;
-use Magento\Quote\Model\QuoteIdMaskFactory;
+use Magento\Quote\Model\MaskedQuoteIdToQuoteIdInterface;
 
 class AdyenPaypalUpdateOrder implements AdyenPaypalUpdateOrderInterface
 {
@@ -61,9 +61,9 @@ class AdyenPaypalUpdateOrder implements AdyenPaypalUpdateOrderInterface
     private AdyenPaymentResponseCollection $paymentResponseCollection;
 
     /**
-     * @var QuoteIdMaskFactory
+     * @var MaskedQuoteIdToQuoteIdInterface
      */
-    private QuoteIdMaskFactory $quoteIdMaskFactory;
+    private MaskedQuoteIdToQuoteIdInterface $maskedQuoteIdToQuoteId;
 
     /**
      * @param PaypalUpdateOrder $updatePaypalOrderHelper
@@ -72,7 +72,7 @@ class AdyenPaypalUpdateOrder implements AdyenPaypalUpdateOrderInterface
      * @param ChargedCurrency $chargedCurrency
      * @param Data $adyenHelper
      * @param AdyenPaymentResponseCollection $paymentResponseCollection
-     * @param QuoteIdMaskFactory $quoteIdMaskFactory
+     * @param MaskedQuoteIdToQuoteIdInterface $maskedQuoteIdToQuoteId
      */
     public function __construct(
         PaypalUpdateOrder $updatePaypalOrderHelper,
@@ -81,7 +81,7 @@ class AdyenPaypalUpdateOrder implements AdyenPaypalUpdateOrderInterface
         ChargedCurrency $chargedCurrency,
         Data $adyenHelper,
         AdyenPaymentResponseCollection $paymentResponseCollection,
-        QuoteIdMaskFactory $quoteIdMaskFactory
+        MaskedQuoteIdToQuoteIdInterface $maskedQuoteIdToQuoteId
     ) {
         $this->paypalUpdateOrderHelper = $updatePaypalOrderHelper;
         $this->cartRepository = $cartRepository;
@@ -89,7 +89,7 @@ class AdyenPaypalUpdateOrder implements AdyenPaypalUpdateOrderInterface
         $this->chargedCurrency = $chargedCurrency;
         $this->adyenHelper = $adyenHelper;
         $this->paymentResponseCollection = $paymentResponseCollection;
-        $this->quoteIdMaskFactory = $quoteIdMaskFactory;
+        $this->maskedQuoteIdToQuoteId = $maskedQuoteIdToQuoteId;
     }
 
     /**
@@ -109,11 +109,7 @@ class AdyenPaypalUpdateOrder implements AdyenPaypalUpdateOrderInterface
     ): string {
         if (is_null($adyenCartId)) {
             /** @var $quoteIdMask QuoteIdMask */
-            $quoteIdMask = $this->quoteIdMaskFactory->create()->load(
-                $adyenMaskedQuoteId,
-                'masked_id'
-            );
-            $adyenCartId = (int) $quoteIdMask->getQuoteId();
+            $adyenCartId = $this->maskedQuoteIdToQuoteId->execute($adyenMaskedQuoteId );
         }
 
         /** @var Quote $quote */

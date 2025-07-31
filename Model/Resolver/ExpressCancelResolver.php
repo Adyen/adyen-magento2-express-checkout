@@ -23,20 +23,20 @@ use Magento\Framework\GraphQl\Query\Resolver\Value;
 use Magento\Framework\GraphQl\Query\Resolver\ValueFactory;
 use Magento\Framework\GraphQl\Query\ResolverInterface;
 use Magento\Framework\GraphQl\Schema\Type\ResolveInfo;
-use Magento\Quote\Model\QuoteIdMaskFactory;
+use Magento\Quote\Model\MaskedQuoteIdToQuoteIdInterface;
 
 class ExpressCancelResolver implements ResolverInterface
 {
     /**
      * @param ExpressCancel $expressCancelApi
      * @param ValueFactory $valueFactory
-     * @param QuoteIdMaskFactory $quoteMaskFactory
+     * @param MaskedQuoteIdToQuoteIdInterface $maskedQuoteIdToQuoteId
      * @param AdyenLogger $adyenLogger
      */
     public function __construct(
         public ExpressCancel $expressCancelApi,
         public ValueFactory $valueFactory,
-        public QuoteIdMaskFactory $quoteMaskFactory,
+        public MaskedQuoteIdToQuoteIdInterface $maskedQuoteIdToQuoteId,
         public AdyenLogger $adyenLogger
     ) { }
 
@@ -50,7 +50,7 @@ class ExpressCancelResolver implements ResolverInterface
      * @throws GraphQlInputException
      * @throws LocalizedException
      */
-    public function resolve(Field $field, $context, ResolveInfo $info, array $value = null, array $args = null): Value
+    public function resolve(Field $field, $context, ResolveInfo $info, ?array $value = null, ?array $args = null): Value
     {
         if (empty($args['adyenMaskedQuoteId'])) {
             throw new GraphQlInputException(__('Required parameter "adyenMaskedQuoteId" is missing!'));
@@ -59,11 +59,7 @@ class ExpressCancelResolver implements ResolverInterface
         try {
             // Extract unmasked quote id
             $adyenMaskedQuoteId = $args['adyenMaskedQuoteId'];
-            $quoteIdMask = $this->quoteMaskFactory->create()->load(
-                $adyenMaskedQuoteId,
-                'masked_id'
-            );
-            $quoteId = (int) $quoteIdMask->getQuoteId();
+            $quoteId = $this->maskedQuoteIdToQuoteId->execute($adyenMaskedQuoteId);
 
             $provider = $this->expressCancelApi;
 

@@ -23,95 +23,36 @@ use Magento\Catalog\Api\ProductRepositoryInterface;
 use Magento\Checkout\Model\Cart\RequestInfoFilterInterface;
 use Magento\Checkout\Model\Cart\RequestQuantityProcessor;
 use Magento\Customer\Api\CustomerRepositoryInterface;
-use Magento\Framework\DataObject;
 use Magento\Framework\Exception\LocalizedException;
 use Magento\Framework\Exception\NoSuchEntityException;
 use Magento\Framework\Filter\LocalizedToNormalized;
 use Magento\Framework\Locale\ResolverInterface;
-use Magento\Quote\Api\CartManagementInterface;
 use Magento\Quote\Api\CartRepositoryInterface;
 use Magento\Quote\Api\Data\CartInterface;
 use Magento\Quote\Api\Data\CartInterfaceFactory;
+use Magento\Quote\Model\MaskedQuoteIdToQuoteId;
 use Magento\Quote\Model\Quote;
-use Magento\Quote\Model\QuoteIdMask;
-use Magento\Quote\Model\QuoteIdMaskFactory;
 use Magento\Store\Model\StoreManagerInterface;
 use Psr\Log\LoggerInterface;
 
 class ExpressInit implements ExpressInitInterface
 {
-    /**
-     * @var CartManagementInterface
-     */
-    private $cartManagement;
+    private ExpressDataBuilderInterface $expressDataBuilder;
+    private ResolverInterface $localeResolver;
+    private LocalizedToNormalized $localizedToNormalizedFilter;
+    private LoggerInterface $logger;
+    private ProductRepositoryInterface $productRepository;
+    private RequestQuantityProcessor $quantityProcessor;
+    private CartInterfaceFactory $quoteFactory;
+    private MaskedQuoteIdToQuoteId $maskedQuoteIdToQuoteId;
+    private CartRepositoryInterface $quoteRepository;
+    private RequestInfoFilterInterface $requestInfoFilter;
+    private StoreManagerInterface $storeManager;
+    private UserContextInterface $userContext;
+
+    private CustomerRepositoryInterface $customerRepository;
 
     /**
-     * @var ExpressDataBuilderInterface
-     */
-    private $expressDataBuilder;
-
-    /**
-     * @var ResolverInterface
-     */
-    private $localeResolver;
-
-    /**
-     * @var LocalizedToNormalized
-     */
-    private $localizedToNormalizedFilter;
-
-    /**
-     * @var LoggerInterface
-     */
-    private $logger;
-
-    /**
-     * @var ProductRepositoryInterface
-     */
-    private $productRepository;
-
-    /**
-     * @var RequestQuantityProcessor
-     */
-    private $quantityProcessor;
-
-    /**
-     * @var CartInterfaceFactory
-     */
-    private $quoteFactory;
-
-    /**
-     * @var QuoteIdMaskFactory
-     */
-    private $quoteMaskFactory;
-
-    /**
-     * @var CartRepositoryInterface
-     */
-    private $quoteRepository;
-
-    /**
-     * @var RequestInfoFilterInterface
-     */
-    private $requestInfoFilter;
-
-    /**
-     * @var StoreManagerInterface
-     */
-    private $storeManager;
-
-    /**
-     * @var UserContextInterface
-     */
-    private $userContext;
-
-    /**
-     * @var CustomerRepositoryInterface
-     */
-    private $customerRepository;
-
-    /**
-     * @param CartManagementInterface $cartManagement
      * @param ExpressDataBuilderInterface $expressDataBuilder
      * @param ResolverInterface $localeResolver
      * @param LocalizedToNormalized $localizedToNormalizedFilter
@@ -119,7 +60,7 @@ class ExpressInit implements ExpressInitInterface
      * @param ProductRepositoryInterface $productRepository
      * @param RequestQuantityProcessor $requestQuantityProcessor
      * @param CartInterfaceFactory $quoteFactory
-     * @param QuoteIdMaskFactory $quoteMaskFactory
+     * @param MaskedQuoteIdToQuoteId $maskedQuoteIdToQuoteId
      * @param CartRepositoryInterface $quoteRepository
      * @param RequestInfoFilterInterface $requestInfoFilter
      * @param StoreManagerInterface $storeManager
@@ -127,7 +68,6 @@ class ExpressInit implements ExpressInitInterface
      * @param CustomerRepositoryInterface $customerRepository
      */
     public function __construct(
-        CartManagementInterface $cartManagement,
         ExpressDataBuilderInterface $expressDataBuilder,
         ResolverInterface $localeResolver,
         LocalizedToNormalized $localizedToNormalizedFilter,
@@ -135,14 +75,13 @@ class ExpressInit implements ExpressInitInterface
         ProductRepositoryInterface $productRepository,
         RequestQuantityProcessor $requestQuantityProcessor,
         CartInterfaceFactory $quoteFactory,
-        QuoteIdMaskFactory $quoteMaskFactory,
+        MaskedQuoteIdToQuoteId $maskedQuoteIdToQuoteId,
         CartRepositoryInterface $quoteRepository,
         RequestInfoFilterInterface $requestInfoFilter,
         StoreManagerInterface $storeManager,
         UserContextInterface $userContext,
         CustomerRepositoryInterface $customerRepository
     ) {
-        $this->cartManagement = $cartManagement;
         $this->expressDataBuilder = $expressDataBuilder;
         $this->localeResolver = $localeResolver;
         $this->localizedToNormalizedFilter = $localizedToNormalizedFilter;
@@ -150,7 +89,7 @@ class ExpressInit implements ExpressInitInterface
         $this->productRepository = $productRepository;
         $this->quantityProcessor = $requestQuantityProcessor;
         $this->quoteFactory = $quoteFactory;
-        $this->quoteMaskFactory = $quoteMaskFactory;
+        $this->maskedQuoteIdToQuoteId = $maskedQuoteIdToQuoteId;
         $this->quoteRepository = $quoteRepository;
         $this->requestInfoFilter = $requestInfoFilter;
         $this->storeManager = $storeManager;
@@ -282,14 +221,11 @@ class ExpressInit implements ExpressInitInterface
     ): CartInterface {
         $adyenExpressQuote = null;
         if ($adyenMaskedQuoteId !== null) {
-            $adyenExpressQuoteId = $this->quoteMaskFactory->create()->load(
-                $adyenMaskedQuoteId,
-                'masked_id'
-            );
+            $adyenExpressQuoteId = $this->maskedQuoteIdToQuoteId->execute($adyenMaskedQuoteId);
             try {
                 /** @var Quote $adyenExpressQuote */
                 $adyenExpressQuote = $this->quoteRepository->get(
-                    $adyenExpressQuoteId->getQuoteId()
+                    $adyenExpressQuoteId
                 );
                 if ((int)$adyenExpressQuote->getItemsCount() > 0) {
                     foreach ($adyenExpressQuote->getAllVisibleItems() ?? [] as $quoteItem) {

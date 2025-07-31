@@ -4,30 +4,18 @@ declare(strict_types=1);
 namespace Adyen\ExpressCheckout\Model;
 
 use Adyen\ExpressCheckout\Api\Data\AdyenPaymentMethodsInterface;
-use Adyen\ExpressCheckout\Api\Data\AdyenPaymentMethodsInterfaceFactory;
 use Adyen\ExpressCheckout\Api\Data\ExpressDataInterface;
-use Adyen\ExpressCheckout\Api\Data\ExpressDataInterfaceFactory;
 use Adyen\ExpressCheckout\Api\Data\ExtraDetailInterface;
-use Adyen\ExpressCheckout\Api\Data\ExtraDetailInterfaceFactory;
 use Adyen\ExpressCheckout\Api\Data\ExtraDetail\AmountInterface;
-use Adyen\ExpressCheckout\Api\Data\ExtraDetail\AmountInterfaceFactory;
 use Adyen\ExpressCheckout\Api\Data\ExtraDetail\ConfigurationInterface;
-use Adyen\ExpressCheckout\Api\Data\ExtraDetail\ConfigurationInterfaceFactory;
 use Adyen\ExpressCheckout\Api\Data\ExtraDetail\IconInterface;
-use Adyen\ExpressCheckout\Api\Data\ExtraDetail\IconInterfaceFactory;
 use Adyen\ExpressCheckout\Api\Data\MethodResponse\ConfigurationInterface as MethodResponseConfigurationInterface;
-use Adyen\ExpressCheckout\Api\Data\MethodResponse\ConfigurationInterfaceFactory as MethodResponseConfigurationInterfaceFactory;
 use Adyen\ExpressCheckout\Api\Data\MethodResponseInterface;
-use Adyen\ExpressCheckout\Api\Data\MethodResponseInterfaceFactory;
 use Adyen\Payment\Api\AdyenPaymentMethodManagementInterface;
-use Magento\Authorization\Model\UserContextInterface;
 use Magento\Catalog\Api\Data\ProductInterface;
-use Magento\Customer\Model\Session as CustomerSession;
 use Magento\Framework\Exception\NoSuchEntityException;
 use Magento\Quote\Api\CartTotalRepositoryInterface;
-use Magento\Quote\Api\Data\AddressInterface;
 use Magento\Quote\Api\Data\CartInterface;
-use Magento\Quote\Api\ShipmentEstimationInterface;
 use Magento\Quote\Model\Quote;
 use Magento\Quote\Model\QuoteIdMask;
 use Magento\Quote\Model\QuoteIdMaskFactory;
@@ -35,123 +23,63 @@ use Magento\Quote\Model\QuoteIdToMaskedQuoteIdInterface;
 
 class ExpressDataBuilder implements ExpressDataBuilderInterface
 {
-    /**
-     * @var AdyenPaymentMethodsInterfaceFactory
-     */
-    private $adyenPaymentMethodsFactory;
-
-    /**
-     * @var AdyenPaymentMethodManagementInterface
-     */
-    private $adyenPaymentMethodManagement;
-
-    /**
-     * @var ExtraDetailInterfaceFactory
-     */
-    private $adyenPaymentMethodExtraDetailFactory;
-
-    /**
-     * @var AmountInterfaceFactory
-     */
-    private $adyenPaymentMethodConfigurationAmountFactory;
-
-    /**
-     * @var ConfigurationInterfaceFactory
-     */
-    private $adyenPaymentMethodExtraDetailConfigurationFactory;
-
-    /**
-     * @var IconInterfaceFactory
-     */
-    private $adyenPaymentMethodExtraDetailIconFactory;
-
-    /**
-     * @var MethodResponseInterfaceFactory
-     */
-    private $adyenPaymentMethodResponseFactory;
-
-    /**
-     * @var MethodResponseConfigurationInterfaceFactory
-     */
-    private $adyenPaymentMethodResponseConfigurationFactory;
-
-    /**
-     * @var CartTotalRepositoryInterface
-     */
-    private $cartTotalRepository;
-
-    /**
-     * @var CustomerSession
-     */
-    private $customerSession;
-
-    /**
-     * @var ExpressDataInterfaceFactory
-     */
-    private $expressDataFactory;
-
-    /**
-     * @var GetAdyenPaymentMethodsByProductInterface
-     */
-    private $getAdyenPaymentMethodsByProduct;
-
-    /**
-     * @var QuoteIdToMaskedQuoteIdInterface
-     */
-    private $quoteIdToMaskedQuoteId;
-
-    /**
-     * @var QuoteIdMaskFactory
-     */
-    private $quoteIdMaskFactory;
+    private AdyenPaymentMethodsInterface $adyenPaymentMethodsFactory;
+    private AdyenPaymentMethodManagementInterface $adyenPaymentMethodManagement;
+    private ExtraDetailInterface $adyenPaymentMethodExtraDetailFactory;
+    private AmountInterface $adyenPaymentMethodConfigurationAmountFactory;
+    private ConfigurationInterface $adyenPaymentMethodExtraDetailConfigurationFactory;
+    private IconInterface $adyenPaymentMethodExtraDetailIconFactory;
+    private MethodResponseInterface $adyenPaymentMethodResponseFactory;
+    private MethodResponseConfigurationInterface $adyenPaymentMethodResponseConfigurationFactory;
+    private CartTotalRepositoryInterface $cartTotalRepository;
+    private ExpressDataInterface $expressDataFactory;
+    private GetAdyenPaymentMethodsByProductInterface $getAdyenPaymentMethodsByProduct;
+    private QuoteIdToMaskedQuoteIdInterface $quoteIdToMaskedQuoteId;
+    private QuoteIdMaskFactory $quoteIdMaskFactory;
 
     /**
      * @param AdyenPaymentMethodManagementInterface $adyenPaymentMethodManagement
-     * @param AdyenPaymentMethodsInterfaceFactory $adyenPaymentMethodsFactory
-     * @param AmountInterfaceFactory $adyenPaymentMethodConfigurationAmountFactory
+     * @param AdyenPaymentMethodsInterface $adyenPaymentMethodsFactory
+     * @param AmountInterface $adyenPaymentMethodConfigurationAmountFactory
      * @param CartTotalRepositoryInterface $cartTotalRepository
-     * @param ConfigurationInterfaceFactory $adyenPaymentMethodExtraDetailConfigurationFactory
-     * @param CustomerSession $customerSession
-     * @param ExpressDataInterfaceFactory $expressDataFactory
-     * @param ExtraDetailInterfaceFactory $adyenPaymentMethodExtraDetailFactory
+     * @param ConfigurationInterface $adyenPaymentMethodExtraDetailConfigurationFactory
+     * @param ExpressDataInterface $expressDataFactory
+     * @param ExtraDetailInterface $adyenPaymentMethodExtraDetailFactory
      * @param GetAdyenPaymentMethodsByProductInterface $getAdyenPaymentMethodsByProduct
-     * @param IconInterfaceFactory $adyenPaymentMethodExtraDetailIconFactory
-     * @param MethodResponseInterfaceFactory $adyenPaymentMethodResponseFactory
-     * @param MethodResponseConfigurationInterfaceFactory $adyenPaymentMethodResponseConfigurationFactory
+     * @param IconInterface $adyenPaymentMethodExtraDetailIconFactory
+     * @param MethodResponseInterface $adyenPaymentMethodResponseFactory
+     * @param MethodResponseConfigurationInterface $adyenPaymentMethodResponseConfigurationFactory
      * @param QuoteIdToMaskedQuoteIdInterface $quoteIdToMaskedQuoteId
      * @param QuoteIdMaskFactory $quoteIdMaskFactory
      */
     public function __construct(
         AdyenPaymentMethodManagementInterface $adyenPaymentMethodManagement,
-        AdyenPaymentMethodsInterfaceFactory $adyenPaymentMethodsFactory,
-        AmountInterfaceFactory $adyenPaymentMethodConfigurationAmountFactory,
+        AdyenPaymentMethodsInterface $adyenPaymentMethodsFactory,
+        AmountInterface $adyenPaymentMethodConfigurationAmountFactory,
         CartTotalRepositoryInterface $cartTotalRepository,
-        ConfigurationInterfaceFactory $adyenPaymentMethodExtraDetailConfigurationFactory,
-        CustomerSession $customerSession,
-        ExpressDataInterfaceFactory $expressDataFactory,
-        ExtraDetailInterfaceFactory $adyenPaymentMethodExtraDetailFactory,
+        ConfigurationInterface $adyenPaymentMethodExtraDetailConfigurationFactory,
+        ExpressDataInterface $expressDataFactory,
+        ExtraDetailInterface $adyenPaymentMethodExtraDetailFactory,
         GetAdyenPaymentMethodsByProductInterface $getAdyenPaymentMethodsByProduct,
-        IconInterfaceFactory $adyenPaymentMethodExtraDetailIconFactory,
-        MethodResponseInterfaceFactory $adyenPaymentMethodResponseFactory,
-        MethodResponseConfigurationInterfaceFactory $adyenPaymentMethodResponseConfigurationFactory,
+        IconInterface $adyenPaymentMethodExtraDetailIconFactory,
+        MethodResponseInterface $adyenPaymentMethodResponseFactory,
+        MethodResponseConfigurationInterface $adyenPaymentMethodResponseConfigurationFactory,
         QuoteIdToMaskedQuoteIdInterface $quoteIdToMaskedQuoteId,
         QuoteIdMaskFactory $quoteIdMaskFactory
     ) {
         $this->adyenPaymentMethodManagement = $adyenPaymentMethodManagement;
         $this->adyenPaymentMethodsFactory = $adyenPaymentMethodsFactory;
+        $this->adyenPaymentMethodConfigurationAmountFactory = $adyenPaymentMethodConfigurationAmountFactory;
         $this->cartTotalRepository = $cartTotalRepository;
-        $this->customerSession = $customerSession;
+        $this->adyenPaymentMethodExtraDetailConfigurationFactory = $adyenPaymentMethodExtraDetailConfigurationFactory;
         $this->expressDataFactory = $expressDataFactory;
         $this->adyenPaymentMethodExtraDetailFactory = $adyenPaymentMethodExtraDetailFactory;
-        $this->adyenPaymentMethodConfigurationAmountFactory = $adyenPaymentMethodConfigurationAmountFactory;
-        $this->adyenPaymentMethodExtraDetailConfigurationFactory = $adyenPaymentMethodExtraDetailConfigurationFactory;
+        $this->getAdyenPaymentMethodsByProduct = $getAdyenPaymentMethodsByProduct;
         $this->adyenPaymentMethodExtraDetailIconFactory = $adyenPaymentMethodExtraDetailIconFactory;
         $this->adyenPaymentMethodResponseFactory = $adyenPaymentMethodResponseFactory;
         $this->adyenPaymentMethodResponseConfigurationFactory = $adyenPaymentMethodResponseConfigurationFactory;
-        $this->adyenPaymentMethodExtraDetailIconFactory = $adyenPaymentMethodExtraDetailIconFactory;
         $this->quoteIdToMaskedQuoteId = $quoteIdToMaskedQuoteId;
         $this->quoteIdMaskFactory = $quoteIdMaskFactory;
-        $this->getAdyenPaymentMethodsByProduct = $getAdyenPaymentMethodsByProduct;
     }
 
     /**
@@ -160,6 +88,7 @@ class ExpressDataBuilder implements ExpressDataBuilderInterface
      * @param CartInterface $quote
      * @param ProductInterface $product
      * @return ExpressDataInterface
+     * @throws NoSuchEntityException
      */
     public function execute(
         CartInterface $quote,
@@ -167,7 +96,6 @@ class ExpressDataBuilder implements ExpressDataBuilderInterface
     ): ExpressDataInterface {
         /** @var ExpressDataInterface $expressData */
         $expressData = $this->expressDataFactory->create();
-        /** @var AdyenPaymentMethodsInterface $adyenPaymentMethods */
         $adyenPaymentMethods = $this->getAdyenPaymentMethods(
             $quote,
             $product

@@ -6,48 +6,37 @@ namespace Adyen\ExpressCheckout\Model;
 use Adyen\ExpressCheckout\Api\ExpressCancelInterface;
 use Adyen\ExpressCheckout\Api\GuestExpressCancelInterface;
 use Magento\Framework\Exception\NoSuchEntityException;
-use Magento\Quote\Model\QuoteIdMask;
-use Magento\Quote\Model\QuoteIdMaskFactory;
+use Magento\Quote\Model\MaskedQuoteIdToQuoteId;
 
 class GuestExpressCancel implements GuestExpressCancelInterface
 {
-    /**
-     * @var ExpressCancelInterface
-     */
-    private $expressCancel;
-
-    /**
-     * @var QuoteIdMaskFactory
-     */
-    private $quoteMaskFactory;
+    private ExpressCancelInterface $expressCancel;
+    private MaskedQuoteIdToQuoteId $maskedQuoteIdToQuoteId;
 
     /**
      * @param ExpressCancelInterface $expressCancel
-     * @param QuoteIdMaskFactory $quoteMaskFactory
+     * @param MaskedQuoteIdToQuoteId $maskedQuoteIdToQuoteId
      */
     public function __construct(
         ExpressCancelInterface $expressCancel,
-        QuoteIdMaskFactory $quoteMaskFactory
+        MaskedQuoteIdToQuoteId $maskedQuoteIdToQuoteId
     ) {
         $this->expressCancel = $expressCancel;
-        $this->quoteMaskFactory = $quoteMaskFactory;
+        $this->maskedQuoteIdToQuoteId = $maskedQuoteIdToQuoteId;
     }
 
     /**
      * Cancel Express Checkout Quote for Guests
      *
      * @param string $maskedQuoteId
+     * @throws NoSuchEntityException
      */
     public function execute(
         string $maskedQuoteId
     ): void {
-        /** @var $quoteIdMask QuoteIdMask */
-        $quoteIdMask = $this->quoteMaskFactory->create()->load(
-            $maskedQuoteId,
-            'masked_id'
-        );
+        $quoteId = $this->maskedQuoteIdToQuoteId->execute($maskedQuoteId);
         $this->expressCancel->execute(
-            (int) $quoteIdMask->getQuoteId()
+            $quoteId
         );
     }
 }

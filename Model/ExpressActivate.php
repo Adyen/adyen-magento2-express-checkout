@@ -10,8 +10,7 @@ use Magento\Quote\Api\CartManagementInterface;
 use Magento\Quote\Api\CartRepositoryInterface;
 use Magento\Quote\Api\Data\CartInterface;
 use Magento\Quote\Api\Data\CartInterfaceFactory;
-use Magento\Quote\Model\QuoteIdMask;
-use Magento\Quote\Model\QuoteIdMaskFactory;
+use Magento\Quote\Model\MaskedQuoteIdToQuoteIdInterface;
 use Magento\Quote\Model\ResourceModel\Quote;
 
 class ExpressActivate implements ExpressActivateInterface
@@ -29,12 +28,12 @@ class ExpressActivate implements ExpressActivateInterface
     /**
      * @var CartInterfaceFactory
      */
-    private $quoteFactory;
+    private CartInterfaceFactory $quoteFactory;
 
     /**
-     * @var QuoteIdMaskFactory
+     * @var MaskedQuoteIdToQuoteIdInterface
      */
-    private $quoteIdMaskFactory;
+    private $maskedQuoteIdToQuoteId;
 
     /**
      * @var Quote
@@ -50,7 +49,7 @@ class ExpressActivate implements ExpressActivateInterface
      * @param CartInterfaceFactory $quoteFactory
      * @param CartManagementInterface $cartManagement
      * @param CartRepositoryInterface $cartRepository
-     * @param QuoteIdMaskFactory $quoteIdMaskFactory
+     * @param MaskedQuoteIdToQuoteIdInterface $maskedQuoteIdToQuoteId
      * @param Quote $quoteResoure
      * @param UserContextInterface $userContext
      */
@@ -58,14 +57,14 @@ class ExpressActivate implements ExpressActivateInterface
         CartInterfaceFactory $quoteFactory,
         CartManagementInterface $cartManagement,
         CartRepositoryInterface $cartRepository,
-        QuoteIdMaskFactory $quoteIdMaskFactory,
+        MaskedQuoteIdToQuoteIdInterface $maskedQuoteIdToQuoteId,
         Quote $quoteResoure,
         UserContextInterface $userContext
     ) {
         $this->quoteFactory = $quoteFactory;
         $this->cartManagement = $cartManagement;
         $this->cartRepository = $cartRepository;
-        $this->quoteIdMaskFactory = $quoteIdMaskFactory;
+        $this->maskedQuoteIdToQuoteId = $maskedQuoteIdToQuoteId;
         $this->quoteResource = $quoteResoure;
         $this->userContext = $userContext;
     }
@@ -107,14 +106,10 @@ class ExpressActivate implements ExpressActivateInterface
      *
      * @param string $maskedQuoteId
      * @return int
+     * @throws NoSuchEntityException
      */
     private function getAdyenQuoteId(string $maskedQuoteId): int
     {
-        /** @var $quoteIdMask QuoteIdMask */
-        $quoteIdMask = $this->quoteIdMaskFactory->create()->load(
-            $maskedQuoteId,
-            'masked_id'
-        );
-        return (int) $quoteIdMask->getQuoteId();
+        return $this->maskedQuoteIdToQuoteId->execute($maskedQuoteId);
     }
 }

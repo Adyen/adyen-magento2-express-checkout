@@ -18,7 +18,7 @@ use Magento\Framework\Setup\Patch\DataPatchInterface;
 
 class SeparateConfigurationFields extends AbstractConfigurationPathPatcher implements DataPatchInterface
 {
-    const REPLACE_CONFIG_PATHS = [
+    protected const array REPLACE_CONFIG_PATHS = [
         'payment/adyen_express/show_apple_pay_on' => 'payment/adyen_applepay/express_show_on',
         'payment/adyen_express/show_google_pay_on' => 'payment/adyen_googlepay/express_show_on',
         'payment/adyen_express/apple_pay_button_color' => 'payment/adyen_applepay/express_button_color'

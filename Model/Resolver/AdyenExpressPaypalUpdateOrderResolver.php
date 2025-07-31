@@ -16,7 +16,6 @@ namespace Adyen\ExpressCheckout\Model\Resolver;
 use Adyen\ExpressCheckout\Api\AdyenPaypalUpdateOrderInterface;
 use Adyen\ExpressCheckout\Helper\PaypalUpdateOrder;
 use Adyen\Payment\Logger\AdyenLogger;
-use Adyen\Payment\Model\Resolver\DataProvider\GetAdyenPaymentStatus;
 use Exception;
 use Magento\Framework\Exception\LocalizedException;
 use Magento\Framework\GraphQl\Config\Element\Field;
@@ -25,21 +24,21 @@ use Magento\Framework\GraphQl\Query\Resolver\Value;
 use Magento\Framework\GraphQl\Query\Resolver\ValueFactory;
 use Magento\Framework\GraphQl\Query\ResolverInterface;
 use Magento\Framework\GraphQl\Schema\Type\ResolveInfo;
-use Magento\Quote\Model\QuoteIdMaskFactory;
+use Magento\Quote\Model\MaskedQuoteIdToQuoteIdInterface;
 
 class AdyenExpressPaypalUpdateOrderResolver implements ResolverInterface
 {
     /**
      * @param AdyenPaypalUpdateOrderInterface $adyenPaypalUpdateOrderApi
      * @param ValueFactory $valueFactory
-     * @param QuoteIdMaskFactory $quoteMaskFactory
+     * @param MaskedQuoteIdToQuoteIdInterface $maskedQuoteIdToQuoteId
      * @param AdyenLogger $adyenLogger
      * @param PaypalUpdateOrder $paypalUpdateOrderHelper
      */
     public function __construct(
         public AdyenPaypalUpdateOrderInterface $adyenPaypalUpdateOrderApi,
         public ValueFactory $valueFactory,
-        public QuoteIdMaskFactory $quoteMaskFactory,
+        public MaskedQuoteIdToQuoteIdInterface $maskedQuoteIdToQuoteId,
         public AdyenLogger $adyenLogger,
         public PaypalUpdateOrder $paypalUpdateOrderHelper
     ) { }
@@ -54,7 +53,7 @@ class AdyenExpressPaypalUpdateOrderResolver implements ResolverInterface
      * @throws GraphQlInputException
      * @throws LocalizedException
      */
-    public function resolve(Field $field, $context, ResolveInfo $info, array $value = null, array $args = null): Value
+    public function resolve(Field $field, $context, ResolveInfo $info, ?array $value = null, ?array $args = null): Value
     {
         if (empty($args['paymentData'])) {
             throw new GraphQlInputException(__('Required parameter "paymentData" is missing!'));
@@ -73,11 +72,8 @@ class AdyenExpressPaypalUpdateOrderResolver implements ResolverInterface
             $adyenCartId = $args['adyenCartId'] ?? null;
 
             if (isset($adyenCartId)) {
-                $quoteIdMask = $this->quoteMaskFactory->create()->load(
-                    $adyenCartId,
-                    'masked_id'
-                );
-                $quoteId = (int) $quoteIdMask->getQuoteId();
+                $quoteId = $this->maskedQuoteIdToQuoteId->execute($adyenCartId);
+
             } else {
                 $quoteId = null;
             }
@@ -90,8 +86,13 @@ class AdyenExpressPaypalUpdateOrderResolver implements ResolverInterface
                     true
                 );
             };
+            $value = $this->valueFactory->create($result);
 
-            return $this->valueFactory->create($result);
+            if (!$value instanceof Value) {
+                throw new LocalizedException(__('Resolver failed to return a valid Value object.'));
+            }
+            return $value;
+
         } catch (Exception $e) {
             $errorMessage = "An error occurred during initializing API call to `/paypal/updateOrder` endpoint!";
             $logMessage = sprintf("%s: %s", $errorMessage, $e->getMessage());

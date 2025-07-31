@@ -4,6 +4,7 @@ declare(strict_types=1);
 namespace Adyen\ExpressCheckout\Model;
 
 use Adyen\Model\Checkout\PaymentMethodsRequest;
+use Adyen\Payment\Api\Data\AdyenAmountCurrencyInterface;
 use Adyen\Payment\Helper\ChargedCurrency;
 use Adyen\Payment\Helper\Config;
 use Adyen\Payment\Helper\Data;
@@ -22,7 +23,7 @@ class GetAdyenPaymentMethodsByProduct implements GetAdyenPaymentMethodsByProduct
     /**
      * @var AdyenAmountCurrencyFactory
      */
-    private $adyenAmountCurrencyFactory;
+    private AdyenAmountCurrencyFactory $adyenAmountCurrencyFactory;
 
     /**
      * @var Data
@@ -95,7 +96,7 @@ class GetAdyenPaymentMethodsByProduct implements GetAdyenPaymentMethodsByProduct
         if (!$merchantAccount) {
             return [];
         }
-        /** @var AdyenAmountCurrency $quoteAmountCurrency */
+        /** @var AdyenAmountCurrencyInterface $quoteAmountCurrency */
         $quoteAmountCurrency = $this->chargedCurrency->getQuoteAmountCurrency($quote);
         $configuredChargeCurrency = $this->adyenConfigHelper->getChargedCurrency(
             $quote->getStoreId()

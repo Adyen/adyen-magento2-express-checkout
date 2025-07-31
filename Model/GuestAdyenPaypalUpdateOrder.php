@@ -16,14 +16,14 @@ namespace Adyen\ExpressCheckout\Model;
 use Adyen\ExpressCheckout\Api\AdyenPaypalUpdateOrderInterface;
 use Adyen\ExpressCheckout\Api\GuestAdyenPaypalUpdateOrderInterface;
 use Magento\Quote\Model\QuoteIdMask;
-use Magento\Quote\Model\QuoteIdMaskFactory;
+use Magento\Quote\Model\MaskedQuoteIdToQuoteId;
 
 class GuestAdyenPaypalUpdateOrder implements GuestAdyenPaypalUpdateOrderInterface
 {
     /**
-     * @var QuoteIdMaskFactory
+     * @var MaskedQuoteIdToQuoteId
      */
-    private QuoteIdMaskFactory $quoteIdMaskFactory;
+    private MaskedQuoteIdToQuoteId $maskedQuoteIdToQuoteId;
 
     /**
      * @var AdyenPaypalUpdateOrder
@@ -31,14 +31,14 @@ class GuestAdyenPaypalUpdateOrder implements GuestAdyenPaypalUpdateOrderInterfac
     private AdyenPaypalUpdateOrder $adyenUpdatePaypalOrder;
 
     /**
-     * @param QuoteIdMaskFactory $quoteIdMaskFactory
+     * @param MaskedQuoteIdToQuoteId $maskedQuoteIdToQuoteId
      * @param AdyenPaypalUpdateOrderInterface $adyenUpdatePaypalOrder
      */
     public function __construct(
-        QuoteIdMaskFactory $quoteIdMaskFactory,
+        MaskedQuoteIdToQuoteId $maskedQuoteIdToQuoteId,
         AdyenPaypalUpdateOrderInterface $adyenUpdatePaypalOrder
     ) {
-        $this->quoteIdMaskFactory = $quoteIdMaskFactory;
+        $this->maskedQuoteIdToQuoteId = $maskedQuoteIdToQuoteId;
         $this->adyenUpdatePaypalOrder = $adyenUpdatePaypalOrder;
     }
 
@@ -51,11 +51,7 @@ class GuestAdyenPaypalUpdateOrder implements GuestAdyenPaypalUpdateOrderInterfac
         $quoteId = null;
         if ($guestMaskedId !== null) {
             /** @var $quoteIdMask QuoteIdMask */
-            $quoteIdMask = $this->quoteIdMaskFactory->create()->load(
-                $guestMaskedId,
-                'masked_id'
-            );
-            $quoteId = (int) $quoteIdMask->getQuoteId();
+            $quoteId = $this->maskedQuoteIdToQuoteId->execute($guestMaskedId);
         }
 
         return $this->adyenUpdatePaypalOrder->execute($paymentData, $quoteId, $adyenMaskedQuoteId, $deliveryMethods);

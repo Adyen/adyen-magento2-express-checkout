@@ -16,6 +16,7 @@ use Adyen\ExpressCheckout\Observer\UpdatePaypalOrderStatus;
 use Adyen\Payment\Test\Unit\AbstractAdyenTestCase;
 use Magento\Framework\Event;
 use Magento\Framework\Event\Observer;
+use Magento\Framework\View\Element\AbstractBlock;
 use Magento\Quote\Api\Data\PaymentInterface;
 use Magento\Sales\Model\Order;
 use Magento\Sales\Model\Order\Config;
@@ -47,7 +48,12 @@ class UpdatePaypalOrderStatusTest extends AbstractAdyenTestCase
         $this->orderMock->method('getPayment')->willReturn($this->paymentMock);
         $this->orderMock->method('getConfig')->willReturn($orderConfigMock);
 
-        $eventMock = $this->createGeneratedMock(Event::class, ['getOrder']);
+
+        $eventMock = $this->getMockBuilder(AbstractBlock::class)
+            ->addMethods(['getOrder'])
+            ->disableOriginalConstructor()
+            ->getMock();
+
         $eventMock->method('getOrder')->willReturn($this->orderMock);
 
         $this->observerMock = $this->createMock(Observer::class);

@@ -18,15 +18,14 @@ use Magento\Framework\Exception\LocalizedException;
 use Magento\Framework\Exception\NoSuchEntityException;
 use Magento\Framework\Exception\ValidatorException;
 use Magento\Payment\Gateway\Http\ClientException;
-use Magento\Quote\Model\QuoteIdMask;
-use Magento\Quote\Model\QuoteIdMaskFactory;
+use Magento\Quote\Model\MaskedQuoteIdToQuoteId;
 
 class GuestAdyenInitPayments implements GuestAdyenInitPaymentsInterface
 {
     /**
-     * @var QuoteIdMaskFactory
+     * @var MaskedQuoteIdToQuoteId
      */
-    private QuoteIdMaskFactory $quoteIdMaskFactory;
+    private MaskedQuoteIdToQuoteId $maskedQuoteIdToQuoteId;
 
     /**
      * @var AdyenInitPayments
@@ -34,14 +33,14 @@ class GuestAdyenInitPayments implements GuestAdyenInitPaymentsInterface
     private AdyenInitPayments $adyenInitPayments;
 
     /**
-     * @param QuoteIdMaskFactory $quoteIdMaskFactory
+     * @param MaskedQuoteIdToQuoteId $maskedQuoteIdToQuoteId
      * @param AdyenInitPayments $adyenInitPayments
      */
     public function __construct(
-        QuoteIdMaskFactory $quoteIdMaskFactory,
+        MaskedQuoteIdToQuoteId $maskedQuoteIdToQuoteId,
         AdyenInitPayments $adyenInitPayments
     ) {
-        $this->quoteIdMaskFactory = $quoteIdMaskFactory;
+        $this->maskedQuoteIdToQuoteId = $maskedQuoteIdToQuoteId;
         $this->adyenInitPayments = $adyenInitPayments;
     }
 
@@ -63,11 +62,7 @@ class GuestAdyenInitPayments implements GuestAdyenInitPaymentsInterface
         $quoteId = null;
         if ($guestMaskedId !== null) {
             /** @var $quoteIdMask QuoteIdMask */
-            $quoteIdMask = $this->quoteIdMaskFactory->create()->load(
-                $guestMaskedId,
-                'masked_id'
-            );
-            $quoteId = (int) $quoteIdMask->getQuoteId();
+            $quoteId = $this->maskedQuoteIdToQuoteId->execute($guestMaskedId);
         }
 
         return $this->adyenInitPayments->execute($stateData, $quoteId, $adyenMaskedQuoteId);
