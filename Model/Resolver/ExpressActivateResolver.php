@@ -73,12 +73,12 @@ class ExpressActivateResolver implements ResolverInterface
                 return true;
             };
 
-            $value = $this->valueFactory->create($result);
+            $valueFactory = $this->valueFactory->create($result);
 
-            if (!$value instanceof Value) {
+            if (!$valueFactory instanceof Value) {
                 throw new LocalizedException(__('Resolver failed to return a valid Value object.'));
             }
-            return $value;
+            return $valueFactory;
         } catch (Exception $e) {
             $errorMessage = "An error occurred while activating the express quote";
             $logMessage = sprintf("%s: %s", $errorMessage, $e->getMessage());

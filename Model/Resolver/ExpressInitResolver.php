@@ -31,7 +31,7 @@ class ExpressInitResolver implements ResolverInterface
 {
     /**
      * @param ExpressInit $expressInitApi
-     * @param ProductCartParamsInterface $productCartParamsPrototype
+     * @param ProductCartParams $productCartParamsPrototype
      * @param ValueFactory $valueFactory
      * @param MaskedQuoteIdToQuoteIdInterface $maskedQuoteIdToQuoteId
      * @param AdyenLogger $adyenLogger
@@ -83,12 +83,12 @@ class ExpressInitResolver implements ResolverInterface
                 return $provider->execute($productCartParams, $quoteId, $adyenMaskedQuoteId);
             };
 
-            $value = $this->valueFactory->create($result);
+            $valueFactory = $this->valueFactory->create($result);
 
-            if (!$value instanceof Value) {
+            if (!$valueFactory instanceof Value) {
                 throw new LocalizedException(__('Resolver failed to return a valid Value object.'));
             }
-            return $value;
+            return $valueFactory;
 
         } catch (Exception $e) {
             $errorMessage = "An error occurred while initiating the express quote";
