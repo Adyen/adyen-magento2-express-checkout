@@ -108,8 +108,7 @@ class AdyenPaypalUpdateOrder implements AdyenPaypalUpdateOrderInterface
         string $deliveryMethods = ''
     ): string {
         if (is_null($adyenCartId)) {
-            /** @var $quoteIdMask QuoteIdMask */
-            $adyenCartId = $this->maskedQuoteIdToQuoteId->execute($adyenMaskedQuoteId );
+            $adyenCartId = $this->maskedQuoteIdToQuoteId->execute($adyenMaskedQuoteId);
         }
 
         /** @var Quote $quote */

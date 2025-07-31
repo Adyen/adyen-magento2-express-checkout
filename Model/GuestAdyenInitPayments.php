@@ -61,7 +61,6 @@ class GuestAdyenInitPayments implements GuestAdyenInitPaymentsInterface
     ): string {
         $quoteId = null;
         if ($guestMaskedId !== null) {
-            /** @var $quoteIdMask QuoteIdMask */
             $quoteId = $this->maskedQuoteIdToQuoteId->execute($guestMaskedId);
         }
 

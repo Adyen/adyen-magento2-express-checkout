@@ -41,7 +41,7 @@ class AdyenInitPayments implements AdyenInitPaymentsInterface
     private Config $configHelper;
     private ReturnUrlHelper $returnUrlHelper;
     private CheckoutStateDataValidator $checkoutStateDataValidator;
-   private TransferFactory $transferFactory;
+    private TransferFactory $transferFactory;
     private TransactionPayment $transactionPaymentClient;
     private Data $adyenHelper;
     private PaymentResponseHandler $paymentResponseHandler;

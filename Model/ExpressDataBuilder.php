@@ -23,61 +23,61 @@ use Magento\Quote\Model\QuoteIdToMaskedQuoteIdInterface;
 
 class ExpressDataBuilder implements ExpressDataBuilderInterface
 {
-    private AdyenPaymentMethodsInterface $adyenPaymentMethodsFactory;
+    private AdyenPaymentMethodsInterface $adyenPaymentMethods;
     private AdyenPaymentMethodManagementInterface $adyenPaymentMethodManagement;
-    private ExtraDetailInterface $adyenPaymentMethodExtraDetailFactory;
-    private AmountInterface $adyenPaymentMethodConfigurationAmountFactory;
-    private ConfigurationInterface $adyenPaymentMethodExtraDetailConfigurationFactory;
-    private IconInterface $adyenPaymentMethodExtraDetailIconFactory;
-    private MethodResponseInterface $adyenPaymentMethodResponseFactory;
-    private MethodResponseConfigurationInterface $adyenPaymentMethodResponseConfigurationFactory;
+    private ExtraDetailInterface $adyenPaymentMethodExtraDetail;
+    private AmountInterface $adyenPaymentMethodConfigurationAmount;
+    private ConfigurationInterface $adyenPaymentMethodExtraDetailConfiguration;
+    private IconInterface $adyenPaymentMethodExtraDetailIcon;
+    private MethodResponseInterface $adyenPaymentMethodResponse;
+    private MethodResponseConfigurationInterface $adyenPaymentMethodResponseConfiguration;
     private CartTotalRepositoryInterface $cartTotalRepository;
-    private ExpressDataInterface $expressDataFactory;
+    private ExpressDataInterface $expressData;
     private GetAdyenPaymentMethodsByProductInterface $getAdyenPaymentMethodsByProduct;
     private QuoteIdToMaskedQuoteIdInterface $quoteIdToMaskedQuoteId;
     private QuoteIdMaskFactory $quoteIdMaskFactory;
 
     /**
      * @param AdyenPaymentMethodManagementInterface $adyenPaymentMethodManagement
-     * @param AdyenPaymentMethodsInterface $adyenPaymentMethodsFactory
-     * @param AmountInterface $adyenPaymentMethodConfigurationAmountFactory
+     * @param AdyenPaymentMethodsInterface $adyenPaymentMethods
+     * @param AmountInterface $adyenPaymentMethodConfigurationAmount
      * @param CartTotalRepositoryInterface $cartTotalRepository
-     * @param ConfigurationInterface $adyenPaymentMethodExtraDetailConfigurationFactory
-     * @param ExpressDataInterface $expressDataFactory
-     * @param ExtraDetailInterface $adyenPaymentMethodExtraDetailFactory
+     * @param ConfigurationInterface $adyenPaymentMethodExtraDetailConfiguration
+     * @param ExpressDataInterface $expressData
+     * @param ExtraDetailInterface $adyenPaymentMethodExtraDetail
      * @param GetAdyenPaymentMethodsByProductInterface $getAdyenPaymentMethodsByProduct
-     * @param IconInterface $adyenPaymentMethodExtraDetailIconFactory
-     * @param MethodResponseInterface $adyenPaymentMethodResponseFactory
-     * @param MethodResponseConfigurationInterface $adyenPaymentMethodResponseConfigurationFactory
+     * @param IconInterface $adyenPaymentMethodExtraDetailIcon
+     * @param MethodResponseInterface $adyenPaymentMethodResponse
+     * @param MethodResponseConfigurationInterface $adyenPaymentMethodResponseConfiguration
      * @param QuoteIdToMaskedQuoteIdInterface $quoteIdToMaskedQuoteId
      * @param QuoteIdMaskFactory $quoteIdMaskFactory
      */
     public function __construct(
         AdyenPaymentMethodManagementInterface $adyenPaymentMethodManagement,
-        AdyenPaymentMethodsInterface $adyenPaymentMethodsFactory,
-        AmountInterface $adyenPaymentMethodConfigurationAmountFactory,
+        AdyenPaymentMethodsInterface $adyenPaymentMethods,
+        AmountInterface $adyenPaymentMethodConfigurationAmount,
         CartTotalRepositoryInterface $cartTotalRepository,
-        ConfigurationInterface $adyenPaymentMethodExtraDetailConfigurationFactory,
-        ExpressDataInterface $expressDataFactory,
-        ExtraDetailInterface $adyenPaymentMethodExtraDetailFactory,
+        ConfigurationInterface $adyenPaymentMethodExtraDetailConfiguration,
+        ExpressDataInterface $expressData,
+        ExtraDetailInterface $adyenPaymentMethodExtraDetail,
         GetAdyenPaymentMethodsByProductInterface $getAdyenPaymentMethodsByProduct,
-        IconInterface $adyenPaymentMethodExtraDetailIconFactory,
-        MethodResponseInterface $adyenPaymentMethodResponseFactory,
-        MethodResponseConfigurationInterface $adyenPaymentMethodResponseConfigurationFactory,
+        IconInterface $adyenPaymentMethodExtraDetailIcon,
+        MethodResponseInterface $adyenPaymentMethodResponse,
+        MethodResponseConfigurationInterface $adyenPaymentMethodResponseConfiguration,
         QuoteIdToMaskedQuoteIdInterface $quoteIdToMaskedQuoteId,
         QuoteIdMaskFactory $quoteIdMaskFactory
     ) {
         $this->adyenPaymentMethodManagement = $adyenPaymentMethodManagement;
-        $this->adyenPaymentMethodsFactory = $adyenPaymentMethodsFactory;
-        $this->adyenPaymentMethodConfigurationAmountFactory = $adyenPaymentMethodConfigurationAmountFactory;
+        $this->adyenPaymentMethods = $adyenPaymentMethods;
+        $this->adyenPaymentMethodConfigurationAmount = $adyenPaymentMethodConfigurationAmount;
         $this->cartTotalRepository = $cartTotalRepository;
-        $this->adyenPaymentMethodExtraDetailConfigurationFactory = $adyenPaymentMethodExtraDetailConfigurationFactory;
-        $this->expressDataFactory = $expressDataFactory;
-        $this->adyenPaymentMethodExtraDetailFactory = $adyenPaymentMethodExtraDetailFactory;
+        $this->adyenPaymentMethodExtraDetailConfiguration = $adyenPaymentMethodExtraDetailConfiguration;
+        $this->expressData = $expressData;
+        $this->adyenPaymentMethodExtraDetail = $adyenPaymentMethodExtraDetail;
         $this->getAdyenPaymentMethodsByProduct = $getAdyenPaymentMethodsByProduct;
-        $this->adyenPaymentMethodExtraDetailIconFactory = $adyenPaymentMethodExtraDetailIconFactory;
-        $this->adyenPaymentMethodResponseFactory = $adyenPaymentMethodResponseFactory;
-        $this->adyenPaymentMethodResponseConfigurationFactory = $adyenPaymentMethodResponseConfigurationFactory;
+        $this->adyenPaymentMethodExtraDetailIcon = $adyenPaymentMethodExtraDetailIcon;
+        $this->adyenPaymentMethodResponse = $adyenPaymentMethodResponse;
+        $this->adyenPaymentMethodResponseConfiguration = $adyenPaymentMethodResponseConfiguration;
         $this->quoteIdToMaskedQuoteId = $quoteIdToMaskedQuoteId;
         $this->quoteIdMaskFactory = $quoteIdMaskFactory;
     }
@@ -95,7 +95,7 @@ class ExpressDataBuilder implements ExpressDataBuilderInterface
         ProductInterface $product
     ): ExpressDataInterface {
         /** @var ExpressDataInterface $expressData */
-        $expressData = $this->expressDataFactory->create();
+        $expressData = $this->expressData->create();
         $adyenPaymentMethods = $this->getAdyenPaymentMethods(
             $quote,
             $product
@@ -150,7 +150,7 @@ class ExpressDataBuilder implements ExpressDataBuilderInterface
         ProductInterface $product
     ): AdyenPaymentMethodsInterface {
         /** @var AdyenPaymentMethodsInterface $adyenPaymentMethods */
-        $adyenPaymentMethods = $this->adyenPaymentMethodsFactory->create();
+        $adyenPaymentMethods = $this->adyenPaymentMethods->create();
         if ((int)$quote->getItemsCount() > 0) {
             $retrievedAdyenPaymentMethods = $quote->getId() ?
                 json_decode(
@@ -190,7 +190,7 @@ class ExpressDataBuilder implements ExpressDataBuilderInterface
     /**
      * Build ExtraDetail Object from Payment Methods Data
      *
-     * @param array $retrievePaymentMethodsResponse
+     * @param array $methodExtraDetailData
      * @param string $method
      * @return ExtraDetailInterface
      */
@@ -198,23 +198,21 @@ class ExpressDataBuilder implements ExpressDataBuilderInterface
         array $methodExtraDetailData,
         string $method
     ): ExtraDetailInterface {
-        $isOpenInvoice = isset($methodExtraDetailData['isOpenInvoice']) ?
-            (bool) $methodExtraDetailData['isOpenInvoice'] :
-            false;
-        $icon = $this->adyenPaymentMethodExtraDetailIconFactory->create(
+        $isOpenInvoice = isset($methodExtraDetailData['isOpenInvoice']) && (bool)$methodExtraDetailData['isOpenInvoice'];
+        $icon = $this->adyenPaymentMethodExtraDetailIcon->create(
             ['data' => $methodExtraDetailData['icon'] ?? []]
         );
         $configurationAmountData = $methodExtraDetailData['configuration']['amount'] ?? [];
         /** @var AmountInterface $amount */
-        $amount = $this->adyenPaymentMethodConfigurationAmountFactory->create(
+        $amount = $this->adyenPaymentMethodConfigurationAmount->create(
             ['data' => $configurationAmountData]
         );
         /** @var ConfigurationInterface $configuration */
-        $configuration = $this->adyenPaymentMethodExtraDetailConfigurationFactory->create();
+        $configuration = $this->adyenPaymentMethodExtraDetailConfiguration->create();
         $configuration->setAmount($amount);
         $configuration->setCurrency($methodExtraDetailData['configuration']['currency'] ?? '');
         /** @var ExtraDetailInterface $extraDetail */
-        $extraDetail = $this->adyenPaymentMethodExtraDetailFactory->create();
+        $extraDetail = $this->adyenPaymentMethodExtraDetail->create();
         $extraDetail->setConfiguration($configuration);
         $extraDetail->setIcon($icon);
         $extraDetail->setMethod($method);
@@ -232,7 +230,7 @@ class ExpressDataBuilder implements ExpressDataBuilderInterface
         array $methodResponseData
     ): MethodResponseInterface {
         /** @var MethodResponseConfigurationInterface $methodResponseConfigurationObject */
-        $methodResponseConfigurationObject = $this->adyenPaymentMethodResponseConfigurationFactory->create();
+        $methodResponseConfigurationObject = $this->adyenPaymentMethodResponseConfiguration->create();
         $configurationData = $methodResponseData['configuration'] ?? [];
         $methodResponseConfigurationObject->setMerchantId($configurationData['merchantId'] ?? '');
         $methodResponseConfigurationObject->setGatewayMerchantId($configurationData['gatewayMerchantId'] ?? '');
@@ -243,7 +241,7 @@ class ExpressDataBuilder implements ExpressDataBuilderInterface
             $brands :
             [];
         /** @var MethodResponseInterface $methodResponseObject */
-        $methodResponseObject = $this->adyenPaymentMethodResponseFactory->create();
+        $methodResponseObject = $this->adyenPaymentMethodResponse->create();
         $methodResponseObject->setConfiguration($methodResponseConfigurationObject);
         $methodResponseObject->getName($methodResponseData['name'] ?? '');
         $methodResponseObject->setType($methodResponseData['type'] ?? '');
