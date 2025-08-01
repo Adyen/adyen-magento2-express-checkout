@@ -3,11 +3,9 @@ declare(strict_types=1);
 
 namespace Adyen\ExpressCheckout\Model;
 
-use Adyen\Model\Checkout\PaymentMethodsRequest;
 use Adyen\Payment\Helper\ChargedCurrency;
 use Adyen\Payment\Helper\Config;
 use Adyen\Payment\Helper\Data;
-use Adyen\Payment\Helper\Locale;
 use Adyen\Payment\Model\AdyenAmountCurrency;
 use Adyen\Payment\Model\AdyenAmountCurrencyFactory;
 use Magento\Catalog\Api\Data\ProductInterface;
@@ -22,17 +20,12 @@ class GetAdyenPaymentMethodsByProduct implements GetAdyenPaymentMethodsByProduct
     /**
      * @var AdyenAmountCurrencyFactory
      */
-    private AdyenAmountCurrencyFactory $adyenAmountCurrencyFactory;
+    private $adyenAmountCurrencyFactory;
 
     /**
      * @var Data
      */
     private $adyenHelper;
-
-    /**
-     * @var Data
-     */
-    private $localeHelper;
 
     /**
      * @var Config
@@ -52,7 +45,6 @@ class GetAdyenPaymentMethodsByProduct implements GetAdyenPaymentMethodsByProduct
     /**
      * @param AdyenAmountCurrencyFactory $adyenAmountCurrencyFactory
      * @param Data $adyenHelper
-     * @param Locale $localeHelper
      * @param Config $adyenConfigHelper
      * @param ChargedCurrency $chargedCurrency
      * @param ScopeConfigInterface $scopeConfig
@@ -60,14 +52,12 @@ class GetAdyenPaymentMethodsByProduct implements GetAdyenPaymentMethodsByProduct
     public function __construct(
         AdyenAmountCurrencyFactory $adyenAmountCurrencyFactory,
         Data $adyenHelper,
-        Locale $localeHelper,
         Config $adyenConfigHelper,
         ChargedCurrency $chargedCurrency,
         ScopeConfigInterface $scopeConfig
     ) {
         $this->adyenAmountCurrencyFactory = $adyenAmountCurrencyFactory;
         $this->adyenHelper = $adyenHelper;
-        $this->localeHelper = $localeHelper;
         $this->adyenConfigHelper = $adyenConfigHelper;
         $this->chargedCurrency = $chargedCurrency;
         $this->scopeConfig = $scopeConfig;
@@ -95,15 +85,13 @@ class GetAdyenPaymentMethodsByProduct implements GetAdyenPaymentMethodsByProduct
         if (!$merchantAccount) {
             return [];
         }
-        /** @var AdyenAmountCurrencyInterface $quoteAmountCurrency */
-        $quoteAmountCurrency = $this->chargedCurrency->getQuoteAmountCurrency($quote);
         $configuredChargeCurrency = $this->adyenConfigHelper->getChargedCurrency(
             $quote->getStoreId()
         );
         $currencyCode = $configuredChargeCurrency === ChargedCurrency::BASE ?
             $quote->getBaseCurrencyCode() :
             $quote->getCurrency()->getQuoteCurrencyCode();
-        /** @var AdyenAmountCurrency $adyenAmountCurrency */
+
         $adyenAmountCurrency = $this->adyenAmountCurrencyFactory->create([
             'amount' => $product->getFinalPrice(),
             'currencyCode' => $currencyCode
@@ -112,7 +100,7 @@ class GetAdyenPaymentMethodsByProduct implements GetAdyenPaymentMethodsByProduct
             "channel" => "Web",
             "merchantAccount" => $merchantAccount,
             "countryCode" => $this->getCurrentCountryCode($store),
-            "shopperLocale" => $this->localeHelper->getCurrentLocaleCode($store->getId()),
+            "shopperLocale" => $this->adyenHelper->getCurrentLocaleCode($store->getId()),
             "amount" => [
                 "value" => $this->adyenHelper->formatAmount($adyenAmountCurrency->getAmount(), $currencyCode),
                 "currency" => $currencyCode
@@ -121,9 +109,10 @@ class GetAdyenPaymentMethodsByProduct implements GetAdyenPaymentMethodsByProduct
         $adyenClient = $this->adyenHelper->initializeAdyenClient(
             $store->getId()
         );
-        $service = $this->adyenHelper->initializePaymentsApi($adyenClient);
+        $service = $this->adyenHelper->createAdyenCheckoutService($adyenClient);
         $response = $service->paymentMethods(
-            new PaymentMethodsRequest($paymentMethodRequest)
+            $paymentMethodRequest,
+            $store
         );
         if (!$response) {
             return [];
