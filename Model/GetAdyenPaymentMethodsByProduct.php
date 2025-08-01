@@ -4,7 +4,6 @@ declare(strict_types=1);
 namespace Adyen\ExpressCheckout\Model;
 
 use Adyen\Model\Checkout\PaymentMethodsRequest;
-use Adyen\Payment\Api\Data\AdyenAmountCurrencyInterface;
 use Adyen\Payment\Helper\ChargedCurrency;
 use Adyen\Payment\Helper\Config;
 use Adyen\Payment\Helper\Data;
