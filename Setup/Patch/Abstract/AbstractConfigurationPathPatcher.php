@@ -23,6 +23,7 @@ abstract class AbstractConfigurationPathPatcher implements DataPatchInterface
     private ModuleDataSetupInterface $moduleDataSetup;
     private WriterInterface $configWriter;
     private ReinitableConfigInterface $reinitableConfig;
+    protected const REPLACE_CONFIG_PATHS = [];
 
     public function __construct(
         ModuleDataSetupInterface $moduleDataSetup,

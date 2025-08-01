@@ -14,17 +14,21 @@ namespace Adyen\ExpressCheckout\Test\Unit\Model\Resolver;
 use Adyen\ExpressCheckout\Api\AdyenPaypalUpdateOrderInterface;
 use Adyen\ExpressCheckout\Helper\PaypalUpdateOrder;
 use Adyen\ExpressCheckout\Model\Resolver\AdyenExpressPaypalUpdateOrderResolver;
+use Magento\Quote\Model\MaskedQuoteIdToQuoteIdInterface;
+use PHPUnit\Framework\MockObject\Exception;
 use PHPUnit\Framework\MockObject\MockObject;
 
 class AdyenExpressPaypalUpdateOrderResolverTest extends AbstractAdyenResolverTestCase
 {
     protected MockObject|AdyenPaypalUpdateOrderInterface $adyenPaypalUpdateOrderMock;
     protected MockObject|PaypalUpdateOrder $paypalUpdateOrderHelperMock;
+    protected MaskedQuoteIdToQuoteIdInterface $maskedQuoteIdToQuoteId;
 
     /**
      * Build the class under test and the dependencies
      *
      * @return void
+     * @throws Exception
      */
     public function setUp(): void
     {
@@ -34,11 +38,12 @@ class AdyenExpressPaypalUpdateOrderResolverTest extends AbstractAdyenResolverTes
         // Build class specific mocks
         $this->adyenPaypalUpdateOrderMock = $this->createMock(AdyenPaypalUpdateOrderInterface::class);
         $this->paypalUpdateOrderHelperMock = $this->createMock(PaypalUpdateOrder::class);
+        $this->maskedQuoteIdToQuoteId = $this->createMock(MaskedQuoteIdToQuoteIdInterface::class);
 
         $this->resolver = new AdyenExpressPaypalUpdateOrderResolver(
             $this->adyenPaypalUpdateOrderMock,
             $this->valueFactoryMock,
-            $this->quoteIdMaskFactoryMock,
+            $this->maskedQuoteIdToQuoteId,
             $this->loggerMock,
             $this->paypalUpdateOrderHelperMock
         );
@@ -49,7 +54,7 @@ class AdyenExpressPaypalUpdateOrderResolverTest extends AbstractAdyenResolverTes
      *
      * @return array[]
      */
-    protected static function emptyArgumentAssertionDataProvider(): array
+    public static function emptyArgumentAssertionDataProvider(): array
     {
         return [
             [
@@ -81,7 +86,7 @@ class AdyenExpressPaypalUpdateOrderResolverTest extends AbstractAdyenResolverTes
      *
      * @return array
      */
-    protected static function successfulResolverDataProvider(): array
+    public static function successfulResolverDataProvider(): array
     {
         return [
             [
@@ -115,7 +120,7 @@ class AdyenExpressPaypalUpdateOrderResolverTest extends AbstractAdyenResolverTes
      *
      * @return array
      */
-    protected static function missingQuoteAssertionDataProvider(): array
+    public static function missingQuoteAssertionDataProvider(): array
     {
         return [
             [

@@ -10,49 +10,52 @@ use Adyen\ExpressCheckout\Model\AdyenPaypalUpdateOrder;
 use Adyen\ExpressCheckout\Model\ResourceModel\PaymentResponse\Collection as AdyenPaymentResponseCollection;
 use Adyen\Payment\Helper\ChargedCurrency;
 use Adyen\Payment\Helper\Data;
+use Adyen\Payment\Model\AdyenAmountCurrency;
 use Adyen\Payment\Test\Unit\AbstractAdyenTestCase;
 use Magento\Framework\Exception\NoSuchEntityException;
 use Magento\Framework\Exception\ValidatorException;
 use Magento\Quote\Api\CartRepositoryInterface;
 use Magento\Quote\Model\Quote;
-use Magento\Quote\Model\QuoteIdMaskFactory;
+use Magento\Quote\Model\MaskedQuoteIdToQuoteIdInterface;
+use PHPUnit\Framework\MockObject\Exception;
 use PHPUnit\Framework\MockObject\MockObject;
 
 class AdyenPaypalUpdateOrderTest extends AbstractAdyenTestCase
 {
     private AdyenPaypalUpdateOrder $model;
 
-    private MockObject $paypalUpdateOrderHelper;
     private MockObject $cartRepository;
     private MockObject $deliveryMethodValidator;
     private MockObject $chargedCurrency;
     private MockObject $adyenHelper;
     private MockObject $paymentResponseCollection;
-    private MockObject $quoteIdMaskFactory;
 
+    /**
+     * @throws Exception
+     */
     protected function setUp(): void
     {
-        $this->paypalUpdateOrderHelper = $this->createMock(PaypalUpdateOrder::class);
+        $paypalUpdateOrderHelper = $this->createMock(PaypalUpdateOrder::class);
         $this->cartRepository = $this->createMock(CartRepositoryInterface::class);
         $this->deliveryMethodValidator = $this->createMock(PaypalDeliveryMethodValidator::class);
         $this->chargedCurrency = $this->createMock(ChargedCurrency::class);
         $this->adyenHelper = $this->createMock(Data::class);
         $this->paymentResponseCollection = $this->createMock(AdyenPaymentResponseCollection::class);
-        $this->quoteIdMaskFactory = $this->createMock(QuoteIdMaskFactory::class);
+        $maskedQuoteIdToQuoteId = $this->createMock(MaskedQuoteIdToQuoteIdInterface::class);
 
         $this->model = new AdyenPaypalUpdateOrder(
-            $this->paypalUpdateOrderHelper,
+            $paypalUpdateOrderHelper,
             $this->cartRepository,
             $this->deliveryMethodValidator,
             $this->chargedCurrency,
             $this->adyenHelper,
             $this->paymentResponseCollection,
-            $this->quoteIdMaskFactory
+            $maskedQuoteIdToQuoteId
         );
     }
 
     /**
-     * @throws NoSuchEntityException
+     * @throws NoSuchEntityException|Exception
      */
     public function testExecuteThrowsExceptionForMissingMerchantReference(): void
     {
@@ -108,6 +111,11 @@ class AdyenPaypalUpdateOrderTest extends AbstractAdyenTestCase
         $this->model->execute('somePaymentData', 1, null, $deliveryMethods);
     }
 
+    /**
+     * @throws NoSuchEntityException
+     * @throws ValidatorException
+     * @throws Exception
+     */
     public function testExecuteReturnsJsonOnSuccess(): void
     {
         $quoteId = 10;
@@ -143,7 +151,7 @@ class AdyenPaypalUpdateOrderTest extends AbstractAdyenTestCase
             ->willReturn(['response' => json_encode(['pspReference' => 'PSP123'])]);
 
         $this->chargedCurrency->method('getQuoteAmountCurrency')->willReturn(
-            $this->createConfiguredMock(\Adyen\Payment\Model\AdyenAmountCurrency::class, [
+            $this->createConfiguredMock(AdyenAmountCurrency::class, [
                 'getCurrencyCode' => $currency
             ])
         );

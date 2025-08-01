@@ -11,7 +11,6 @@
 
 namespace Adyen\ExpressCheckout\Test\Unit\Model\Resolver;
 
-use Adyen\ExpressCheckout\Exception\ExpressInitException;
 use Adyen\Payment\Logger\AdyenLogger;
 use Adyen\Payment\Test\Unit\AbstractAdyenTestCase;
 use Exception;
@@ -22,8 +21,8 @@ use Magento\Framework\GraphQl\Query\Resolver\Value;
 use Magento\Framework\GraphQl\Query\Resolver\ValueFactory;
 use Magento\Framework\GraphQl\Schema\Type\ResolveInfo;
 use Magento\GraphQl\Model\Query\Context;
+use Magento\Quote\Model\MaskedQuoteIdToQuoteIdInterface;
 use Magento\Quote\Model\QuoteIdMask;
-use Magento\Quote\Model\QuoteIdMaskFactory;
 use Magento\Framework\GraphQl\Query\ResolverInterface;
 use PHPUnit\Framework\MockObject\MockObject;
 
@@ -34,7 +33,7 @@ abstract class AbstractAdyenResolverTestCase extends AbstractAdyenTestCase
     protected MockObject&Context $contextMock;
     protected MockObject&ResolveInfo $infoMock;
     protected MockObject&ValueFactory $valueFactoryMock;
-    protected MockObject&QuoteIdMaskFactory $quoteIdMaskFactoryMock;
+    protected MockObject&MaskedQuoteIdToQuoteIdInterface $maskedQuoteIdToQuoteIdMock;
     protected MockObject&AdyenLogger $loggerMock;
 
     /**
@@ -42,31 +41,32 @@ abstract class AbstractAdyenResolverTestCase extends AbstractAdyenTestCase
      *
      * @return array[]
      */
-    abstract protected static function emptyArgumentAssertionDataProvider(): array;
+    abstract public static function emptyArgumentAssertionDataProvider(): array;
 
     /**
      * Data provider for abstract test case testSuccessfulResolving()
      *
      * @return array
      */
-    abstract protected static function successfulResolverDataProvider(): array;
+    abstract public static function successfulResolverDataProvider(): array;
 
     /**
      * Data provider for abstract test case testMissingQuoteShouldThrowException()
      *
      * @return array
      */
-    abstract protected static function missingQuoteAssertionDataProvider(): array;
+    abstract public static function missingQuoteAssertionDataProvider(): array;
 
+    /**
+     * @throws \PHPUnit\Framework\MockObject\Exception
+     */
     public function setUp(): void
     {
         $this->fieldMock = $this->createMock(Field::class);
         $this->contextMock = $this->createMock(Context::class);
         $this->infoMock = $this->createMock(ResolveInfo::class);
         $this->valueFactoryMock = $this->createMock(ValueFactory::class);
-        $this->quoteIdMaskFactoryMock = $this->createGeneratedMock(QuoteIdMaskFactory::class, [
-            'create'
-        ]);
+        $this->maskedQuoteIdToQuoteIdMock = $this->createMock(MaskedQuoteIdToQuoteIdInterface::class);
         $this->loggerMock = $this->createMock(AdyenLogger::class);
     }
 
@@ -87,20 +87,21 @@ abstract class AbstractAdyenResolverTestCase extends AbstractAdyenTestCase
      * @dataProvider successfulResolverDataProvider
      *
      * @return void
-     * @throws Exception
+     * @throws Exception|\PHPUnit\Framework\MockObject\Exception
      */
     public function testSuccessfulResolving($args)
     {
         $returnValueMock = $this->createMock(Value::class);
         $this->valueFactoryMock->method('create')->willReturn($returnValueMock);
 
-        $quoteIdMaskMock = $this->createGeneratedMock(QuoteIdMask::class, [
-            'load',
-            'getQuoteId'
-        ]);
-        $quoteIdMaskMock->method('load')->willReturn($quoteIdMaskMock);
+        $quoteIdMaskMock = $this->getMockBuilder(QuoteIdMask::class)
+            ->addMethods(['getQuoteId'])
+            ->onlyMethods(['load'])
+            ->disableOriginalConstructor()
+            ->getMock();
+
+        $quoteIdMaskMock->method('load')->willReturnSelf();
         $quoteIdMaskMock->method('getQuoteId')->willReturn(1);
-        $this->quoteIdMaskFactoryMock->method('create')->willReturn($quoteIdMaskMock);
 
         $result = $this->resolver->resolve(
             $this->fieldMock,
@@ -147,14 +148,15 @@ abstract class AbstractAdyenResolverTestCase extends AbstractAdyenTestCase
     {
         $this->expectException(LocalizedException::class);
 
-        $quoteIdMaskMock = $this->createGeneratedMock(QuoteIdMask::class, [
-            'load',
-            'getQuoteId'
-        ]);
-        $quoteIdMaskMock->method('load')->willReturn($quoteIdMaskMock);
-        $quoteIdMaskMock->method('getQuoteId')
-            ->willThrowException(new ExpressInitException(__('Localized test exception!')));
-        $this->quoteIdMaskFactoryMock->method('create')->willReturn($quoteIdMaskMock);
+        $this->loggerMock->expects($this->once())
+            ->method('error')
+            ->with($this->callback(function ($message) {
+            return str_contains($message, 'An error occurred') ;
+        }));
+
+        // Simulate quote resolution failure
+        $this->maskedQuoteIdToQuoteIdMock->method('execute')
+            ->willThrowException(new \Exception('Quote resolution failed'));
 
         $this->resolver->resolve(
             $this->fieldMock,
@@ -163,7 +165,5 @@ abstract class AbstractAdyenResolverTestCase extends AbstractAdyenTestCase
             [],
             $args
         );
-
-        $this->loggerMock->expects($this->once())->method('error');
     }
 }

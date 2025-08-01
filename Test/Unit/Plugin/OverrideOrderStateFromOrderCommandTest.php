@@ -28,11 +28,13 @@ class OverrideOrderStateFromOrderCommandTest extends AbstractAdyenTestCase
     {
         $this->plugin = new OverrideOrderStateFromOrderCommand();
         $this->payment = $this->getMockBuilder(OrderPaymentInterface::class)
-            ->setMethods(['getIsTransactionPending', 'getIsFraudDetected'])
+            ->onlyMethods(['getMethod'])
+            ->addMethods(['getIsTransactionPending', 'getIsFraudDetected'])
             ->getMockForAbstractClass();
         $this->order = $this->getMockBuilder(Order::class)
             ->disableOriginalConstructor()
             ->getMock();
+
         $this->orderCommand = $this->createMock(OrderCommand::class);
     }
 

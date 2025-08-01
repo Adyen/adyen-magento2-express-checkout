@@ -24,21 +24,21 @@ use Magento\Framework\GraphQl\Query\Resolver\Value;
 use Magento\Framework\GraphQl\Query\Resolver\ValueFactory;
 use Magento\Framework\GraphQl\Query\ResolverInterface;
 use Magento\Framework\GraphQl\Schema\Type\ResolveInfo;
-use Magento\Quote\Model\QuoteIdMaskFactory;
+use Magento\Quote\Model\MaskedQuoteIdToQuoteIdInterface;
 
 class AdyenExpressInitPaymentsResolver implements ResolverInterface
 {
     /**
      * @param AdyenInitPaymentsInterface $adyenInitPaymentsApi
      * @param ValueFactory $valueFactory
-     * @param QuoteIdMaskFactory $quoteMaskFactory
+     * @param MaskedQuoteIdToQuoteIdInterface $maskedQuoteIdToQuoteId
      * @param AdyenLogger $adyenLogger
      * @param GetAdyenPaymentStatus $adyenPaymentStatusDataProvider
      */
     public function __construct(
         public AdyenInitPaymentsInterface $adyenInitPaymentsApi,
         public ValueFactory $valueFactory,
-        public QuoteIdMaskFactory $quoteMaskFactory,
+        public MaskedQuoteIdToQuoteIdInterface $maskedQuoteIdToQuoteId,
         public AdyenLogger $adyenLogger,
         public GetAdyenPaymentStatus $adyenPaymentStatusDataProvider
     ) { }
@@ -53,7 +53,7 @@ class AdyenExpressInitPaymentsResolver implements ResolverInterface
      * @throws GraphQlInputException
      * @throws LocalizedException
      */
-    public function resolve(Field $field, $context, ResolveInfo $info, array $value = null, array $args = null): Value
+    public function resolve(Field $field, $context, ResolveInfo $info, ?array $value = null, ?array $args = null): Value
     {
         if (empty($args['stateData'])) {
             throw new GraphQlInputException(__('Required parameter "stateData" is missing!'));
@@ -71,11 +71,7 @@ class AdyenExpressInitPaymentsResolver implements ResolverInterface
             $adyenCartId = $args['adyenCartId'] ?? null;
 
             if (isset($adyenCartId)) {
-                $quoteIdMask = $this->quoteMaskFactory->create()->load(
-                    $adyenCartId,
-                    'masked_id'
-                );
-                $quoteId = (int) $quoteIdMask->getQuoteId();
+                $quoteId = $this->maskedQuoteIdToQuoteId->execute($adyenCartId);
             } else {
                 $quoteId = null;
             }
@@ -87,8 +83,12 @@ class AdyenExpressInitPaymentsResolver implements ResolverInterface
                     json_decode($provider->execute($stateData, $quoteId, $adyenMaskedQuoteId), true)
                 );
             };
+            $valueFactory = $this->valueFactory->create($result);
 
-            return $this->valueFactory->create($result);
+            if (!$valueFactory instanceof Value) {
+                throw new LocalizedException(__('Resolver failed to return a valid Value object.'));
+            }
+            return $valueFactory;
         } catch (Exception $e) {
             $errorMessage = "An error occurred during initializing API call to `/payments` endpoint!";
             $logMessage = sprintf("%s: %s", $errorMessage, $e->getMessage());

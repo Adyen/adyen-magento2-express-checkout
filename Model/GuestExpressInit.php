@@ -18,30 +18,22 @@ use Adyen\ExpressCheckout\Api\Data\ProductCartParamsInterface;
 use Adyen\ExpressCheckout\Api\ExpressInitInterface;
 use Adyen\ExpressCheckout\Api\GuestExpressInitInterface;
 use Magento\Framework\Exception\NoSuchEntityException;
-use Magento\Quote\Model\QuoteIdMask;
-use Magento\Quote\Model\QuoteIdMaskFactory;
+use Magento\Quote\Model\MaskedQuoteIdToQuoteIdInterface;
 
 class GuestExpressInit implements GuestExpressInitInterface
 {
-    /**
-     * @var ExpressInitInterface
-     */
-    private $expressInit;
-
-    /**
-     * @var QuoteIdMaskFactory
-     */
-    private $quoteMaskFactory;
+    private ExpressInitInterface $expressInit;
+    private MaskedQuoteIdToQuoteIdInterface $maskedQuoteIdToQuoteId;
 
     /**
      * @param ExpressInitInterface $expressInit
-     * @param QuoteIdMaskFactory $quoteMaskFactory
+     * @param MaskedQuoteIdToQuoteIdInterface $maskedQuoteIdToQuoteId
      */
     public function __construct(
         ExpressInitInterface $expressInit,
-        QuoteIdMaskFactory $quoteMaskFactory
+        MaskedQuoteIdToQuoteIdInterface $maskedQuoteIdToQuoteId
     ) {
-        $this->quoteMaskFactory = $quoteMaskFactory;
+        $this->maskedQuoteIdToQuoteId = $maskedQuoteIdToQuoteId;
         $this->expressInit = $expressInit;
     }
 
@@ -52,7 +44,7 @@ class GuestExpressInit implements GuestExpressInitInterface
      * @param string|null $guestMaskedId
      * @param string|null $adyenMaskedQuoteId
      * @return ExpressDataInterface|null
-     * @throws ExpressInitException
+     * @throws NoSuchEntityException
      */
     public function execute(
         ProductCartParamsInterface $productCartParams,
@@ -61,12 +53,7 @@ class GuestExpressInit implements GuestExpressInitInterface
     ): ?ExpressDataInterface {
         $quoteId = null;
         if ($guestMaskedId !== null) {
-            /** @var $quoteIdMask QuoteIdMask */
-            $quoteIdMask = $this->quoteMaskFactory->create()->load(
-                $guestMaskedId,
-                'masked_id'
-            );
-            $quoteId = (int) $quoteIdMask->getQuoteId();
+            $quoteId = $this->maskedQuoteIdToQuoteId->execute($guestMaskedId);
         }
         return $this->expressInit->execute(
             $productCartParams,

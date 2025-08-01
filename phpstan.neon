@@ -1,0 +1,23 @@
+parameters:
+    level: 0
+    paths:
+        - Api
+        - Block
+        - CustomerData
+        - Exception
+        - Helper
+        - Model
+        - Observer
+        - Plugin
+        - Setup/Patch
+        - Test
+        - ViewModel
+        - etc
+        - view/frontend
+
+    scanDirectories:
+        - ../../../dev/tests
+        - ../../magento
+
+    bootstrapFiles:
+        - %rootDir%/../../../vendor/autoload.php

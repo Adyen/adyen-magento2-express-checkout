@@ -13,16 +13,20 @@ namespace Adyen\ExpressCheckout\Test\Unit\Model\Resolver;
 
 use Adyen\ExpressCheckout\Model\ExpressCancel;
 use Adyen\ExpressCheckout\Model\Resolver\ExpressCancelResolver;
+use Magento\Quote\Model\MaskedQuoteIdToQuoteIdInterface;
+use PHPUnit\Framework\MockObject\Exception;
 use PHPUnit\Framework\MockObject\MockObject;
 
 class ExpressCancelResolverTest extends AbstractAdyenResolverTestCase
 {
     protected MockObject&ExpressCancel $expressCancelMock;
+    protected MockObject&MaskedQuoteIdToQuoteIdInterface $maskedQuoteIdToQuoteIdMock;
 
     /**
      * Build the class under test and the dependencies
      *
      * @return void
+     * @throws Exception
      */
     public function setUp(): void
     {
@@ -35,7 +39,7 @@ class ExpressCancelResolverTest extends AbstractAdyenResolverTestCase
         $this->resolver = new ExpressCancelResolver(
             $this->expressCancelMock,
             $this->valueFactoryMock,
-            $this->quoteIdMaskFactoryMock,
+            $this->maskedQuoteIdToQuoteIdMock,
             $this->loggerMock
         );
     }
@@ -61,7 +65,7 @@ class ExpressCancelResolverTest extends AbstractAdyenResolverTestCase
      *
      * @return array[]
      */
-    protected static function emptyArgumentAssertionDataProvider(): array
+    public static function emptyArgumentAssertionDataProvider(): array
     {
         return [
             [
@@ -80,7 +84,7 @@ class ExpressCancelResolverTest extends AbstractAdyenResolverTestCase
      *
      * @return array
      */
-    protected static function missingQuoteAssertionDataProvider(): array
+    public static function missingQuoteAssertionDataProvider(): array
     {
         return [
             [

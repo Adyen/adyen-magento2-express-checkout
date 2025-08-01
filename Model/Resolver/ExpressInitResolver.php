@@ -13,8 +13,9 @@ declare(strict_types=1);
 
 namespace Adyen\ExpressCheckout\Model\Resolver;
 
-use Adyen\ExpressCheckout\Api\Data\ProductCartParamsInterfaceFactory;
+use Adyen\ExpressCheckout\Api\Data\ProductCartParamsInterface;
 use Adyen\ExpressCheckout\Model\ExpressInit;
+use Adyen\ExpressCheckout\Model\ProductCartParams;
 use Adyen\Payment\Logger\AdyenLogger;
 use Exception;
 use Magento\Framework\Exception\LocalizedException;
@@ -24,22 +25,22 @@ use Magento\Framework\GraphQl\Query\Resolver\Value;
 use Magento\Framework\GraphQl\Query\Resolver\ValueFactory;
 use Magento\Framework\GraphQl\Query\ResolverInterface;
 use Magento\Framework\GraphQl\Schema\Type\ResolveInfo;
-use Magento\Quote\Model\QuoteIdMaskFactory;
+use Magento\Quote\Model\MaskedQuoteIdToQuoteIdInterface;
 
 class ExpressInitResolver implements ResolverInterface
 {
     /**
      * @param ExpressInit $expressInitApi
-     * @param ProductCartParamsInterfaceFactory $productCartParamsFactory
+     * @param ProductCartParams $productCartParamsPrototype
      * @param ValueFactory $valueFactory
-     * @param QuoteIdMaskFactory $quoteMaskFactory
+     * @param MaskedQuoteIdToQuoteIdInterface $maskedQuoteIdToQuoteId
      * @param AdyenLogger $adyenLogger
      */
     public function __construct(
         public ExpressInit $expressInitApi,
-        public ProductCartParamsInterfaceFactory $productCartParamsFactory,
+        public ProductCartParams $productCartParamsPrototype,
         public ValueFactory $valueFactory,
-        public QuoteIdMaskFactory $quoteMaskFactory,
+        public MaskedQuoteIdToQuoteIdInterface $maskedQuoteIdToQuoteId,
         public AdyenLogger $adyenLogger
     ) { }
 
@@ -53,7 +54,7 @@ class ExpressInitResolver implements ResolverInterface
      * @throws GraphQlInputException
      * @throws LocalizedException
      */
-    public function resolve(Field $field, $context, ResolveInfo $info, array $value = null, array $args = null): Value
+    public function resolve(Field $field, $context, ResolveInfo $info, ?array $value = null, ?array $args = null): Value
     {
         if (empty($args['productCartParams'])) {
             throw new GraphQlInputException(__('Required parameter "productCartParams" is missing!'));
@@ -65,7 +66,7 @@ class ExpressInitResolver implements ResolverInterface
         }
 
         try {
-            $productCartParams = $this->productCartParamsFactory->create();
+            $productCartParams = clone $this->productCartParamsPrototype;
             $productCartParams->setData($productCartParamsDecoded);
 
             $adyenCartId = $args['adyenCartId'] ?? null;
@@ -73,11 +74,7 @@ class ExpressInitResolver implements ResolverInterface
             $provider = $this->expressInitApi;
 
             if (isset($adyenCartId)) {
-                $quoteIdMask = $this->quoteMaskFactory->create()->load(
-                    $adyenCartId,
-                    'masked_id'
-                );
-                $quoteId = (int) $quoteIdMask->getQuoteId();
+                $quoteId = $this->maskedQuoteIdToQuoteId->execute($adyenCartId);
             } else {
                 $quoteId = null;
             }
@@ -86,7 +83,13 @@ class ExpressInitResolver implements ResolverInterface
                 return $provider->execute($productCartParams, $quoteId, $adyenMaskedQuoteId);
             };
 
-            return $this->valueFactory->create($result);
+            $valueFactory = $this->valueFactory->create($result);
+
+            if (!$valueFactory instanceof Value) {
+                throw new LocalizedException(__('Resolver failed to return a valid Value object.'));
+            }
+            return $valueFactory;
+
         } catch (Exception $e) {
             $errorMessage = "An error occurred while initiating the express quote";
             $logMessage = sprintf("%s: %s", $errorMessage, $e->getMessage());
