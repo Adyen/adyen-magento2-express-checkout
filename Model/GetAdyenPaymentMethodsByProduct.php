@@ -103,7 +103,7 @@ class GetAdyenPaymentMethodsByProduct implements GetAdyenPaymentMethodsByProduct
             return [];
         }
         $responseData = [];
-        $responseData['paymentMethodsResponse'] = $response;
+        $responseData['paymentMethodsResponse'] = $response->toArray();
         $responseData['paymentMethodsExtraDetails'] = [];
 
         return $responseData;
