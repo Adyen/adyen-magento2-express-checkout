@@ -38,7 +38,13 @@ class GuestExpressActivate implements GuestExpressActivateInterface
     ): void {
         $quoteId = null;
         if ($currentMaskedQuoteId !== null) {
-            $quoteId = $this->maskedQuoteIdToQuoteId->execute($currentMaskedQuoteId);
+            try {
+                $quoteId = $this->maskedQuoteIdToQuoteId->execute($currentMaskedQuoteId);
+            } catch (NoSuchEntityException $exception) {
+                throw new NoSuchEntityException(
+                    __('Could not find a cart with ID "%masked_cart_id"', ['masked_cart_id' => $currentMaskedQuoteId])
+                );
+            }
         }
         $this->expressActivate->execute(
             $adyenMaskedQuoteId,

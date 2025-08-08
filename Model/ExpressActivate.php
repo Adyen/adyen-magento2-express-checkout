@@ -77,6 +77,12 @@ class ExpressActivate implements ExpressActivateInterface
      */
     private function getAdyenQuoteId(string $maskedQuoteId): int
     {
-        return $this->maskedQuoteIdToQuoteId->execute($maskedQuoteId);
+        try {
+            return $this->maskedQuoteIdToQuoteId->execute($maskedQuoteId);
+        } catch (NoSuchEntityException $exception) {
+            throw new NoSuchEntityException(
+                __('Could not find a cart with ID "%masked_cart_id"', ['masked_cart_id' => $maskedQuoteId])
+            );
+        }
     }
 }

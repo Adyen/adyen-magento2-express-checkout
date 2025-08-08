@@ -114,7 +114,13 @@ class AdyenInitPayments implements AdyenInitPaymentsInterface
         ?string $adyenMaskedQuoteId = null
     ): string {
         if (is_null($adyenCartId)) {
-            $adyenCartId = $this->maskedQuoteIdToQuoteId->execute($adyenMaskedQuoteId);
+            try {
+                $adyenCartId = $this->maskedQuoteIdToQuoteId->execute($adyenMaskedQuoteId);
+            } catch (NoSuchEntityException $exception) {
+                throw new NoSuchEntityException(
+                    __('Could not find a cart with ID "%masked_cart_id"', ['masked_cart_id' => $adyenMaskedQuoteId])
+                );
+            }
         }
 
         $quote = $this->cartRepository->get($adyenCartId);

@@ -25,44 +25,16 @@ use Magento\Framework\Exception\NoSuchEntityException;
 use Magento\Framework\Exception\ValidatorException;
 use Magento\Quote\Api\CartRepositoryInterface;
 use Magento\Quote\Model\Quote;
-use Magento\Quote\Model\QuoteIdMask;
 use Magento\Quote\Model\MaskedQuoteIdToQuoteIdInterface;
 
 class AdyenPaypalUpdateOrder implements AdyenPaypalUpdateOrderInterface
 {
-    /**
-     * @var PaypalUpdateOrder
-     */
     protected PaypalUpdateOrder $paypalUpdateOrderHelper;
-
-    /**
-     * @var CartRepositoryInterface
-     */
     private CartRepositoryInterface $cartRepository;
-
-    /**
-     * @var PaypalDeliveryMethodValidator
-     */
     private PaypalDeliveryMethodValidator $deliveryMethodValidator;
-
-    /**
-     * @var ChargedCurrency
-     */
     private ChargedCurrency $chargedCurrency;
-
-    /**
-     * @var Data
-     */
     private Data $adyenHelper;
-
-    /**
-     * @var AdyenPaymentResponseCollection
-     */
     private AdyenPaymentResponseCollection $paymentResponseCollection;
-
-    /**
-     * @var MaskedQuoteIdToQuoteIdInterface
-     */
     private MaskedQuoteIdToQuoteIdInterface $maskedQuoteIdToQuoteId;
 
     /**
@@ -108,7 +80,13 @@ class AdyenPaypalUpdateOrder implements AdyenPaypalUpdateOrderInterface
         string $deliveryMethods = ''
     ): string {
         if (is_null($adyenCartId)) {
-            $adyenCartId = $this->maskedQuoteIdToQuoteId->execute($adyenMaskedQuoteId);
+            try {
+                $adyenCartId = $this->maskedQuoteIdToQuoteId->execute($adyenMaskedQuoteId);
+            } catch (NoSuchEntityException $exception) {
+                throw new NoSuchEntityException(
+                    __('Could not find a cart with ID "%masked_cart_id"', ['masked_cart_id' => $adyenMaskedQuoteId])
+                );
+            }
         }
 
         /** @var Quote $quote */
