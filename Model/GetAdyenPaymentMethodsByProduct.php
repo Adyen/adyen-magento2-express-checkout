@@ -19,35 +19,12 @@ use Magento\Tax\Model\Config as TaxConfig;
 
 class GetAdyenPaymentMethodsByProduct implements GetAdyenPaymentMethodsByProductInterface
 {
-    /**
-     * @var AdyenAmountCurrencyFactory
-     */
-    private $adyenAmountCurrencyFactory;
-
-    /**
-     * @var Data
-     */
-    private $adyenHelper;
-
-    /**
-     * @var Data
-     */
-    private $localeHelper;
-
-    /**
-     * @var Config
-     */
-    private $adyenConfigHelper;
-
-    /**
-     * @var ChargedCurrency
-     */
-    private $chargedCurrency;
-
-    /**
-     * @var ScopeConfigInterface
-     */
-    private $scopeConfig;
+    private AdyenAmountCurrencyFactory $adyenAmountCurrencyFactory;
+    private Data $adyenHelper;
+    private Locale $localeHelper;
+    private Config $adyenConfigHelper;
+    private ChargedCurrency $chargedCurrency;
+    private ScopeConfigInterface $scopeConfig;
 
     /**
      * @param AdyenAmountCurrencyFactory $adyenAmountCurrencyFactory
@@ -95,15 +72,12 @@ class GetAdyenPaymentMethodsByProduct implements GetAdyenPaymentMethodsByProduct
         if (!$merchantAccount) {
             return [];
         }
-        /** @var AdyenAmountCurrency $quoteAmountCurrency */
-        $quoteAmountCurrency = $this->chargedCurrency->getQuoteAmountCurrency($quote);
         $configuredChargeCurrency = $this->adyenConfigHelper->getChargedCurrency(
             $quote->getStoreId()
         );
         $currencyCode = $configuredChargeCurrency === ChargedCurrency::BASE ?
             $quote->getBaseCurrencyCode() :
             $quote->getCurrency()->getQuoteCurrencyCode();
-        /** @var AdyenAmountCurrency $adyenAmountCurrency */
         $adyenAmountCurrency = $this->adyenAmountCurrencyFactory->create([
             'amount' => $product->getFinalPrice(),
             'currencyCode' => $currencyCode
@@ -131,9 +105,7 @@ class GetAdyenPaymentMethodsByProduct implements GetAdyenPaymentMethodsByProduct
         $responseData = [];
         $responseData['paymentMethodsResponse'] = $response->toArray();
         $responseData['paymentMethodsExtraDetails'] = [];
-        if (!$response) {
-            return [];
-        }
+
         return $responseData;
     }
 

@@ -6,31 +6,23 @@ namespace Adyen\ExpressCheckout\Model;
 use Adyen\ExpressCheckout\Api\ExpressActivateInterface;
 use Adyen\ExpressCheckout\Api\GuestExpressActivateInterface;
 use Magento\Framework\Exception\NoSuchEntityException;
-use Magento\Quote\Model\QuoteIdMask;
-use Magento\Quote\Model\QuoteIdMaskFactory;
+use Magento\Quote\Model\MaskedQuoteIdToQuoteId;
 
 class GuestExpressActivate implements GuestExpressActivateInterface
 {
-    /**
-     * @var ExpressActivateInterface
-     */
-    private $expressActivate;
-
-    /**
-     * @var QuoteIdMaskFactory
-     */
-    private $quoteMaskFactory;
+    private ExpressActivateInterface $expressActivate;
+    private MaskedQuoteIdToQuoteId $maskedQuoteIdToQuoteId;
 
     /**
      * @param ExpressActivateInterface $expressActivate
-     * @param QuoteIdMaskFactory $quoteMaskFactory
+     * @param MaskedQuoteIdToQuoteId $maskedQuoteIdToQuoteId
      */
     public function __construct(
         ExpressActivateInterface $expressActivate,
-        QuoteIdMaskFactory $quoteMaskFactory
+        MaskedQuoteIdToQuoteId $maskedQuoteIdToQuoteId
     ) {
         $this->expressActivate = $expressActivate;
-        $this->quoteMaskFactory = $quoteMaskFactory;
+        $this->maskedQuoteIdToQuoteId = $maskedQuoteIdToQuoteId;
     }
 
     /**
@@ -46,13 +38,12 @@ class GuestExpressActivate implements GuestExpressActivateInterface
     ): void {
         $quoteId = null;
         if ($currentMaskedQuoteId !== null) {
-            /** @var $quoteIdMask QuoteIdMask */
-            $quoteIdMask = $this->quoteMaskFactory->create()->load(
-                $currentMaskedQuoteId,
-                'masked_id'
-            );
-            if ($quoteIdMask->getQuoteId()) {
-                $quoteId = (int) $quoteIdMask->getQuoteId();
+            try {
+                $quoteId = $this->maskedQuoteIdToQuoteId->execute($currentMaskedQuoteId);
+            } catch (NoSuchEntityException $exception) {
+                throw new NoSuchEntityException(
+                    __('Could not find a cart with ID "%masked_cart_id"', ['masked_cart_id' => $currentMaskedQuoteId])
+                );
             }
         }
         $this->expressActivate->execute(

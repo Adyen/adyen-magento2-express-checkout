@@ -15,17 +15,21 @@ use Adyen\ExpressCheckout\Api\AdyenInitPaymentsInterface;
 use Adyen\ExpressCheckout\Model\AdyenInitPayments;
 use Adyen\ExpressCheckout\Model\Resolver\AdyenExpressInitPaymentsResolver;
 use Adyen\Payment\Model\Resolver\DataProvider\GetAdyenPaymentStatus;
+use Magento\Quote\Model\MaskedQuoteIdToQuoteIdInterface;
+use PHPUnit\Framework\MockObject\Exception;
 use PHPUnit\Framework\MockObject\MockObject;
 
 class AdyenExpressInitPaymentsResolverTest extends AbstractAdyenResolverTestCase
 {
     protected MockObject&AdyenInitPaymentsInterface $adyenInitPaymentsMock;
     protected MockObject&GetAdyenPaymentStatus $adyenGetPaymentStatusMock;
+    protected MaskedQuoteIdToQuoteIdInterface $maskedQuoteIdToQuoteId;
 
     /**
      * Build the class under test and the dependencies
      *
      * @return void
+     * @throws Exception
      */
     public function setUp(): void
     {
@@ -35,11 +39,12 @@ class AdyenExpressInitPaymentsResolverTest extends AbstractAdyenResolverTestCase
         // Build class specific mocks
         $this->adyenInitPaymentsMock = $this->createMock(AdyenInitPayments::class);
         $this->adyenGetPaymentStatusMock = $this->createMock(GetAdyenPaymentStatus::class);
+        $this->maskedQuoteIdToQuoteId = $this->createMock(MaskedQuoteIdToQuoteIdInterface::class);
 
         $this->resolver = new AdyenExpressInitPaymentsResolver(
             $this->adyenInitPaymentsMock,
             $this->valueFactoryMock,
-            $this->quoteIdMaskFactoryMock,
+            $this->maskedQuoteIdToQuoteId,
             $this->loggerMock,
             $this->adyenGetPaymentStatusMock
         );
@@ -50,7 +55,7 @@ class AdyenExpressInitPaymentsResolverTest extends AbstractAdyenResolverTestCase
      *
      * @return array[]
      */
-    protected static function emptyArgumentAssertionDataProvider(): array
+    public static function emptyArgumentAssertionDataProvider(): array
     {
         return [
             [
@@ -84,7 +89,7 @@ class AdyenExpressInitPaymentsResolverTest extends AbstractAdyenResolverTestCase
      *
      * @return array
      */
-    protected static function successfulResolverDataProvider(): array
+    public static function successfulResolverDataProvider(): array
     {
         return [
             [
@@ -114,14 +119,14 @@ class AdyenExpressInitPaymentsResolverTest extends AbstractAdyenResolverTestCase
      *
      * @return array
      */
-    protected static function missingQuoteAssertionDataProvider(): array
+    public static function missingQuoteAssertionDataProvider(): array
     {
         return [
             [
                 'args' => [
                     'stateData' => 'adyen_state_data_mock',
-                    'adyenMaskedQuoteId' => 'mock_product_cart_params',
-                    'adyenCartId' => 'mock_adyenCartId'
+                    'adyenMaskedQuoteId' => 'mock_adyenCartId',
+                    'adyenCartId' => ''
                 ]
             ]
         ];

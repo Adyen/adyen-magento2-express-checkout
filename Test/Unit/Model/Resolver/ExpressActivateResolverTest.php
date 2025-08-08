@@ -13,16 +13,20 @@ namespace Adyen\ExpressCheckout\Test\Unit\Model\Resolver;
 
 use Adyen\ExpressCheckout\Model\ExpressActivate;
 use Adyen\ExpressCheckout\Model\Resolver\ExpressActivateResolver;
+use Magento\Quote\Model\MaskedQuoteIdToQuoteIdInterface;
+use PHPUnit\Framework\MockObject\Exception;
 use PHPUnit\Framework\MockObject\MockObject;
 
 class ExpressActivateResolverTest extends AbstractAdyenResolverTestCase
 {
     protected MockObject&ExpressActivate $expressActivateMock;
+    protected MaskedQuoteIdToQuoteIdInterface $maskedQuoteIdToQuoteId;
 
     /**
      * Build the class under test and the dependencies
      *
      * @return void
+     * @throws Exception
      */
     public function setUp(): void
     {
@@ -35,7 +39,7 @@ class ExpressActivateResolverTest extends AbstractAdyenResolverTestCase
         $this->resolver = new ExpressActivateResolver(
             $this->expressActivateMock,
             $this->valueFactoryMock,
-            $this->quoteIdMaskFactoryMock,
+            $this->maskedQuoteIdToQuoteIdMock,
             $this->loggerMock
         );
     }
@@ -73,7 +77,7 @@ class ExpressActivateResolverTest extends AbstractAdyenResolverTestCase
      *
      * @return array[]
      */
-    protected static function emptyArgumentAssertionDataProvider(): array
+    public static function emptyArgumentAssertionDataProvider(): array
     {
         return [
             [
@@ -92,7 +96,7 @@ class ExpressActivateResolverTest extends AbstractAdyenResolverTestCase
      *
      * @return array
      */
-    protected static function missingQuoteAssertionDataProvider(): array
+    public static function missingQuoteAssertionDataProvider(): array
     {
         return [
             [

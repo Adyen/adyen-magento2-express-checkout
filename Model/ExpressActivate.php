@@ -4,70 +4,36 @@ declare(strict_types=1);
 namespace Adyen\ExpressCheckout\Model;
 
 use Adyen\ExpressCheckout\Api\ExpressActivateInterface;
-use Magento\Authorization\Model\UserContextInterface;
 use Magento\Framework\Exception\NoSuchEntityException;
-use Magento\Quote\Api\CartManagementInterface;
 use Magento\Quote\Api\CartRepositoryInterface;
 use Magento\Quote\Api\Data\CartInterface;
 use Magento\Quote\Api\Data\CartInterfaceFactory;
-use Magento\Quote\Model\QuoteIdMask;
-use Magento\Quote\Model\QuoteIdMaskFactory;
+use Magento\Quote\Model\MaskedQuoteIdToQuoteIdInterface;
 use Magento\Quote\Model\ResourceModel\Quote;
 
 class ExpressActivate implements ExpressActivateInterface
 {
-    /**
-     * @var CartManagementInterface
-     */
-    private $cartManagement;
-
-    /**
-     * @var CartRepositoryInterface
-     */
-    private $cartRepository;
-
-    /**
-     * @var CartInterfaceFactory
-     */
-    private $quoteFactory;
-
-    /**
-     * @var QuoteIdMaskFactory
-     */
-    private $quoteIdMaskFactory;
-
-    /**
-     * @var Quote
-     */
-    private $quoteResource;
-
-    /**
-     * @var UserContextInterface
-     */
-    private $userContext;
+    private CartRepositoryInterface $cartRepository;
+    private CartInterfaceFactory $quoteFactory;
+    private MaskedQuoteIdToQuoteIdInterface $maskedQuoteIdToQuoteId;
+    private Quote $quoteResource;
 
     /**
      * @param CartInterfaceFactory $quoteFactory
-     * @param CartManagementInterface $cartManagement
      * @param CartRepositoryInterface $cartRepository
-     * @param QuoteIdMaskFactory $quoteIdMaskFactory
+     * @param MaskedQuoteIdToQuoteIdInterface $maskedQuoteIdToQuoteId
      * @param Quote $quoteResoure
-     * @param UserContextInterface $userContext
      */
     public function __construct(
         CartInterfaceFactory $quoteFactory,
-        CartManagementInterface $cartManagement,
         CartRepositoryInterface $cartRepository,
-        QuoteIdMaskFactory $quoteIdMaskFactory,
+        MaskedQuoteIdToQuoteIdInterface $maskedQuoteIdToQuoteId,
         Quote $quoteResoure,
-        UserContextInterface $userContext
     ) {
         $this->quoteFactory = $quoteFactory;
-        $this->cartManagement = $cartManagement;
         $this->cartRepository = $cartRepository;
-        $this->quoteIdMaskFactory = $quoteIdMaskFactory;
+        $this->maskedQuoteIdToQuoteId = $maskedQuoteIdToQuoteId;
         $this->quoteResource = $quoteResoure;
-        $this->userContext = $userContext;
     }
 
     /**
@@ -107,14 +73,16 @@ class ExpressActivate implements ExpressActivateInterface
      *
      * @param string $maskedQuoteId
      * @return int
+     * @throws NoSuchEntityException
      */
     private function getAdyenQuoteId(string $maskedQuoteId): int
     {
-        /** @var $quoteIdMask QuoteIdMask */
-        $quoteIdMask = $this->quoteIdMaskFactory->create()->load(
-            $maskedQuoteId,
-            'masked_id'
-        );
-        return (int) $quoteIdMask->getQuoteId();
+        try {
+            return $this->maskedQuoteIdToQuoteId->execute($maskedQuoteId);
+        } catch (NoSuchEntityException $exception) {
+            throw new NoSuchEntityException(
+                __('Could not find a cart with ID "%masked_cart_id"', ['masked_cart_id' => $maskedQuoteId])
+            );
+        }
     }
 }
