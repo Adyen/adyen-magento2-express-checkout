@@ -48,7 +48,7 @@ define([
         customerData,
         fullScreenLoader,
         quote,
-        AdyenCheckout,
+        AdyenWeb,
         adyenPaymentModal,
         adyenPaymentService,
         activateCart,
@@ -174,10 +174,10 @@ define([
             initialiseGooglePayComponent: async function (googlePaymentMethod, element) {
                 const config = configModel().getConfig();
                 const adyenData = window.adyenData;
-                let currentPage = getCurrentPage(this.isProductView, element);
 
-                this.checkoutComponent = await new AdyenCheckout({
+                this.checkoutComponent = await window.AdyenWeb.AdyenCheckout({
                     locale: config.locale,
+                    countryCode: config.countryCode,
                     clientKey: config.originkey,
                     environment: config.checkoutenv,
                     analytics: {
@@ -196,15 +196,17 @@ define([
                     },
                     paymentMethodsResponse: getPaymentMethod('googlepay', this.isProductView),
                     onAdditionalDetails: this.handleOnAdditionalDetails.bind(this),
-                    isExpress: true,
-                    expressPage: currentPage,
                     risk: {
                         enabled: false
                     }
                 });
                 const googlePayConfig = this.getGooglePayConfig(googlePaymentMethod, element);
 
-                this.googlePayComponent = this.checkoutComponent.create(googlePaymentMethod, googlePayConfig);
+                this.googlePayComponent = await window.AdyenWeb.createComponent(
+                    "googlepay",
+                    this.checkoutComponent,
+                    googlePayConfig
+                );
 
                 this.googlePayComponent.isAvailable()
                     .then(function () {
@@ -250,6 +252,8 @@ define([
                 const config = configModel().getConfig();
                 const pdpForm = getPdpForm(element);
                 const isVirtual = virtualQuoteModel().getIsVirtual();
+                const currentPage = getCurrentPage(this.isProductView, element);
+
                 let currency;
 
                 if (this.isProductView) {
@@ -278,6 +282,7 @@ define([
                         phoneNumberRequired: true
                     },
                     isExpress: true,
+                    expressPage: currentPage,
                     transactionInfo: {
                         totalPriceStatus: 'ESTIMATED',
                         totalPrice: this.isProductView
@@ -445,7 +450,7 @@ define([
                 let componentData = this.googlePayComponent.data;
 
                 const payload = {
-                    email: paymentData.email,
+                    email: paymentData.authorizedEvent.email,
                     paymentMethod: {
                         method: 'adyen_googlepay',
                         additional_data: {
@@ -480,12 +485,12 @@ define([
 
             setShippingInformation: function (paymentData) {
                 const shippingMethod = this.shippingMethods.find(function (method) {
-                    return method.method_code === paymentData.shippingOptionData.id;
+                    return method.method_code === paymentData.authorizedEvent.shippingOptionData.id;
                 });
                 let payload = {
                     'addressInformation': {
                         'shipping_address': {
-                            ...this.mapAddress(paymentData.shippingAddress),
+                            ...this.mapAddress(paymentData.authorizedEvent.shippingAddress),
                             'same_as_billing': 0,
                             'customer_address_id': 0,
                             'save_in_address_book': 0
@@ -501,7 +506,7 @@ define([
 
             setBillingAddress: function (paymentData) {
                 let payload = {
-                    'address': this.mapAddress(paymentData.paymentMethodData.info.billingAddress),
+                    'address': this.mapAddress(paymentData.authorizedEvent.paymentMethodData.info.billingAddress),
                     'useForShipping': false
                 };
 
