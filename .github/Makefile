@@ -15,7 +15,6 @@ magento:
 install:
 	composer config --json repositories.local '{"type": "path", "url": "/data/extensions/workdir", "options": { "symlink": false } }'
 	composer require "adyen/adyen-magento2-expresscheckout:*"
-	vendor/bin/phpcs --standard=Magento2 --extensions=php,phtml --error-severity=10 --ignore-annotations -n -p vendor/adyen/adyen-magento2-expresscheckout
 	bin/magento module:enable --all
 	bin/magento setup:upgrade
 	bin/magento setup:di:compile
@@ -65,3 +64,20 @@ graphql:
 
 phpstan-run:
 	vendor/bin/phpstan analyse -c vendor/adyen/adyen-magento2-expresscheckout/phpstan.neon
+
+phpunit-run:
+	cp vendor/adyen/adyen-magento2-expresscheckout/Test/phpunit.xml.dist dev/tests/unit/phpunit.xml
+	cd dev/tests/unit; \
+		../../../vendor/bin/phpunit \
+		--coverage-clover=../../../build/clover.xml \
+		--log-junit=../../../build/tests-log.xml \
+		-c phpunit.xml \
+		../../../vendor/adyen/adyen-magento2-expresscheckout/Test/Unit
+
+codesniffer-run:
+	vendor/bin/phpcs --standard=Magento2 \
+		--extensions=php,phtml \
+		--error-severity=10 \
+		--warning-severity=0 \
+		--ignore-annotations \
+		-p vendor/adyen/adyen-magento2-expresscheckout
