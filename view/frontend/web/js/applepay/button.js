@@ -38,7 +38,7 @@ define([
         $t,
         customerData,
         AdyenConfiguration,
-        AdyenCheckout,
+        AdyenWeb,
         activateCart,
         cancelCart,
         createPayment,
@@ -149,9 +149,10 @@ define([
                 const adyenData = window.adyenData;
                 let currentPage = getCurrentPage(this.isProductView, element);
 
-                const adyenCheckoutComponent = await new AdyenCheckout({
+                const adyenCheckoutComponent = await window.AdyenWeb.AdyenCheckout({
                     locale: config.locale,
                     environment: config.checkoutenv,
+                    countryCode: config.countryCode,
                     analytics: {
                         analyticsData: {
                             applicationInfo: {
@@ -169,8 +170,6 @@ define([
                     risk: {
                         enabled: false
                     },
-                    isExpress: true,
-                    expressPage: currentPage,
                     clientKey: AdyenConfiguration.getClientKey()
                 });
                 const applePayConfiguration = this.getApplePayConfiguration(applePaymentMethod, element);
@@ -180,8 +179,9 @@ define([
                     applePayConfiguration.amount.currency = currencyModel().getCurrency();
                 }
 
-                this.applePayComponent = adyenCheckoutComponent.create(
+                this.applePayComponent = await window.AdyenWeb.createComponent(
                     'applepay',
+                    adyenCheckoutComponent,
                     applePayConfiguration
                 );
 
@@ -246,6 +246,7 @@ define([
                 const isVirtual = virtualQuoteModel().getIsVirtual();
                 let currency;
                 let applepayBaseConfiguration;
+                const currentPage = getCurrentPage(this.isProductView, element);
 
                 if (this.isProductView) {
                     currency = currencyModel().getCurrency();
@@ -278,6 +279,7 @@ define([
                         currency: currency
                     },
                     isExpress: true,
+                    expressPage: currentPage,
                     supportedNetworks: getSupportedNetworks(),
                     merchantCapabilities: ['supports3DS'],
                     requiredShippingContactFields: ['postalAddress', 'name', 'email', 'phone'],
