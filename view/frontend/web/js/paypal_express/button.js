@@ -84,6 +84,105 @@ define([
     cancelCart
 ) {
     'use strict';
+    function waitForElement(selectorOrEl, {timeout = 5000, stableFrames = 4} = {}) {
+        const el = typeof selectorOrEl === 'string'
+            ? () => document.querySelector(selectorOrEl)
+            : () => selectorOrEl;
+        const start = performance.now();
+        let stableCount = 0, lastRect = null;
+
+        return new Promise((resolve, reject) => {
+            (function tick() {
+                const node = el();
+                if (node) {
+                    const rect = node.getBoundingClientRect();
+                    const same = lastRect &&
+                        rect.top === lastRect.top &&
+                        rect.left === lastRect.left &&
+                        rect.width === lastRect.width &&
+                        rect.height === lastRect.height;
+                    if (same) stableCount++; else stableCount = 0;
+                    lastRect = rect;
+                    if (stableCount >= stableFrames) return resolve(node);
+                }
+                if (performance.now() - start > timeout) {
+                    return reject(new Error('Host element not ready'));
+                }
+                requestAnimationFrame(tick);
+            })();
+        });
+    }
+
+    // Configuration: target wrapper and child mount node
+    const MINI_WRAPPER_SELECTOR = '#minicart-content-wrapper'; // stable container from Magento
+    const PAYPAL_MOUNT_SELECTOR = '#adyen-paypal-mini-cart';        // your button host inside the wrapper
+
+    function isMiniCartOpen() {
+        const wrapper = document.querySelector(MINI_WRAPPER_SELECTOR);
+        if (!wrapper) return false;
+        // many Luma-based themes toggle _active on the block; also check visibility
+        return wrapper.offsetParent !== null || wrapper.classList.contains('_active');
+    }
+
+// Wait until the mount target exists AND the mini-cart is open & stable
+    async function waitForPaypalHost({ timeout = 6000, stableFrames = 3 } = {}) {
+        const start = performance.now();
+        let stable = 0, lastRect = null;
+        return new Promise((resolve, reject) => {
+            (function tick() {
+                const host = document.querySelector(PAYPAL_MOUNT_SELECTOR);
+                const open = isMiniCartOpen();
+                if (host && open) {
+                    const rect = host.getBoundingClientRect();
+                    const same = lastRect &&
+                        rect.top === lastRect.top && rect.left === lastRect.left &&
+                        rect.width === lastRect.width && rect.height === lastRect.height;
+                    stable = same ? (stable + 1) : 0;
+                    lastRect = rect;
+                    if (stable >= stableFrames) return resolve(host);
+                }
+                if (performance.now() - start > timeout) return reject(new Error('Mini-cart host not ready'));
+                requestAnimationFrame(tick);
+            })();
+        });
+    }
+
+    // Debounce utility
+    function debounce(fn, wait = 250) {
+        let t;
+        return function(...args) { clearTimeout(t); t = setTimeout(() => fn.apply(this, args), wait); };
+    }
+
+    // Single-flight + latest-wins scheduler
+    let scheduled = false;
+    let running = false;
+    let needsRun = false;
+    async function schedulePaypalInit(runFn) {
+        needsRun = true;
+        if (scheduled) return;
+        scheduled = true;
+        // small delay to coalesce bursts from customer-data/contentUpdated
+        setTimeout(async () => {
+            scheduled = false;
+            if (running) return; // in-flight: latest will run right after
+            if (!needsRun) return;
+            needsRun = false;
+            running = true;
+            try {
+                await runFn();
+            } finally {
+                running = false;
+                if (needsRun) schedulePaypalInit(runFn); // run latest if another burst arrived during run
+            }
+        }, 200);
+    }
+
+
+
+
+
+
+
 
     return Component.extend({
         isPlaceOrderActionAllowed: ko.observable(
@@ -239,13 +338,18 @@ define([
             };
         },
 
-        initialisePaypalComponent: async function (paypalPaymentMethod, element) {
-            // Configuration setup
+        initialisePaypalComponent: async function (paypalPaymentMethod, elementOrSelector) {
+            // Clean up any previous component (safe)
+            if (this.paypalComponent && typeof this.paypalComponent.unmount === 'function') {
+                try { this.paypalComponent.unmount(); } catch(_) {}
+                this.paypalComponent = null;
+            }
+
             const config = configModel().getConfig();
             const adyenData = window.adyenData;
-            let currentPage = getCurrentPage(this.isProductView, element);
 
-            const adyenCheckoutComponent = await window.AdyenWeb.AdyenCheckout({
+            // Build Checkout (canonical)
+            const checkout = await window.AdyenWeb.AdyenCheckout({
                 locale: config.locale,
                 countryCode: config.countryCode,
                 originKey: config.originkey,
@@ -264,36 +368,51 @@ define([
                         }
                     }
                 },
-                risk: {
-                    enabled: false
-                },
+                risk: { enabled: false },
                 clientKey: AdyenConfiguration.getClientKey()
             });
 
-            const paypalConfiguration = this.getPaypalConfiguration(paypalPaymentMethod, element);
-
+            const paypalConfiguration = this.getPaypalConfiguration(paypalPaymentMethod, elementOrSelector);
             if (this.isProductView) {
-                paypalConfiguration.currencyCode = currencyModel().getCurrency();
-                paypalConfiguration.amount.currency = currencyModel().getCurrency();
+                const cur = currencyModel().getCurrency();
+                paypalConfiguration.currencyCode = cur;
+                paypalConfiguration.amount = paypalConfiguration.amount || {};
+                paypalConfiguration.amount.currency = cur;
             }
 
+            let component;
             try {
-                this.paypalComponent = await window.AdyenWeb.createComponent('paypal', adyenCheckoutComponent, paypalConfiguration);
+                component = await window.AdyenWeb.createComponent('paypal', checkout, paypalConfiguration);
+            } catch (e) {
+                console.error('Error creating PayPal component', e);
+                return;
+            }
 
-                if (typeof this.paypalComponent.isAvailable === 'function') {
-                    this.paypalComponent
-                        .isAvailable()
-                        .then(() => {
-                            this.onAvailable(element);
-                        })
-                        .catch((e) => {
-                            this.onNotAvailable(e);
-                        });
-                } else {
-                    this.onAvailable(element);
-                }
-            } catch (error) {
-                console.error('Error creating PayPal component', error);
+            // Availability check (if exposed)
+            if (typeof component.isAvailable === 'function') {
+                try { await component.isAvailable(); }
+                catch (e) { this.onNotAvailable?.(e); return; }
+            }
+
+            // Wait for the mini-cart host to be truly ready
+            let hostEl;
+            try {
+                // If a selector string was passed, prefer our robust host wait
+                hostEl = typeof elementOrSelector === 'string'
+                    ? await waitForPaypalHost({ timeout: 6000, stableFrames: 3 })
+                    : await waitForElement(elementOrSelector, { timeout: 6000, stableFrames: 3 });
+            } catch(_) {
+                return; // no host, bail softly
+            }
+
+            if (!hostEl.isConnected) return;
+
+            try {
+                component.mount(hostEl);
+                this.paypalComponent = component;
+                this.onAvailable?.(hostEl);
+            } catch (e) {
+                console.error('Error mounting PayPal component', e);
             }
         },
 
@@ -303,7 +422,7 @@ define([
 
         onAvailable: function (element) {
             element.style.display = 'block';
-            this.paypalComponent.mount(element);
+            //this.paypalComponent.mount(element);
         },
 
         unmountPaypal: function () {
@@ -312,27 +431,30 @@ define([
             }
         },
 
-        reloadPaypalButton: async function (element) {
-            const paypalPaymentMethod = await getPaymentMethod('paypal', this.isProductView);
+        reloadPaypalButton: debounce(function (element) {
+            // Only try when the mini-cart is open
+            if (!isMiniCartOpen()) return;
 
-            if (this.isProductView) {
-                const pdpResponse = await getExpressMethods().getRequest(element);
+            schedulePaypalInit(async () => {
+                const paypalPaymentMethod = await getPaymentMethod('paypal', this.isProductView);
 
-                virtualQuoteModel().setIsVirtual(true, pdpResponse);
-                setExpressMethods(pdpResponse);
-                totalsModel().setTotal(pdpResponse.totals.grand_total);
-            } else {
-                virtualQuoteModel().setIsVirtual(false);
-            }
+                if (this.isProductView) {
+                    const pdpResponse = await getExpressMethods().getRequest(element);
+                    virtualQuoteModel().setIsVirtual(true, pdpResponse);
+                    setExpressMethods(pdpResponse);
+                    totalsModel().setTotal(pdpResponse.totals.grand_total);
+                } else {
+                    virtualQuoteModel().setIsVirtual(false);
+                }
 
-            this.unmountPaypal();
+                this.unmountPaypal();
 
-            if (!isConfigSet(paypalPaymentMethod, ['merchantId'])) {
-                return;
-            }
+                if (!isConfigSet(paypalPaymentMethod, ['merchantId'])) return;
 
-            this.initialisePaypalComponent(paypalPaymentMethod, element);
-        },
+                // IMPORTANT: initialise using a STABLE SELECTOR, not the KO element that gets rebuilt
+                await this.initialisePaypalComponent(paypalPaymentMethod, PAYPAL_MOUNT_SELECTOR);
+            });
+        }, 300),
 
         getPaypalConfiguration: function (paypalPaymentMethod, element) {
             const paypalStyles = getPaypalStyles();
