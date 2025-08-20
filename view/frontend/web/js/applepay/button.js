@@ -322,9 +322,14 @@ define([
                     .then(() => getShippingMethods(payload, this.isProductView))
                     .then((result) => {
                     // Stop if no shipping methods.
-                    if (result.length === 0) {
-                        reject($t('There are no shipping methods available for you right now. Please try again or use an alternative payment method.'));
+                    if (!Array.isArray(result) || result.length === 0) {
+                         return resolve(buildErrorUpdate(
+                             $t('There are no shipping methods available for this address.'),
+                             'shippingContactInvalid',
+                             'postalAddress'
+                             ));
                     }
+
                     let shippingMethods = [];
 
                     self.shippingMethods = {};
@@ -337,7 +342,7 @@ define([
                             identifier: result[i].method_code,
                             label: result[i].method_title,
                             detail: result[i].carrier_title ? result[i].carrier_title : '',
-                            amount: parseFloat(result[i].amount).toFixed(2)
+                            amount: String(parseFloat(result[i].amount).toFixed(2))
                         };
                         // Add method object to array.
 
@@ -346,6 +351,15 @@ define([
                         if (!self.shippingMethod) {
                             self.shippingMethod = result[i].method_code;
                         }
+                    }
+
+                    // If all methods were filtered out, bail with a clear ApplePayError.
+                    if (shippingMethods.length === 0) {
+                         return resolve(buildErrorUpdate(
+                            $t('No valid shipping methods for this address.'),
+                            'shippingContactInvalid',
+                            'postalAddress'
+                         ));
                     }
 
                     let address = {
@@ -380,7 +394,7 @@ define([
                             })
                             .fail((e) => {
                                 console.error('Adyen ApplePay: Unable to get totals', e);
-                                reject($t('We\'re unable to fetch the cart totals for you. Please try an alternative payment method.'));
+                                resolve(buildErrorUpdate($t('We\'re unable to fetch the cart totals. Please try again.')));
                             });
                     });
                 });
@@ -419,18 +433,25 @@ define([
                             self.afterSetTotalsInfo(response, shippingMethod, self.isProductView, resolve);
                         }).fail((e) => {
                         console.error('Adyen ApplePay: Unable to get totals', e);
-                        reject($t('We\'re unable to fetch the cart totals for you. Please try an alternative payment method.'));
+                        resolve(buildErrorUpdate($t('We\'re unable to fetch the cart totals. Please try again.')));
+
                     });
                 });
             },
 
             afterSetTotalsInfo: function (response, shippingMethod, isPdp, resolve) {
-                let applePayShippingMethodUpdate = {};
+                // Normalize and harden numbers into valid Apple Pay strings
+                const toAmt = (v) => {
+                        const n = Number(v);
+                        return Number.isFinite(n) ? n.toFixed(2) : '0.00';
+                    };
 
-                applePayShippingMethodUpdate.newTotal = {
-                    type: 'final',
-                    label: this.getMerchantName(),
-                    amount: (response.grand_total).toString()
+                    const applePayShippingMethodUpdate = {
+                        newTotal: {
+                            type: 'final',
+                                label: this.getMerchantName(),
+                                amount: toAmt(response?.grand_total)
+                        }
                 };
 
                 // If the shipping methods is an array pass all methods to Apple Pay to show in payment window.
@@ -439,28 +460,33 @@ define([
                     shippingMethod = shippingMethod[0];
                 }
 
-                applePayShippingMethodUpdate.newLineItems = [
+                const lineItems = [
                     {
                         type: 'final',
                         label: $t('Subtotal'),
-                        amount: response.subtotal.toString()
+                        amount: toAmt(response?.subtotal)
                     },
                     {
                         type: 'final',
                         label: $t('Shipping'),
-                        amount: shippingMethod.amount.toString()
+                        amount: toAmt(shippingMethod?.amount)
                     }
                 ];
 
-                if (response.tax_amount > 0) {
-                    applePayShippingMethodUpdate.newLineItems.push({
+                if (Number(response?.tax_amount) > 0) {
+                    lineItems.push({
                         type: 'final',
                         label: $t('Tax'),
-                        amount: response.tax_amount.toString()
+                        amount: toAmt(response.tax_amount)
                     })
                 }
 
-                this.shippingMethod = shippingMethod.identifier;
+                applePayShippingMethodUpdate.newLineItems = lineItems;
+
+                // Guard: Only set identifier if present
+                if (shippingMethod && shippingMethod.identifier) {
+                        this.shippingMethod = shippingMethod.identifier;
+                }
                 resolve(applePayShippingMethodUpdate);
             },
 
@@ -550,9 +576,9 @@ define([
                                 createPayment(JSON.stringify(postData), self.isProductView)
                                     .done(function () {
                                         redirectToSuccess();
-                                        resolve(window.ApplePaySession.STATUS_SUCCESS);
+                                        resolve({ status: window.ApplePaySession.STATUS_SUCCESS });
                                     }).fail(function (r) {
-                                    reject(window.ApplePaySession.STATUS_FAILURE);
+                                    reject({ status: window.ApplePaySession.STATUS_FAILURE });
                                     console.error('Adyen ApplePay Unable to take payment', r);
                                 });
 
@@ -564,9 +590,9 @@ define([
                             createPayment(JSON.stringify(postData), self.isProductView)
                                 .done(function () {
                                     redirectToSuccess();
-                                    resolve(window.ApplePaySession.STATUS_SUCCESS);
+                                    resolve({ status: window.ApplePaySession.STATUS_SUCCESS });
                                 }).fail(function (r) {
-                                reject(window.ApplePaySession.STATUS_FAILURE);
+                                reject({ status: window.ApplePaySession.STATUS_FAILURE });
                                 console.error('Adyen ApplePay Unable to take payment', r);
                             });
                         }
