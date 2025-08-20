@@ -9,7 +9,7 @@
  * Author: Adyen <magento@adyen.com>
  */
 
-namespace Adyen\ExpressCheckout\Test\Unit\Model\Resolver;
+namespace Adyen\ExpressCheckout\Test\Unit\Observer;
 
 use Adyen\ExpressCheckout\Block\Paypal\Shortcut\Button;
 use Adyen\ExpressCheckout\Observer\UpdatePaypalOrderStatus;

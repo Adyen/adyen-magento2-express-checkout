@@ -38,6 +38,8 @@ define([
     'Adyen_ExpressCheckout/js/model/maskedId',
     'Adyen_ExpressCheckout/js/helpers/getCurrentPage',
     'Adyen_ExpressCheckout/js/helpers/getMaskedIdFromCart',
+    'Adyen_Payment/js/helper/currencyHelper',
+    'Adyen_ExpressCheckout/js/actions/cancelCart'
 ], function (
     Component,
     $t,
@@ -77,7 +79,9 @@ define([
     virtualQuoteModel,
     maskedIdModel,
     getCurrentPage,
-    getMaskedIdFromCart
+    getMaskedIdFromCart,
+    currencyHelper,
+    cancelCart
 ) {
     'use strict';
 
@@ -178,6 +182,62 @@ define([
             }
         },
 
+        _createShippingMethodObject: function(method) {
+            const description = method.carrier_title?.trim() || method.method_title?.trim() || method.carrier_code;
+            const label = method.method_title?.trim() || method.carrier_code;
+
+            return {
+                identifier: method.method_code,
+                label: label,
+                detail: description,
+                amount: method.amount,
+                carrierCode: method.carrier_code
+            };
+        },
+
+        _matchShippingMethodByLabel: function(label) {
+            label = label?.trim();
+            for (const method of Object.values(this.shippingMethods)) {
+                if (
+                    method.carrier_code === label ||
+                    method.carrier_title === label ||
+                    method.method_code === label ||
+                    method.method_title === label
+                ) {
+                    this.shippingMethod = method.method_code || method.carrier_code;
+                    return this._createShippingMethodObject(method);
+                }
+            }
+            console.warn(`No matching shipping method found for label: ${label}`, this.shippingMethods);
+            return null;
+        },
+
+        _getAddressInformationPayload: function(shippingMethod, shippingAddress) {
+            const address = {
+                countryId: shippingAddress.countryCode,
+                region: shippingAddress.state,
+                regionId: getRegionId(shippingAddress.country_id, shippingAddress.state),
+                postcode: shippingAddress.postalCode
+            };
+
+            return {
+                shippingInformationPayload: {
+                    addressInformation: {
+                        shipping_address: address,
+                        billing_address: address,
+                        shipping_method_code: this.shippingMethod,
+                        shipping_carrier_code: shippingMethod?.carrierCode || ''
+                    }
+                },
+                totalsPayload: {
+                    addressInformation: {
+                        address: address,
+                        shipping_method_code: this.shippingMethod,
+                        shipping_carrier_code: shippingMethod?.carrierCode || ''
+                    }
+                }
+            };
+        },
 
         initialisePaypalComponent: async function (paypalPaymentMethod, element) {
             // Configuration setup
@@ -300,8 +360,14 @@ define([
                 amount: {
                     currency: currency,
                     value: this.isProductView
-                        ? formatAmount(totalsModel().getTotal() * 100)
-                        : formatAmount(getCartSubtotal() * 100)
+                        ? currencyHelper.formatAmount(
+                            totalsModel().getTotal(),
+                            currency
+                        )
+                        : currencyHelper.formatAmount(
+                            getCartSubtotal(),
+                            currency
+                        )
                 },
                 onSubmit: (state, component) => {
                     const paymentData = state.data;
@@ -348,21 +414,14 @@ define([
                     }
                 },
                 onShippingOptionsChange: async (data, actions, component) => {
-                    let shippingMethod = [];
                     const currentPaymentData = component.paymentData;
-                    for (const method of Object.values(this.shippingMethods)) {
-                        if (method.carrier_title === data.selectedShippingOption.label) {
-                            this.shippingMethod = method.method_code;
-                            shippingMethod = {
-                                identifier: method.method_code,
-                                label: method.method_title,
-                                detail: method.carrier_title ? method.carrier_title : '',
-                                amount: parseFloat(method.amount).toFixed(2),
-                                carrierCode: method.carrier_code,
-                            };
-                            break;
-                        }
+                    const selectedShippingLabel = data.selectedShippingOption.label?.trim();
+
+                    const shippingMethod = this._matchShippingMethodByLabel(selectedShippingLabel);
+                    if (!shippingMethod) {
+                        return actions.reject();
                     }
+
                     await this.setShippingAndTotals(shippingMethod, this.shippingAddress);
 
                     await updatePaypalOrder.updateOrder(
@@ -379,6 +438,7 @@ define([
                         return actions.reject();
                     });
                 },
+
                 onShopperDetails: async (shopperDetails, rawData, actions) => {
                     try {
                         const isVirtual = virtualQuoteModel().getIsVirtual();
@@ -445,6 +505,9 @@ define([
                     });
 
                 },
+
+                onError: () => cancelCart(this.isProductView),
+
                 style: paypalStyles
             };
 
@@ -513,18 +576,13 @@ define([
                     }
 
                     let shippingMethods = [];
+                    this.shippingMethod = null;
 
                     for (let method of result) {
                         if (typeof method.method_code !== 'string') {
                             continue;
                         }
-                        let shippingMethod = {
-                            identifier: method.method_code,
-                            label: method.method_title,
-                            detail: method.carrier_title ? method.carrier_title : '',
-                            amount: parseFloat(method.amount).toFixed(2),
-                            carrierCode: method.carrier_code,
-                        };
+                        let shippingMethod = this._createShippingMethodObject(method);
                         shippingMethods.push(shippingMethod);
                         this.shippingMethods[method.method_code] = method;
                         if (!this.shippingMethod) {
@@ -542,9 +600,9 @@ define([
             const payload = {
                 paymentMethod: {
                     method: 'adyen_paypal_express',
-                    additional_data: [
-                        'brand_code:paypal'
-                    ]
+                    additional_data: {
+                        brand_code: 'paypal'
+                    },
                 }
             };
 
@@ -604,30 +662,8 @@ define([
 
         // Extracted method to set shipping information and totals
         setShippingAndTotals: function (shippingMethod, shippingAddress) {
-            let address = {
-                'countryId': shippingAddress.countryCode,
-                'region': shippingAddress.state,
-                'regionId': getRegionId(shippingAddress.country_id, shippingAddress.state),
-                'postcode': shippingAddress.postalCode
-            };
-
-            let shippingInformationPayload = {
-                addressInformation: {
-                    shipping_address: address,
-                    billing_address: address,
-                    shipping_method_code: this.shippingMethod,
-                    shipping_carrier_code: shippingMethod ? shippingMethod.carrierCode : ''
-                }
-            };
-
-            let totalsPayload = {
-                'addressInformation': {
-                    'address': address,
-                    'shipping_method_code': this.shippingMethod,
-                    'shipping_carrier_code': shippingMethod ? shippingMethod.carrierCode : ''
-                }
-            };
-
+            const { shippingInformationPayload, totalsPayload } =
+                this._getAddressInformationPayload(shippingMethod, shippingAddress);
             return Promise.all([
                 setShippingInformation(shippingInformationPayload, this.isProductView),
                 setTotalsInfo(totalsPayload, this.isProductView)

@@ -15,12 +15,17 @@ jobs:
       group: larger-runners
       labels: ubuntu-latest-8-cores
     timeout-minutes: 10
+    permissions:
+      contents: read
+      attestations: write
     env:
       PHP_VERSION: ${{ matrix.php-version }}
       MAGENTO_VERSION: ${{ matrix.magento-version }}
       ADYEN_API_KEY: ${{secrets.ADYEN_API_KEY}}
       ADYEN_CLIENT_KEY: ${{secrets.ADYEN_CLIENT_KEY}}
       ADYEN_MERCHANT: ${{secrets.ADYEN_MERCHANT}}
+      ADMIN_USERNAME: ${{secrets.MAGENTO_ADMIN_USERNAME}}
+      ADMIN_PASSWORD: ${{secrets.MAGENTO_ADMIN_PASSWORD}}
       DEPLOY_SAMPLEDATA: 1
     steps:
       - uses: actions/checkout@v4
@@ -66,7 +71,7 @@ jobs:
 
       - name: Archive test result artifacts
         if: always()
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: html-report
           path: test-report

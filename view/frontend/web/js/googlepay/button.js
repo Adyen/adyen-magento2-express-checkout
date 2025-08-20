@@ -4,7 +4,6 @@ define([
     'uiComponent',
     'mage/translate',
     'Magento_Customer/js/customer-data',
-    'Magento_Checkout/js/model/full-screen-loader',
     'Magento_Checkout/js/model/quote',
     'Adyen_Payment/js/adyen',
     'Adyen_Payment/js/model/adyen-payment-modal',
@@ -38,7 +37,8 @@ define([
     'Adyen_ExpressCheckout/js/model/totals',
     'Adyen_ExpressCheckout/js/model/currency',
     'Adyen_ExpressCheckout/js/model/virtualQuote',
-    'Adyen_ExpressCheckout/js/helpers/getCurrentPage'
+    'Adyen_ExpressCheckout/js/helpers/getCurrentPage',
+    'Adyen_ExpressCheckout/js/model/adyen-loader'
 ],
     function (
         $,
@@ -46,7 +46,6 @@ define([
         Component,
         $t,
         customerData,
-        fullScreenLoader,
         quote,
         AdyenCheckout,
         adyenPaymentModal,
@@ -80,7 +79,8 @@ define([
         totalsModel,
         currencyModel,
         virtualQuoteModel,
-        getCurrentPage
+        getCurrentPage,
+        loader
     ) {
         'use strict';
 
@@ -95,7 +95,7 @@ define([
                 isProductView: false,
                 maskedId: null,
                 googlePayComponent: null,
-                modalLabel: 'googlepay_actionmodal',
+                modalLabel: 'adyen-checkout-action_modal',
                 orderId: 0
             },
 
@@ -427,6 +427,8 @@ define([
                 let self = this;
                 const isVirtual = virtualQuoteModel().getIsVirtual();
 
+                loader.startLoader();
+
                 activateCart(this.isProductView).then(function () {
                     self.setBillingAddress(paymentData).done(function () {
                         if (!isVirtual) {
@@ -450,7 +452,8 @@ define([
                         method: 'adyen_googlepay',
                         additional_data: {
                             brand_code: this.googlePayComponent.props.type,
-                            stateData: JSON.stringify(componentData)
+                            stateData: JSON.stringify(componentData),
+                            frontendType: 'default'
                         },
                         extension_attributes: getExtensionAttributes(paymentData)
                     }
@@ -474,6 +477,7 @@ define([
                     })
                     .fail(function (e) {
                         console.error('Adyen GooglePay Unable to take payment', e);
+                        loader.stopLoader();
                     });
             },
 
@@ -509,23 +513,24 @@ define([
 
             handleOnAdditionalDetails: function (result) {
                 const self = this;
+                const quoteId = this.isProductView ? maskedIdModel().getMaskedId() : getMaskedIdFromCart();
+
                 let request = result.data;
-                adyenPaymentModal.hideModalLabel(this.modalLabel);
-                fullScreenLoader.startLoader();
-                request.orderId = self.orderId;
                 let popupModal = self.showModal();
 
-                adyenPaymentService.paymentDetails(request).
-                done(function(responseJSON) {
-                    fullScreenLoader.stopLoader();
-                    self.handleAdyenResult(responseJSON, self.orderId);
-                }).
-                fail(function(response) {
-                    self.closeModal(popupModal);
-                    errorProcessor.process(response, self.messageContainer);
-                    self.isPlaceOrderActionAllowed(true);
-                    fullScreenLoader.stopLoader();
-                });
+                adyenPaymentModal.hideModalLabel(this.modalLabel);
+                loader.startLoader();
+
+                adyenPaymentService.paymentDetails(request, self.orderId, quoteId)
+                    .done(function(responseJSON) {
+                        self.handleAdyenResult(responseJSON, self.orderId);
+                    })
+                    .fail(function(response) {
+                        self.closeModal(popupModal);
+                        errorProcessor.process(response, self.messageContainer);
+                        self.isPlaceOrderActionAllowed(true);
+                        loader.stopLoader();
+                    });
             },
 
             handleAdyenResult: function (responseJSON, orderId) {
@@ -534,6 +539,7 @@ define([
 
                 if (!!response.isFinal) {
                     // Status is final redirect to the success page
+                    loader.stopLoader();
                     redirectToSuccess()
                 } else {
                     // Handle action
@@ -545,16 +551,22 @@ define([
                 var self = this;
                 let popupModal;
 
-                fullScreenLoader.stopLoader();
-
                 if (action.type === 'threeDS2' || action.type === 'await') {
                     popupModal = self.showModal();
                 }
 
                 try {
-                    self.checkoutComponent.createFromAction(action).mount('#' + this.modalLabel);
+                    self.checkoutComponent.createFromAction(action, {
+                        onActionHandled: function (event) {
+                            if (event.componentType === "3DS2Challenge") {
+                                loader.stopLoader();
+                                popupModal.modal('openModal');
+                            }
+                        }
+                    }).mount('#' + this.modalLabel);
                 } catch (e) {
                     console.log(e);
+                    loader.stopLoader();
                     self.closeModal(popupModal);
                 }
             },
@@ -562,11 +574,12 @@ define([
             showModal: function() {
                 let actionModal = adyenPaymentModal.showModal(
                     adyenPaymentService,
-                    fullScreenLoader,
+                    loader,
                     this.messageContainer,
                     this.orderId,
                     this.modalLabel,
-                    this.isPlaceOrderActionAllowed
+                    this.isPlaceOrderActionAllowed,
+                    false
                 );
 
                 $("." + this.modalLabel + " .action-close").hide();
