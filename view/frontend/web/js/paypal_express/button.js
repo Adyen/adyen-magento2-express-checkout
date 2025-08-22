@@ -99,7 +99,8 @@ define([
             shopperEmail: null,
             billingAddress : {},
             orderId: null,
-            quoteId: null
+            quoteId: null,
+            currency: null
         },
 
         initialize: async function (config, element) {
@@ -352,6 +353,8 @@ define([
                 currency = paymentMethodExtraDetails.configuration.amount.currency;
             }
 
+            this.currency = currency;
+
             paypalBaseConfiguration = {
                 countryCode: countryCode,
                 environment: config.checkoutenv.toUpperCase(),
@@ -466,15 +469,22 @@ define([
                                 if (!isVirtual) {
                                     return setShippingInformation(shippingInformationPayload, this.isProductView)
                                         .then(() => {
-                                            return this.createOrder();
+                                            this.createOrder()
+                                                .then(() => {
+                                                    actions.resolve();
+                                                })
+                                                .catch(() => {
+                                                    actions.reject();
+                                                });
                                         })
+                                } else {
+                                    this.createOrder()
                                         .then(() => {
                                             actions.resolve();
+                                        })
+                                        .catch(() => {
+                                            actions.reject();
                                         });
-                                } else {
-                                    return this.createOrder().then(() => {
-                                        actions.resolve();
-                                    });
                                 }
                             })
                             .catch((error) => {
@@ -597,6 +607,8 @@ define([
             });
         },
         createOrder: function(email) {
+            let self = this;
+
             const payload = {
                 paymentMethod: {
                     method: 'adyen_paypal_express',
@@ -613,19 +625,28 @@ define([
             }
 
             return new Promise((resolve, reject) => {
-                createOrder(JSON.stringify(payload), this.isProductView)
-                    .then(function(orderId) {
-                        if (orderId) {
-                            this.orderId = orderId;
-                            resolve(orderId);
-                        } else {
-                            reject(new Error('Order ID not returned'));
-                        }
-                    }.bind(this))
-                    .catch(function(e) {
-                        console.error('Adyen Paypal Unable to take payment', e);
-                        reject(e);
-                    });
+                updatePaypalOrder.updateOrder(
+                    self.isProductView,
+                    self.paypalComponent.paymentData,
+                    self.shippingMethods,
+                    self.currency
+                ).then(function (response) {
+                    createOrder(JSON.stringify(payload), self.isProductView)
+                        .then(function(orderId) {
+                            if (orderId) {
+                                self.orderId = orderId;
+                                resolve(orderId);
+                            } else {
+                                reject(new Error('Order ID not returned'));
+                            }
+                        }.bind(this))
+                        .catch(function(e) {
+                            console.error('Adyen Paypal Unable to take payment', e);
+                            reject(e);
+                        });
+                }).catch(function () {
+                    reject(new Error('Payment data mismatch'));
+                });
             });
         },
 
