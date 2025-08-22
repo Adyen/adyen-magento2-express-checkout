@@ -344,8 +344,8 @@ define([
                                 detail: result[i].carrier_title ? result[i].carrier_title : '',
                                 amount: this.toAmountString(result[i].amount)
                             };
-                            // Add method object to array.
 
+                            // Add method object to array.
                             shippingMethods.push(method);
                             self.shippingMethods[result[i].method_code] = result[i];
                             if (!self.shippingMethod) {
@@ -440,7 +440,6 @@ define([
                 });
             },
 
-
             afterSetTotalsInfo: function (response, shippingMethod, isPdp, resolve) {
                 // Guard against missing/NaN totals
                 const grandTotal = this.toAmountString(response && response.grand_total);
@@ -488,7 +487,6 @@ define([
 
                 resolve(update);
             },
-
 
             onAuthorized: function (data, actions) {
                 const isVirtual = virtualQuoteModel().getIsVirtual();
