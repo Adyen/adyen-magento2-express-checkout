@@ -78,6 +78,11 @@ define([
                 applePayComponent: null,
             },
 
+            toAmountString: function (val) {
+                const n = Number(val);
+                return Number.isFinite(n) ? n.toFixed(2) : '0.00';
+            },
+
             initialize: async function (config, element) {
                 this._super();
 
@@ -337,7 +342,7 @@ define([
                                 identifier: result[i].method_code,
                                 label: result[i].method_title,
                                 detail: result[i].carrier_title ? result[i].carrier_title : '',
-                                amount: parseFloat(result[i].amount).toFixed(2)
+                                amount: this.toAmountString(result[i].amount)
                             };
                             // Add method object to array.
 
@@ -388,34 +393,45 @@ define([
 
             onShippingMethodSelect: function (resolve, reject, event) {
                 let self = this;
-                let shippingMethod = event.shippingMethod;
+                let shippingMethod = event && event.shippingMethod;
 
-                let address = {
-                    'countryId': self.shippingAddress.country_id,
-                    'region': self.shippingAddress.region,
-                    'regionId': getRegionId(self.shippingAddress.country_id, self.shippingAddress.region),
-                    'postcode': self.shippingAddress.postcode
+                // Fallback to the first known method if the event is missing anything
+                if (!shippingMethod || !self.shippingMethods || !self.shippingMethods[shippingMethod.identifier]) {
+                    const firstKey = self.shippingMethods && Object.keys(self.shippingMethods)[0];
+                    if (!firstKey) {
+                        reject($t('No shipping methods available.'));
+                        return;
+                    }
+                    shippingMethod = { identifier: firstKey, amount: self.shippingMethods[firstKey].amount };
+                }
+
+                const address = {
+                    countryId: self.shippingAddress.country_id,
+                    region: self.shippingAddress.region,
+                    regionId: getRegionId(self.shippingAddress.country_id, self.shippingAddress.region),
+                    postcode: self.shippingAddress.postcode
                 };
 
-                let totalsPayload = {
-                    'addressInformation': {
-                        'address': address,
-                        'shipping_method_code': self.shippingMethods[shippingMethod.identifier].method_code,
-                        'shipping_carrier_code': self.shippingMethods[shippingMethod.identifier].carrier_code
+                const totalsPayload = {
+                    addressInformation: {
+                        address: address,
+                        shipping_method_code: self.shippingMethods[shippingMethod.identifier].method_code,
+                        shipping_carrier_code: self.shippingMethods[shippingMethod.identifier].carrier_code
                     }
                 };
 
-                let shippingInformationPayload = {
-                    'addressInformation': {
-                        'shipping_method_code': self.shippingMethods[shippingMethod.identifier].method_code,
-                        'shipping_carrier_code': self.shippingMethods[shippingMethod.identifier].carrier_code,
-                        'shipping_address': address
+                const shippingInformationPayload = {
+                    addressInformation: {
+                        shipping_method_code: self.shippingMethods[shippingMethod.identifier].method_code,
+                        shipping_carrier_code: self.shippingMethods[shippingMethod.identifier].carrier_code,
+                        shipping_address: address
                     }
                 };
 
                 setShippingInformation(shippingInformationPayload, this.isProductView).then(() => {
                     setTotalsInfo(totalsPayload, self.isProductView)
                         .done((response) => {
+                            // this ensures newTotal/newLineItems are valid and well-formed
                             self.afterSetTotalsInfo(response, shippingMethod, self.isProductView, resolve);
                         }).fail((e) => {
                         console.error('Adyen ApplePay: Unable to get totals', e);
@@ -424,45 +440,55 @@ define([
                 });
             },
 
-            afterSetTotalsInfo: function (response, shippingMethod, isPdp, resolve) {
-                let applePayShippingMethodUpdate = {};
 
-                applePayShippingMethodUpdate.newTotal = {
-                    type: 'final',
-                    label: this.getMerchantName(),
-                    amount: (response.grand_total).toString()
+            afterSetTotalsInfo: function (response, shippingMethod, isPdp, resolve) {
+                // Guard against missing/NaN totals
+                const grandTotal = this.toAmountString(response && response.grand_total);
+                const subtotal   = this.toAmountString(response && response.subtotal);
+                const tax        = this.toAmountString(response && response.tax_amount);
+
+                const update = {
+                    newTotal: {
+                        type: 'final',
+                        label: this.getMerchantName(),
+                        amount: grandTotal
+                    },
+                    newLineItems: [
+                        { type: 'final', label: $t('Subtotal'), amount: subtotal }
+                    ]
                 };
 
-                // If the shipping methods is an array pass all methods to Apple Pay to show in payment window.
+                // If the shipping methods is an array, pass them all and use the first one for line items
                 if (Array.isArray(shippingMethod)) {
-                    applePayShippingMethodUpdate.newShippingMethods = shippingMethod;
-                    shippingMethod = shippingMethod[0];
+                    update.newShippingMethods = shippingMethod;
+                    shippingMethod = shippingMethod[0]; // first item becomes the selected one
                 }
 
-                applePayShippingMethodUpdate.newLineItems = [
-                    {
-                        type: 'final',
-                        label: $t('Subtotal'),
-                        amount: response.subtotal.toString()
-                    },
-                    {
-                        type: 'final',
-                        label: $t('Shipping'),
-                        amount: shippingMethod.amount.toString()
-                    }
-                ];
+                // shipping line (guard amount)
+                const shippingAmount = this.toAmountString(shippingMethod && shippingMethod.amount);
+                update.newLineItems.push({
+                    type: 'final',
+                    label: $t('Shipping'),
+                    amount: shippingAmount
+                });
 
-                if (response.tax_amount > 0) {
-                    applePayShippingMethodUpdate.newLineItems.push({
+                // tax line (only if > 0.00)
+                if (Number(tax) > 0) {
+                    update.newLineItems.push({
                         type: 'final',
                         label: $t('Tax'),
-                        amount: response.tax_amount.toString()
-                    })
+                        amount: tax
+                    });
                 }
 
-                this.shippingMethod = shippingMethod.identifier;
-                resolve(applePayShippingMethodUpdate);
+                // store identifier defensively (if present)
+                if (shippingMethod && shippingMethod.identifier) {
+                    this.shippingMethod = shippingMethod.identifier;
+                }
+
+                resolve(update);
             },
+
 
             onAuthorized: function (data, actions) {
                 const isVirtual = virtualQuoteModel().getIsVirtual();
@@ -530,25 +556,23 @@ define([
                                 return;
                             }
 
-                            // Need to set shipping info as well
-                            const sc = shippingContact;
                             const shippingInformationPayload = {
                                 'addressInformation': {
                                     'shipping_address': {
-                                        'email': sc.emailAddress,
-                                        'telephone': sc.phoneNumber,
-                                        'firstname': sc.givenName,
-                                        'lastname': sc.familyName,
-                                        'street': sc.addressLines,
-                                        'city': sc.locality,
-                                        'region': sc.administrativeArea,
+                                        'email': shippingContact.emailAddress,
+                                        'telephone': shippingContact.phoneNumber,
+                                        'firstname': shippingContact.givenName,
+                                        'lastname': shippingContact.familyName,
+                                        'street': shippingContact.addressLines,
+                                        'city': shippingContact.locality,
+                                        'region': shippingContact.administrativeArea,
                                         'region_id': getRegionId(
-                                            (sc.countryCode || '').toUpperCase(),
-                                            sc.administrativeArea
+                                            shippingContact.countryCode.toUpperCase(),
+                                            shippingContact.administrativeArea
                                         ),
                                         'region_code': null,
-                                        'country_id': (sc.countryCode || '').toUpperCase(),
-                                        'postcode': sc.postalCode,
+                                        'country_id': shippingContact.countryCode.toUpperCase(),
+                                        'postcode': shippingContact.postalCode,
                                         'same_as_billing': 0,
                                         'customer_address_id': 0,
                                         'save_in_address_book': 0
