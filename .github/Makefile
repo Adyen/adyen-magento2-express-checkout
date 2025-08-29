@@ -13,11 +13,22 @@ magento:
 
 # Plugin install
 install:
-	composer config --json repositories.local '{"type": "path", "url": "/data/extensions/workdir", "options": { "symlink": false } }'
-	composer require "adyen/adyen-magento2-expresscheckout:*"
-	bin/magento module:enable --all
-	bin/magento setup:upgrade
-	bin/magento setup:di:compile
+    	# Turn off Packagist for this operation so the local path MUST be used
+    	COMPOSER_HOME=/var/www/html/var/composer COMPOSER_DISABLE_ASYNC_ARCHIVE_EXTRACT=1 \
+    		composer config repositories.packagist false
+
+    	# Add the local repo and give it a high, stable version so it beats any remote tag
+    	COMPOSER_HOME=/var/www/html/var/composer COMPOSER_DISABLE_ASYNC_ARCHIVE_EXTRACT=1 \
+    		composer config --json repositories.local \
+    		'{"type":"path","url":"/data/extensions/workdir","options":{"symlink": false, "versions":{"adyen/adyen-magento2-expresscheckout":"999.0.0"}}}'
+
+    	# Require exactly that stable version from the local path
+    	COMPOSER_HOME=/var/www/html/var/composer COMPOSER_DISABLE_ASYNC_ARCHIVE_EXTRACT=1 \
+    		composer require --prefer-dist --no-progress --no-interaction "adyen/adyen-magento2-expresscheckout:999.0.0"
+
+    	bin/magento module:enable --all
+    	bin/magento setup:upgrade
+    	bin/magento setup:di:compile
 
 # Configuration
 configure: n98-magerun2.phar
