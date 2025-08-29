@@ -30,7 +30,9 @@ install:
 		'{"type":"path","url":"/data/extensions/workdir","options":{"symlink":false,"canonical":true}}'
 
 	# Require the package without pinning a version; path repo will be preferred
-	composer require --prefer-dist --no-progress --no-interaction "adyen/adyen-magento2-expresscheckout:*"
+	composer require --prefer-dist --no-progress --no-interaction \
+    		"adyen/adyen-magento2-expresscheckout:3.0.x-dev" --with-all-dependencies
+
 
 	# (Optional) Prove it's coming from the path repo
 	composer show adyen/adyen-magento2-expresscheckout -s | sed -n '1,12p'
