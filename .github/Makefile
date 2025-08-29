@@ -1,3 +1,8 @@
+.PHONY: n98-magerun2.phar sys-check magento install configure flush plugin production fs graphql phpstan-run phpunit-run codesniffer-run
+export COMPOSER_HOME := /var/www/html/var/composer
+export COMPOSER_DISABLE_ASYNC_ARCHIVE_EXTRACT := 1
+export COMPOSER_CACHE_DIR := /var/www/html/var/composer-cache
+
 # Install N98-Magerun
 n98-magerun2.phar:
 	wget -q https://files.magerun.net/n98-magerun2.phar
@@ -13,14 +18,17 @@ magento:
 
 # Plugin install
 install:
+	# Writable Composer home/cache
 	mkdir -p var/composer var/composer-cache
 	chmod -R 777 var/composer var/composer-cache
-	# Force local path repo so PR code is used instead of Packagist
-	composer config repositories.packagist false
-	composer config repositories.local path /data/extensions/workdir
-	composer config repositories.local.options.symlink false
-	composer config --json "repositories.local.options.versions" '{"adyen/adyen-magento2-expresscheckout":"999.0.0"}'
+
+	# Add local path repo and (correctly) set versions at repo root
+	composer config --json repositories.local \
+		'{"type":"path","url":"/data/extensions/workdir","options":{"symlink":false},"versions":{"adyen/adyen-magento2-expresscheckout":"999.0.0"}}'
+
+	# Require that exact (local-only) version; Packagist stays enabled for dependencies
 	composer require --prefer-dist --no-progress --no-interaction "adyen/adyen-magento2-expresscheckout:999.0.0"
+
 	bin/magento module:enable --all
 	bin/magento setup:upgrade
 	bin/magento setup:di:compile
