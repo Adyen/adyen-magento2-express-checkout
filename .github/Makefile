@@ -22,13 +22,18 @@ install:
 	mkdir -p var/composer var/composer-cache
 	chmod -R 777 var/composer var/composer-cache
 
-	# Keep Packagist enabled for dependencies, but map the local Express repo to dev-develop-3
+	# Ensure Packagist is enabled (in case it was disabled in earlier runs)
 	composer config repositories.packagist composer https://repo.packagist.org
-	composer config --json repositories.local \
-		'{"type":"path","url":"/data/extensions/workdir","options":{"symlink":false},"versions":{"adyen/adyen-magento2-expresscheckout":"dev-develop-3"}}'
 
-	# Require the local package explicitly at dev-develop-3 (this will use the path repo)
-	composer require --prefer-dist --no-progress --no-interaction "adyen/adyen-magento2-expresscheckout:dev-develop-3"
+	# Add local path repo (explicitly canonical so it wins)
+	composer config --json repositories.local \
+		'{"type":"path","url":"/data/extensions/workdir","options":{"symlink":false,"canonical":true}}'
+
+	# Require the package without pinning a version; path repo will be preferred
+	composer require --prefer-dist --no-progress --no-interaction "adyen/adyen-magento2-expresscheckout:*"
+
+	# (Optional) Prove it's coming from the path repo
+	composer show adyen/adyen-magento2-expresscheckout -s | sed -n '1,12p'
 
 	bin/magento module:enable --all
 	bin/magento setup:upgrade
