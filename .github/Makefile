@@ -1,12 +1,7 @@
-.PHONY: sys-check magento install configure flush plugin production fs graphql phpstan-run phpunit-run codesniffer-run
-export COMPOSER_HOME := /var/www/html/var/composer
-export COMPOSER_DISABLE_ASYNC_ARCHIVE_EXTRACT := 1
-export COMPOSER_CACHE_DIR := /var/www/html/var/composer-cache
-
 # Install N98-Magerun
 n98-magerun2.phar:
-	@[ -f n98-magerun2.phar ] || wget -q https://files.magerun.net/n98-magerun2.phar
-	@chmod +x ./n98-magerun2.phar || true
+	wget -q https://files.magerun.net/n98-magerun2.phar
+	chmod +x ./n98-magerun2.phar
 
 # Check Magento installation
 sys-check: n98-magerun2.phar
@@ -18,25 +13,8 @@ magento:
 
 # Plugin install
 install:
-	# Writable Composer home/cache
-	mkdir -p var/composer var/composer-cache
-	chmod -R 777 var/composer var/composer-cache
-
-	# Ensure Packagist is enabled (in case it was disabled in earlier runs)
-	composer config repositories.packagist composer https://repo.packagist.org
-
-	# Add local path repo (explicitly canonical so it wins)
-	composer config --json repositories.local \
-		'{"type":"path","url":"/data/extensions/workdir","options":{"symlink":false,"canonical":true}}'
-
-	# Require the package without pinning a version; path repo will be preferred
-	composer require --prefer-dist --no-progress --no-interaction \
-    		"adyen/adyen-magento2-expresscheckout:3.0.x-dev" --with-all-dependencies
-
-
-	# (Optional) Prove it's coming from the path repo
-	composer show adyen/adyen-magento2-expresscheckout -s | sed -n '1,12p'
-
+	composer config --json repositories.local '{"type": "path", "url": "/data/extensions/workdir", "options": { "symlink": false } }'
+	composer require "adyen/adyen-magento2-expresscheckout:*"
 	bin/magento module:enable --all
 	bin/magento setup:upgrade
 	bin/magento setup:di:compile
@@ -59,7 +37,7 @@ flush:
 	bin/magento cache:flush
 
 # Full plugin setup
-plugin: install fs configure flush
+plugin: install configure flush
 
 # Production mode
 production:
