@@ -1,12 +1,12 @@
-.PHONY: n98-magerun2.phar sys-check magento install configure flush plugin production fs graphql phpstan-run phpunit-run codesniffer-run
+.PHONY: sys-check magento install configure flush plugin production fs graphql phpstan-run phpunit-run codesniffer-run
 export COMPOSER_HOME := /var/www/html/var/composer
 export COMPOSER_DISABLE_ASYNC_ARCHIVE_EXTRACT := 1
 export COMPOSER_CACHE_DIR := /var/www/html/var/composer-cache
 
 # Install N98-Magerun
 n98-magerun2.phar:
-	wget -q https://files.magerun.net/n98-magerun2.phar
-	chmod +x ./n98-magerun2.phar
+	@[ -f n98-magerun2.phar ] || wget -q https://files.magerun.net/n98-magerun2.phar
+	@chmod +x ./n98-magerun2.phar || true
 
 # Check Magento installation
 sys-check: n98-magerun2.phar
@@ -59,7 +59,7 @@ flush:
 	bin/magento cache:flush
 
 # Full plugin setup
-plugin: install configure flush
+plugin: install fs configure flush
 
 # Production mode
 production:
