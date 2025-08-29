@@ -22,12 +22,16 @@ install:
 	mkdir -p var/composer var/composer-cache
 	chmod -R 777 var/composer var/composer-cache
 
-	# Add local path repo and (correctly) set versions at repo root
-	composer config --json repositories.local \
-		'{"type":"path","url":"/data/extensions/workdir","options":{"symlink":false},"versions":{"adyen/adyen-magento2-expresscheckout":"999.0.0"}}'
+	# Use local path repo ONLY for this require (so we install your PR code)
+	composer config repositories.packagist false
+	composer config repositories.local path /data/extensions/workdir
+	composer config repositories.local.options.symlink false
 
-	# Require that exact (local-only) version; Packagist stays enabled for dependencies
-	composer require --prefer-dist --no-progress --no-interaction "adyen/adyen-magento2-expresscheckout:999.0.0"
+	# Require from the path repo as a dev version
+	composer require --prefer-dist --no-progress --no-interaction "adyen/adyen-magento2-expresscheckout:*@dev"
+
+	# Re-enable Packagist for everything else
+	composer config repositories.packagist composer https://repo.packagist.org
 
 	bin/magento module:enable --all
 	bin/magento setup:upgrade
