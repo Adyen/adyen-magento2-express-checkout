@@ -10,19 +10,14 @@ use Magento\Checkout\Model\Session as CheckoutSession;
 
 class ExpressCancel implements ExpressCancelInterface
 {
-    private CartRepositoryInterface $cartRepository;
-    private CheckoutSession $checkoutSession;
-
     /**
      * @param CartRepositoryInterface $cartRepository
      * @param CheckoutSession $checkoutSession
      */
     public function __construct(
-        CartRepositoryInterface $cartRepository,
-        CheckoutSession $checkoutSession
+        private readonly CartRepositoryInterface $cartRepository,
+        private readonly CheckoutSession $checkoutSession
     ) {
-        $this->cartRepository = $cartRepository;
-        $this->checkoutSession = $checkoutSession;
     }
 
     /**
