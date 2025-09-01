@@ -16,7 +16,7 @@ jobs:
     runs-on:
       group: larger-runners
       labels: ubuntu-latest-8-cores
-    timeout-minutes: 10
+    timeout-minutes: 25
     permissions:
       contents: read
       attestations: write
