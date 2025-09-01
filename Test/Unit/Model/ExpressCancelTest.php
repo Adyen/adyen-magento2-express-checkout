@@ -11,7 +11,7 @@ use Magento\Quote\Api\CartRepositoryInterface;
 use Magento\Quote\Model\Quote;
 use PHPUnit\Framework\MockObject\Exception;
 
-final class ExpressCancelTest extends AbstractAdyenTestCase
+class ExpressCancelTest extends AbstractAdyenTestCase
 {
     private CartRepositoryInterface $cartRepository;
     private CheckoutSession $checkoutSession;
