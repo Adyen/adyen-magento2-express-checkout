@@ -24,7 +24,9 @@ use Adyen\Payment\Helper\PaymentResponseHandler;
 use Adyen\Payment\Helper\ReturnUrlHelper;
 use Adyen\Payment\Helper\Util\CheckoutStateDataValidator;
 use Adyen\Payment\Helper\Vault;
+use Adyen\Payment\Helper\PaymentMethods;
 use Exception;
+use Adyen\ExpressCheckout\Helper\LineItemsDataBuilder;
 use Magento\Authorization\Model\UserContextInterface;
 use Magento\Framework\Exception\LocalizedException;
 use Magento\Framework\Exception\NoSuchEntityException;
@@ -34,6 +36,7 @@ use Magento\Quote\Api\CartRepositoryInterface;
 use Magento\Quote\Model\Quote;
 use Magento\Quote\Model\MaskedQuoteIdToQuoteIdInterface;
 use Adyen\Payment\Helper\Requests;
+use Magento\Payment\Helper\Data as DataHelper;
 
 class AdyenInitPayments implements AdyenInitPaymentsInterface
 {
@@ -50,6 +53,9 @@ class AdyenInitPayments implements AdyenInitPaymentsInterface
     private UserContextInterface $userContext;
     private Requests $requestHelper;
     private PlatformInfo $platformInfo;
+    private PaymentMethods $paymentMethodsHelper;
+    private DataHelper $dataHelper;
+    private LineItemsDataBuilder $lineItemsDataBuilder;
 
     private const FRONTEND_TYPE = 'default';
 
@@ -67,6 +73,9 @@ class AdyenInitPayments implements AdyenInitPaymentsInterface
      * @param UserContextInterface $userContext
      * @param Requests $requestHelper
      * @param PlatformInfo $platformInfo
+     * @param PaymentMethods $paymentMethodsHelper
+     * @param DataHelper $dataHelper
+     * @param LineItemsDataBuilder $lineItemsDataBuilder
      */
     public function __construct(
         CartRepositoryInterface $cartRepository,
@@ -81,7 +90,10 @@ class AdyenInitPayments implements AdyenInitPaymentsInterface
         Vault $vaultHelper,
         UserContextInterface $userContext,
         Requests $requestHelper,
-        PlatformInfo $platformInfo
+        PlatformInfo $platformInfo,
+        PaymentMethods $paymentMethodsHelper,
+        DataHelper $dataHelper,
+        LineItemsDataBuilder $lineItemsDataBuilder
     ) {
         $this->cartRepository = $cartRepository;
         $this->configHelper = $configHelper;
@@ -96,6 +108,9 @@ class AdyenInitPayments implements AdyenInitPaymentsInterface
         $this->userContext = $userContext;
         $this->requestHelper = $requestHelper;
         $this->platformInfo = $platformInfo;
+        $this->paymentMethodsHelper = $paymentMethodsHelper;
+        $this->dataHelper = $dataHelper;
+        $this->lineItemsDataBuilder = $lineItemsDataBuilder;
     }
 
     /**
@@ -174,6 +189,7 @@ class AdyenInitPayments implements AdyenInitPaymentsInterface
      * @param Quote $quote
      * @param array $stateData
      * @return array
+     * @throws LocalizedException
      */
     protected function buildPaymentsRequest(Quote $quote, array $stateData): array
     {
@@ -201,6 +217,13 @@ class AdyenInitPayments implements AdyenInitPaymentsInterface
             'merchantAccount' => $this->configHelper->getMerchantAccount($storeId),
             'channel' => self::PAYMENT_CHANNEL_WEB
         ];
+
+        // If the payment method requires line items, include them
+        $paymentMethodInstance = $this->dataHelper->getMethodInstance($paymentMethodCode);
+        if ($this->paymentMethodsHelper->getRequiresLineItems($paymentMethodInstance)) {
+            $requestLineItems = $this->lineItemsDataBuilder->getOpenInvoiceDataForQuote($quote);
+            $request = array_merge($request, $requestLineItems);
+        }
 
         // Only add these parameters if the user is logged in
         if ($isLoggedIn) {

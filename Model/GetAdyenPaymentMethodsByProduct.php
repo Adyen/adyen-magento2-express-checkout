@@ -8,10 +8,12 @@ use Adyen\Payment\Helper\ChargedCurrency;
 use Adyen\Payment\Helper\Config;
 use Adyen\Payment\Helper\Data;
 use Adyen\Payment\Helper\Locale;
-use Adyen\Payment\Model\AdyenAmountCurrency;
+use Adyen\Payment\Logger\AdyenLogger;
 use Adyen\Payment\Model\AdyenAmountCurrencyFactory;
+use Exception;
 use Magento\Catalog\Api\Data\ProductInterface;
 use Magento\Framework\App\Config\ScopeConfigInterface;
+use Magento\Framework\Exception\NoSuchEntityException;
 use Magento\Quote\Api\Data\CartInterface;
 use Magento\Store\Api\Data\StoreInterface;
 use Magento\Store\Model\ScopeInterface;
@@ -23,31 +25,31 @@ class GetAdyenPaymentMethodsByProduct implements GetAdyenPaymentMethodsByProduct
     private Data $adyenHelper;
     private Locale $localeHelper;
     private Config $adyenConfigHelper;
-    private ChargedCurrency $chargedCurrency;
     private ScopeConfigInterface $scopeConfig;
+    private AdyenLogger $adyenLogger;
 
     /**
      * @param AdyenAmountCurrencyFactory $adyenAmountCurrencyFactory
      * @param Data $adyenHelper
      * @param Locale $localeHelper
      * @param Config $adyenConfigHelper
-     * @param ChargedCurrency $chargedCurrency
      * @param ScopeConfigInterface $scopeConfig
+     * @param AdyenLogger $adyenLogger
      */
     public function __construct(
         AdyenAmountCurrencyFactory $adyenAmountCurrencyFactory,
         Data $adyenHelper,
         Locale $localeHelper,
         Config $adyenConfigHelper,
-        ChargedCurrency $chargedCurrency,
-        ScopeConfigInterface $scopeConfig
+        ScopeConfigInterface $scopeConfig,
+        AdyenLogger $adyenLogger
     ) {
         $this->adyenAmountCurrencyFactory = $adyenAmountCurrencyFactory;
         $this->adyenHelper = $adyenHelper;
         $this->localeHelper = $localeHelper;
         $this->adyenConfigHelper = $adyenConfigHelper;
-        $this->chargedCurrency = $chargedCurrency;
         $this->scopeConfig = $scopeConfig;
+        $this->adyenLogger = $adyenLogger;
     }
 
     /**
@@ -55,7 +57,9 @@ class GetAdyenPaymentMethodsByProduct implements GetAdyenPaymentMethodsByProduct
      * Used in PDP for ExpressCheckout when we don't have all options selected yet for Composite
      *
      * @param ProductInterface $product
+     * @param CartInterface $quote
      * @return array
+     * @throws NoSuchEntityException
      */
     public function execute(
         ProductInterface $product,
@@ -82,7 +86,7 @@ class GetAdyenPaymentMethodsByProduct implements GetAdyenPaymentMethodsByProduct
             'amount' => $product->getFinalPrice(),
             'currencyCode' => $currencyCode
         ]);
-        $paymentMethodRequest = [
+        $paymentMethodsRequest = [
             "channel" => "Web",
             "merchantAccount" => $merchantAccount,
             "countryCode" => $this->getCurrentCountryCode($store),
@@ -92,16 +96,23 @@ class GetAdyenPaymentMethodsByProduct implements GetAdyenPaymentMethodsByProduct
                 "currency" => $currencyCode
             ]
         ];
-        $adyenClient = $this->adyenHelper->initializeAdyenClient(
-            $store->getId()
-        );
-        $service = $this->adyenHelper->initializePaymentsApi($adyenClient);
-        $response = $service->paymentMethods(
-            new PaymentMethodsRequest($paymentMethodRequest)
-        );
-        if (!$response) {
+
+        try {
+            $adyenClient = $this->adyenHelper->initializeAdyenClient($store->getId());
+            $service = $this->adyenHelper->initializePaymentsApi($adyenClient);
+
+            $paymentMethodsRequestObject = new PaymentMethodsRequest($paymentMethodsRequest);
+
+            $response = $service->paymentMethods($paymentMethodsRequestObject);
+        } catch (Exception $exception) {
+            $message = __('An error occurred while fetching Adyen payment methods on PDP. %1',
+                $exception->getMessage());
+
+            $this->adyenLogger->error($message);
+
             return [];
         }
+
         $responseData = [];
         $responseData['paymentMethodsResponse'] = $response->toArray();
         $responseData['paymentMethodsExtraDetails'] = [];
