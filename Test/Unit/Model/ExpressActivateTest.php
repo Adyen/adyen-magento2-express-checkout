@@ -17,7 +17,7 @@ use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\MockObject\MockObject;
 
 #[CoversClass(ExpressActivate::class)]
-final class ExpressActivateTest extends AbstractAdyenTestCase
+class ExpressActivateTest extends AbstractAdyenTestCase
 {
     /** @var CartRepositoryInterface&MockObject */
     private $cartRepository;
