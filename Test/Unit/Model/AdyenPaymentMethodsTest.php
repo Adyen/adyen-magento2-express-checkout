@@ -14,7 +14,7 @@ use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\MockObject\MockObject;
 
 #[CoversClass(AdyenPaymentMethods::class)]
-final class AdyenPaymentMethodsTest extends AbstractAdyenTestCase
+class AdyenPaymentMethodsTest extends AbstractAdyenTestCase
 {
     private AdyenPaymentMethods $subject;
 

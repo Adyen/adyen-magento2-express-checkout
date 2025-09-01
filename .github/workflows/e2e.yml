@@ -3,18 +3,20 @@ run-name: Headless E2E tests for ${{ github.event.pull_request.head.ref }}
 
 on:
   pull_request:
-    branches: [main]
+    branches:
+      - main
+      - develop-3
 
 jobs:
   build:
     strategy:
       matrix:
-        php-version: ["8.2"]
-        magento-version: ["2.4.6-p8"]
+        php-version: ["8.3"]
+        magento-version: ["2.4.8"]
     runs-on:
       group: larger-runners
       labels: ubuntu-latest-8-cores
-    timeout-minutes: 10
+    timeout-minutes: 25
     permissions:
       contents: read
       attestations: write
