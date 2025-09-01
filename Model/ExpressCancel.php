@@ -6,21 +6,18 @@ namespace Adyen\ExpressCheckout\Model;
 use Adyen\ExpressCheckout\Api\ExpressCancelInterface;
 use Magento\Framework\Exception\NoSuchEntityException;
 use Magento\Quote\Api\CartRepositoryInterface;
+use Magento\Checkout\Model\Session as CheckoutSession;
 
 class ExpressCancel implements ExpressCancelInterface
 {
     /**
-     * @var CartRepositoryInterface
-     */
-    private $cartRepository;
-
-    /**
      * @param CartRepositoryInterface $cartRepository
+     * @param CheckoutSession $checkoutSession
      */
     public function __construct(
-        CartRepositoryInterface $cartRepository
+        private readonly CartRepositoryInterface $cartRepository,
+        private readonly CheckoutSession $checkoutSession
     ) {
-        $this->cartRepository = $cartRepository;
     }
 
     /**
@@ -47,6 +44,7 @@ class ExpressCancel implements ExpressCancelInterface
                 !$originalQuote->getIsActive()) {
                 $originalQuote->setIsActive(true);
                 $this->cartRepository->save($originalQuote);
+                $this->checkoutSession->setQuoteId($originalQuoteId);
             }
         }
     }
