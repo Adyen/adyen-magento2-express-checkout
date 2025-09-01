@@ -14,4 +14,4 @@ $script = <<<SCRIPT
     window.adyenData = {$serializedAdyenData};
 SCRIPT;
 
-echo $secureRenderer->renderTag('script', [], $script, false);
+/* @noEscape */ echo $secureRenderer->renderTag('script', [], $script, false);
