@@ -299,7 +299,9 @@ define([
                     },
                     onAuthorized: this.startPlaceOrder.bind(this),
                     onClick: function (resolve, reject) {validatePdpForm(resolve, reject, pdpForm);},
-                    onSubmit: function () {},
+                    onSubmit: async function (state, component, actions) {
+                        actions.resolve({resultCode: "IdentifyShopper"});
+                    },
                     onError: () => cancelCart(this.isProductView),
                     ...googlePayStyles
                 };
