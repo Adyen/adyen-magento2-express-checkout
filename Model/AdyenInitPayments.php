@@ -20,6 +20,7 @@ use Adyen\Payment\Gateway\Request\Header\HeaderDataBuilderInterface;
 use Adyen\Payment\Helper\Config;
 use Adyen\Payment\Helper\Data;
 use Adyen\Payment\Helper\PlatformInfo;
+use Adyen\Payment\Helper\ShopperConversionId;
 use Adyen\Payment\Helper\PaymentResponseHandler;
 use Adyen\Payment\Helper\ReturnUrlHelper;
 use Adyen\Payment\Helper\Util\CheckoutStateDataValidator;
@@ -56,6 +57,7 @@ class AdyenInitPayments implements AdyenInitPaymentsInterface
     private PaymentMethods $paymentMethodsHelper;
     private DataHelper $dataHelper;
     private LineItemsDataBuilder $lineItemsDataBuilder;
+    private ShopperConversionId $shopperConversionId;
 
     private const FRONTEND_TYPE = 'default';
 
@@ -76,6 +78,7 @@ class AdyenInitPayments implements AdyenInitPaymentsInterface
      * @param PaymentMethods $paymentMethodsHelper
      * @param DataHelper $dataHelper
      * @param LineItemsDataBuilder $lineItemsDataBuilder
+     * @param ShopperConversionId $shopperConversionId
      */
     public function __construct(
         CartRepositoryInterface $cartRepository,
@@ -93,7 +96,8 @@ class AdyenInitPayments implements AdyenInitPaymentsInterface
         PlatformInfo $platformInfo,
         PaymentMethods $paymentMethodsHelper,
         DataHelper $dataHelper,
-        LineItemsDataBuilder $lineItemsDataBuilder
+        LineItemsDataBuilder $lineItemsDataBuilder,
+        ShopperConversionId $shopperConversionId
     ) {
         $this->cartRepository = $cartRepository;
         $this->configHelper = $configHelper;
@@ -111,6 +115,7 @@ class AdyenInitPayments implements AdyenInitPaymentsInterface
         $this->paymentMethodsHelper = $paymentMethodsHelper;
         $this->dataHelper = $dataHelper;
         $this->lineItemsDataBuilder = $lineItemsDataBuilder;
+        $this->shopperConversionId = $shopperConversionId;
     }
 
     /**
@@ -217,6 +222,12 @@ class AdyenInitPayments implements AdyenInitPaymentsInterface
             'merchantAccount' => $this->configHelper->getMerchantAccount($storeId),
             'channel' => self::PAYMENT_CHANNEL_WEB
         ];
+
+        $shopperConversionId = $this->shopperConversionId->getShopperConversionId($quote);
+
+        if (!empty($shopperConversionId)) {
+            $request["shopperConversionId"] = $shopperConversionId;
+        }
 
         // If the payment method requires line items, include them
         $paymentMethodInstance = $this->dataHelper->getMethodInstance($paymentMethodCode);
