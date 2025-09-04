@@ -7,8 +7,8 @@ jobs:
   build:
     strategy:
       matrix:
-        php-version: [ "8.2" ]
-        magento-version: [ "2.4.6-p8" ]
+        php-version: ["8.2"]
+        magento-version: ["2.4.6-p12"]
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
