@@ -38,7 +38,8 @@ define([
     'Adyen_ExpressCheckout/js/model/currency',
     'Adyen_ExpressCheckout/js/model/virtualQuote',
     'Adyen_ExpressCheckout/js/helpers/getCurrentPage',
-    'Adyen_ExpressCheckout/js/model/adyen-loader'
+    'Adyen_ExpressCheckout/js/model/adyen-loader',
+    'Magento_Checkout/js/model/error-processor'
 ],
     function (
         $,
@@ -80,7 +81,8 @@ define([
         currencyModel,
         virtualQuoteModel,
         getCurrentPage,
-        loader
+        loader,
+        errorProcessor
     ) {
         'use strict';
 
@@ -297,9 +299,8 @@ define([
                         merchantId: googlePaymentMethod.configuration.merchantId,
                         merchantName: config.merchantAccount
                     },
-                    onAuthorized: this.startPlaceOrder.bind(this),
                     onClick: function (resolve, reject) {validatePdpForm(resolve, reject, pdpForm);},
-                    onSubmit: function () {},
+                    onSubmit: this.handleOnSubmit.bind(this),
                     onError: () => cancelCart(this.isProductView),
                     ...googlePayStyles
                 };
@@ -428,64 +429,6 @@ define([
                 });
             },
 
-            startPlaceOrder: function (paymentData) {
-                let self = this;
-                const isVirtual = virtualQuoteModel().getIsVirtual();
-
-                loader.startLoader();
-
-                activateCart(this.isProductView).then(function () {
-                    self.setBillingAddress(paymentData).done(function () {
-                        if (!isVirtual) {
-                            self.setShippingInformation(paymentData).done(function () {
-                                self.placeOrder(paymentData);
-                            });
-                        } else {
-                            self.placeOrder(paymentData);
-                        }
-                    });
-                });
-            },
-
-            placeOrder: function (paymentData) {
-                let self = this;
-                let componentData = this.googlePayComponent.data;
-
-                const payload = {
-                    email: paymentData.authorizedEvent.email,
-                    paymentMethod: {
-                        method: 'adyen_googlepay',
-                        additional_data: {
-                            brand_code: this.googlePayComponent.props.type,
-                            stateData: JSON.stringify(componentData),
-                            frontendType: 'default'
-                        },
-                        extension_attributes: getExtensionAttributes(paymentData)
-                    }
-                };
-
-                if (window.checkout && window.checkout.agreementIds) {
-                    payload.paymentMethod.extension_attributes = {
-                        agreement_ids: window.checkout.agreementIds
-                    };
-                }
-
-                createPayment(JSON.stringify(payload), this.isProductView)
-                    .done(function (orderId) {
-                        if (!!orderId) {
-                            self.orderId = orderId;
-
-                            getPaymentStatus(orderId, self.isProductView).then(function (responseJSON) {
-                                self.handleAdyenResult(responseJSON, orderId);
-                            });
-                        }
-                    })
-                    .fail(function (e) {
-                        console.error('Adyen GooglePay Unable to take payment', e);
-                        loader.stopLoader();
-                    });
-            },
-
             setShippingInformation: function (paymentData) {
                 const shippingMethod = this.shippingMethods.find(function (method) {
                     return method.method_code === paymentData.authorizedEvent.shippingOptionData.id;
@@ -514,6 +457,58 @@ define([
                 };
 
                 return setBillingAddress(payload, this.isProductView);
+            },
+
+            handleOnSubmit: async function (state, component, actions) {
+                let self = this;
+                const isVirtual = virtualQuoteModel().getIsVirtual();
+                const paymentData = component.state;
+
+                loader.startLoader();
+
+                await activateCart(this.isProductView);
+                await self.setBillingAddress(paymentData);
+
+                if (!isVirtual) {
+                    await self.setShippingInformation(paymentData);
+                }
+
+                const payload = {
+                    email: paymentData.authorizedEvent.email,
+                    paymentMethod: {
+                        method: 'adyen_googlepay',
+                        additional_data: {
+                            stateData: JSON.stringify(state.data),
+                            frontendType: 'default'
+                        },
+                        extension_attributes: getExtensionAttributes(paymentData)
+                    }
+                };
+
+                if (window.checkout && window.checkout.agreementIds) {
+                    payload.paymentMethod.extension_attributes = {
+                        agreement_ids: window.checkout.agreementIds
+                    };
+                }
+
+                createPayment(JSON.stringify(payload), this.isProductView)
+                    .done(function (orderId) {
+                        if (!!orderId) {
+                            self.orderId = orderId;
+
+                            getPaymentStatus(orderId, self.isProductView).then(function (responseJSON) {
+                                const response = JSON.parse(responseJSON);
+                                actions.resolve({resultCode: response.resultCode});
+
+                                self.handleAdyenResult(responseJSON, orderId);
+                            });
+                        }
+                    })
+                    .fail(function (e) {
+                        actions.reject();
+                        console.error('Adyen GooglePay Unable to take payment', e);
+                        loader.stopLoader();
+                    });
             },
 
             handleOnAdditionalDetails: function (result) {
