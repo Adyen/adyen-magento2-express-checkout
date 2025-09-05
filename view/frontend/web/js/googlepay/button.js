@@ -429,36 +429,6 @@ define([
                 });
             },
 
-            setShippingInformation: function (paymentData) {
-                const shippingMethod = this.shippingMethods.find(function (method) {
-                    return method.method_code === paymentData.authorizedEvent.shippingOptionData.id;
-                });
-                let payload = {
-                    'addressInformation': {
-                        'shipping_address': {
-                            ...this.mapAddress(paymentData.authorizedEvent.shippingAddress),
-                            'same_as_billing': 0,
-                            'customer_address_id': 0,
-                            'save_in_address_book': 0
-                        },
-                        'shipping_method_code': shippingMethod.method_code,
-                        'shipping_carrier_code': shippingMethod.carrier_code,
-                        'extension_attributes': getExtensionAttributes(paymentData)
-                    }
-                };
-
-                return setShippingInformation(payload, this.isProductView);
-            },
-
-            setBillingAddress: function (paymentData) {
-                let payload = {
-                    'address': this.mapAddress(paymentData.authorizedEvent.paymentMethodData.info.billingAddress),
-                    'useForShipping': false
-                };
-
-                return setBillingAddress(payload, this.isProductView);
-            },
-
             handleOnSubmit: async function (state, component, actions) {
                 let self = this;
                 const isVirtual = virtualQuoteModel().getIsVirtual();
@@ -509,6 +479,36 @@ define([
                         console.error('Adyen GooglePay Unable to take payment', e);
                         loader.stopLoader();
                     });
+            },
+
+            setShippingInformation: function (paymentData) {
+                const shippingMethod = this.shippingMethods.find(function (method) {
+                    return method.method_code === paymentData.authorizedEvent.shippingOptionData.id;
+                });
+                let payload = {
+                    'addressInformation': {
+                        'shipping_address': {
+                            ...this.mapAddress(paymentData.authorizedEvent.shippingAddress),
+                            'same_as_billing': 0,
+                            'customer_address_id': 0,
+                            'save_in_address_book': 0
+                        },
+                        'shipping_method_code': shippingMethod.method_code,
+                        'shipping_carrier_code': shippingMethod.carrier_code,
+                        'extension_attributes': getExtensionAttributes(paymentData)
+                    }
+                };
+
+                return setShippingInformation(payload, this.isProductView);
+            },
+
+            setBillingAddress: function (paymentData) {
+                let payload = {
+                    'address': this.mapAddress(paymentData.authorizedEvent.paymentMethodData.info.billingAddress),
+                    'useForShipping': false
+                };
+
+                return setBillingAddress(payload, this.isProductView);
             },
 
             handleOnAdditionalDetails: function (result) {
