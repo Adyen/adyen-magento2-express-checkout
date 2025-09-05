@@ -340,6 +340,7 @@ define([
             const paypalStyles = getPaypalStyles();
             const config = configModel().getConfig();
             const countryCode = config.countryCode;
+            const pdpForm = getPdpForm(element);
 
             let currency;
             let paypalBaseConfiguration;
@@ -363,14 +364,8 @@ define([
                 amount: {
                     currency: currency,
                     value: this.isProductView
-                        ? currencyHelper.formatAmount(
-                            totalsModel().getTotal(),
-                            currency
-                        )
-                        : currencyHelper.formatAmount(
-                            getCartSubtotal(),
-                            currency
-                        )
+                        ? formatAmount(totalsModel().getTotal())
+                        : formatAmount(getCartSubtotal()),
                 },
                 onSubmit: (state, component) => {
                     const paymentData = state.data;
@@ -386,6 +381,21 @@ define([
                     }).catch((error) => {
                         console.error('Payment initiation failed', error);
                     });
+                },
+                onInit: function (data, actions) {
+                    $(pdpForm).valid() ? actions.enable() : actions.disable();
+                    $(pdpForm).validation('clearError');
+
+                    $(".product-options-wrapper input").on("change", function () {
+                        $(pdpForm).valid() ? actions.enable() : actions.disable();
+                    });
+                },
+                onClick: function (data, actions) {
+                    if (!pdpForm || !pdpForm.length) {
+                        actions.resolve();
+                    }
+
+                    $(pdpForm).valid() ? actions.resolve() : actions.reject();
                 },
                 onShippingAddressChange: async (data, actions, component) => {
                     try {
