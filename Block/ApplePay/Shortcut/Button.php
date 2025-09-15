@@ -14,52 +14,28 @@ declare(strict_types=1);
 namespace Adyen\ExpressCheckout\Block\ApplePay\Shortcut;
 
 use Adyen\Payment\Helper\Data as AdyenHelper;
-use Adyen\Payment\Helper\Config as AdyenConfigHelper;
 use Adyen\ExpressCheckout\Block\Buttons\AbstractButton;
 use Adyen\ExpressCheckout\Model\ConfigurationInterface;
+use Adyen\Payment\Helper\Locale;
+use Adyen\Payment\Helper\Config;
+use Magento\Checkout\Model\DefaultConfigProvider;
 use Magento\Checkout\Model\Session;
 use Magento\Catalog\Block\ShortcutInterface;
-use Magento\Checkout\Model\DefaultConfigProvider;
 use Magento\Customer\Model\Session as CustomerSession;
 use Magento\Framework\App\Config\ScopeConfigInterface;
-use Magento\Framework\Exception\LocalizedException;
 use Magento\Framework\UrlInterface;
 use Magento\Framework\View\Element\Template\Context;
 use Magento\Payment\Model\MethodInterface;
-use Magento\Framework\Exception\NoSuchEntityException;
 use Magento\Store\Model\StoreManagerInterface;
 
 class Button extends AbstractButton implements ShortcutInterface
 {
-    /**
-     * @var DefaultConfigProvider $defaultConfigProvider
-     */
-    private $defaultConfigProvider;
-
-    /**
-     * @var UrlInterface $url
-     */
-    private $url;
-
-    /**
-     * @var CustomerSession $customerSession
-     */
-    private $customerSession;
-
-    /**
-     * @var StoreManagerInterface $storeManager
-     */
-    private $storeManager;
-
-    /**
-     * @var ScopeConfigInterface $scopeConfig
-     */
-    private $scopeConfig;
+    const PAYMENT_METHOD_VARIANT = 'applepay';
 
     /**
      * @var ConfigurationInterface $configuration
      */
-    private $configuration;
+    private ConfigurationInterface $configuration;
 
     /**
      * Button Constructor
@@ -73,7 +49,8 @@ class Button extends AbstractButton implements ShortcutInterface
      * @param DefaultConfigProvider $defaultConfigProvider
      * @param ScopeConfigInterface $scopeConfig
      * @param AdyenHelper $adyenHelper
-     * @param AdyenConfigHelper $adyenConfigHelper
+     * @param Locale $localeHelper
+     * @param Config $configHelper
      * @param ConfigurationInterface $configuration
      * @param array $data
      */
@@ -87,7 +64,8 @@ class Button extends AbstractButton implements ShortcutInterface
         DefaultConfigProvider $defaultConfigProvider,
         ScopeConfigInterface $scopeConfig,
         AdyenHelper $adyenHelper,
-        AdyenConfigHelper $adyenConfigHelper,
+        Locale $localeHelper,
+        Config $configHelper,
         ConfigurationInterface $configuration,
         array $data = []
     ) {
@@ -100,34 +78,15 @@ class Button extends AbstractButton implements ShortcutInterface
             $storeManagerInterface,
             $scopeConfig,
             $adyenHelper,
-            $adyenConfigHelper,
+            $localeHelper,
+            $configHelper,
+            $defaultConfigProvider,
             $data
         );
-        $this->defaultConfigProvider = $defaultConfigProvider;
+
         $this->configuration = $configuration;
     }
 
-    /**
-     * Current Quote ID for guests
-     *
-     * @return string
-     * @throws LocalizedException
-     * @throws NoSuchEntityException
-     */
-    public function getQuoteId(): string
-    {
-        try {
-            $config = $this->defaultConfigProvider->getConfig();
-            if (!empty($config['quoteData']['entity_id'])) {
-                return $config['quoteData']['entity_id'];
-            }
-        } catch (NoSuchEntityException $e) {
-            if ($e->getMessage() !== 'No such entity with cartId = ') {
-                throw $e;
-            }
-        }
-        return '';
-    }
 
     /**
      * @return string
@@ -135,5 +94,15 @@ class Button extends AbstractButton implements ShortcutInterface
     public function getButtonColor(): string
     {
         return $this->configuration->getApplePayButtonColor();
+    }
+
+    public function buildConfiguration(): array
+    {
+        $baseConfiguration = parent::buildConfiguration();
+        $variant = $this->getPaymentMethodVariant();
+
+        $baseConfiguration["Adyen_ExpressCheckout/js/$variant/button"]['buttonColor'] = $this->getButtonColor();
+
+        return $baseConfiguration;
     }
 }

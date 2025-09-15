@@ -1,0 +1,30 @@
+version: '3'
+services:
+  playwright:
+    image: mcr.microsoft.com/playwright:v1.54.2
+    shm_size: 1gb
+    ipc: host
+    cap_add:
+      - SYS_ADMIN
+    networks:
+      - backend
+    environment:
+      - INTEGRATION_TESTS_BRANCH
+      - MAGENTO_BASE_URL
+      - MAGENTO_ADMIN_USERNAME
+      - MAGENTO_ADMIN_PASSWORD
+      - PAYPAL_USERNAME
+      - PAYPAL_PASSWORD
+      - ADYEN_API_KEY
+      - ADYEN_CLIENT_KEY
+      - ADYEN_MERCHANT
+      - GOOGLE_USERNAME
+      - GOOGLE_PASSWORD
+      - WEBHOOK_USERNAME
+      - WEBHOOK_PASSWORD
+      - CI
+    volumes:
+      - ./scripts/e2e.sh:/e2e.sh
+      - ../test-report:/tmp/test-report
+networks:
+  backend:

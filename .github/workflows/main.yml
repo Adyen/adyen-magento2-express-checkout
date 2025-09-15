@@ -1,31 +1,77 @@
-on: ["push", "pull_request"]
 name: Main Workflow
 
+on:
+  push:
+    branches:
+      - main
+      - develop-3
+  pull_request:
+    branches:
+      - main
+      - develop-3
+  workflow_dispatch:
+
 jobs:
-  run:
-    name: Run
+  build:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
 
     strategy:
       matrix:
-        php-version: [ 7.4, 8.0, 8.1 ]
+        php-version: ["8.4"]
+        magento-version: ["2.4.8"]
+
+    env:
+      PHP_VERSION: ${{ matrix.php-version }}
+      MAGENTO_VERSION: ${{ matrix.magento-version }}
+      ADYEN_API_KEY: ${{ secrets.ADYEN_API_KEY }}
+      ADYEN_CLIENT_KEY: ${{ secrets.ADYEN_CLIENT_KEY }}
+      ADYEN_MERCHANT: ${{ secrets.ADYEN_MERCHANT }}
+      ADMIN_USERNAME: ${{ secrets.MAGENTO_ADMIN_USERNAME }}
+      ADMIN_PASSWORD: ${{ secrets.MAGENTO_ADMIN_PASSWORD }}
+      DONATION_ACCOUNT: ${{ secrets.DONATION_ACCOUNT }}
+      DEPLOY_SAMPLEDATA: 1
 
     steps:
-      - name: Setup PHP
-        uses: shivammathur/setup-php@v2
+      - uses: actions/checkout@v4
         with:
-          php-version: ${{ matrix.php-version }}
-          tools: composer:v1
+          ref: ${{ github.event.pull_request.head.sha || github.ref }}
 
-      - name: Checkout code
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
+      - name: Install Magento
+        run: docker compose -f .github/docker-compose.yml run --rm web make magento
 
-      - name: TruffleHog OSS
-        uses: trufflesecurity/trufflehog@main
-        with:
-          path: ./
-          base: ${{ github.event.repository.default_branch }}
-          head: HEAD
-          extra_args: --debug --only-verified
+      - name: Start web server in background
+        run: docker compose -f .github/docker-compose.yml up -d web
+
+      - name: Setup permissions
+        run: docker exec magento2-container make fs
+
+      - name: Check install
+        run: docker exec magento2-container make sys-check
+
+      - name: Install plugin
+        run: docker exec -u www-data magento2-container make plugin
+
+      - name: Kill Cron Jobs
+        run: docker exec magento2-container /etc/init.d/cron stop
+
+      - name: Setup permissions
+        run: docker exec magento2-container make fs
+
+      - name: Run PHP_Codesniffer
+        run: docker exec magento2-container make codesniffer-run
+
+      - name: Run PHPUnit
+        run: docker exec magento2-container make phpunit-run
+
+      - name: SonarCloud Scan
+        if: ${{ env.SONAR_TOKEN }}
+        uses: SonarSource/sonarqube-scan-action@master
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+
+      - name: Run PHPStan
+        run: docker exec magento2-container make phpstan-run

@@ -13,18 +13,19 @@ declare(strict_types=1);
 
 namespace Adyen\ExpressCheckout\Block\Buttons;
 
-use Adyen\Payment\Helper\Config;
 use Adyen\Payment\Helper\Data as AdyenHelper;
+use Adyen\Payment\Helper\Locale;
+use Adyen\Payment\Helper\Config;
+use Exception;
+use Magento\Checkout\Model\DefaultConfigProvider;
 use Magento\Checkout\Model\Session;
 use Magento\Customer\Model\Session as CustomerSession;
-use Magento\Framework\Exception\InputException;
 use Magento\Framework\Exception\LocalizedException;
 use Magento\Framework\Exception\NoSuchEntityException;
 use Magento\Framework\UrlInterface;
 use Magento\Framework\View\Element\Template;
 use Magento\Framework\View\Element\Template\Context;
 use Magento\Payment\Model\MethodInterface;
-use Magento\Store\Model\ScopeInterface;
 use Magento\Store\Model\Store;
 use Magento\Store\Model\StoreManagerInterface;
 use Magento\Framework\App\Config\ScopeConfigInterface;
@@ -34,46 +35,57 @@ abstract class AbstractButton extends Template
     public const ALIAS_ELEMENT_INDEX = 'alias';
     public const BUTTON_ELEMENT_INDEX = 'button_id';
     public const COUNTRY_CODE_PATH = 'general/country/default';
+    public const PAYMENT_METHOD_VARIANT = '';
 
     /**
      * @var Session
      */
-    private $checkoutSession;
+    private Session $checkoutSession;
 
     /**
      * @var MethodInterface
      */
-    private $payment;
+    private MethodInterface $payment;
 
     /**
      * @var UrlInterface $url
      */
-    private $url;
+    private UrlInterface $url;
 
     /**
      * @var CustomerSession $customerSession
      */
-    private $customerSession;
+    private CustomerSession $customerSession;
 
     /**
      * @var StoreManagerInterface $storeManager
      */
-    private $storeManager;
+    private StoreManagerInterface $storeManager;
 
     /**
      * @var ScopeConfigInterface $scopeConfig
      */
-    private $scopeConfig;
+    private ScopeConfigInterface $scopeConfig;
 
     /**
      * @var AdyenHelper
      */
-    private $adyenHelper;
+    private AdyenHelper $adyenHelper;
+
+    /**
+     * @var Locale
+     */
+    private Locale $localeHelper;
 
     /**
      * @var Config
      */
-    private $adyenConfigHelper;
+    private Config $configHelper;
+
+    /**
+     * @var DefaultConfigProvider
+     */
+    private DefaultConfigProvider $defaultConfigProvider;
 
     /**
      * Button constructor.
@@ -85,8 +97,11 @@ abstract class AbstractButton extends Template
      * @param StoreManagerInterface $storeManagerInterface
      * @param ScopeConfigInterface $scopeConfig
      * @param AdyenHelper $adyenHelper
-     * @param Config $adyenConfigHelper
+     * @param Locale $localeHelper
+     * @param Config $configHelper
+     * @param DefaultConfigProvider $defaultConfigProvider
      * @param array $data
+     * @paramm Config $configHelper
      */
     public function __construct(
         Context $context,
@@ -97,7 +112,9 @@ abstract class AbstractButton extends Template
         StoreManagerInterface $storeManagerInterface,
         ScopeConfigInterface $scopeConfig,
         AdyenHelper $adyenHelper,
-        Config $adyenConfigHelper,
+        Locale $localeHelper,
+        Config $configHelper,
+        DefaultConfigProvider $defaultConfigProvider,
         array $data = []
     ) {
         parent::__construct($context, $data);
@@ -108,7 +125,9 @@ abstract class AbstractButton extends Template
         $this->storeManager = $storeManagerInterface;
         $this->scopeConfig = $scopeConfig;
         $this->adyenHelper = $adyenHelper;
-        $this->adyenConfigHelper = $adyenConfigHelper;
+        $this->localeHelper = $localeHelper;
+        $this->configHelper = $configHelper;
+        $this->defaultConfigProvider = $defaultConfigProvider;
     }
 
     /**
@@ -170,7 +189,7 @@ abstract class AbstractButton extends Template
     }
 
     /**
-     * @return string
+     * @return string|null
      */
     public function getDefaultCountryCode(): ?string
     {
@@ -185,7 +204,7 @@ abstract class AbstractButton extends Template
      * @throws NoSuchEntityException
      * @throws LocalizedException
      */
-    public function getCurrency()
+    public function getCurrency(): ?string
     {
         /** @var Store $store */
         $store = $this->storeManager->getStore();
@@ -195,7 +214,8 @@ abstract class AbstractButton extends Template
     }
 
     /**
-     * @return string
+     * @return string|null
+     * @throws NoSuchEntityException
      */
     public function getMerchantAccount(): ?string
     {
@@ -205,18 +225,18 @@ abstract class AbstractButton extends Template
         );
     }
 
-    /**
-     * @return string
-     */
     public function getLocale(): string
     {
-        return $this->adyenHelper->getStoreLocale(
-            $this->storeManager->getStore()->getId()
+        $storeId = (int) $this->storeManager->getStore()->getId();
+        return $this->localeHelper->getStoreLocale(
+            $storeId
         );
     }
 
     /**
-     * @return string
+     * @return int
+     * @throws LocalizedException
+     * @throws NoSuchEntityException
      */
     public function getFormat(): int
     {
@@ -224,15 +244,19 @@ abstract class AbstractButton extends Template
     }
 
     /**
-     * @return string
+     * @return string|null
+     * @throws NoSuchEntityException
      */
     public function getOriginKey(): ?string
     {
-        return $this->adyenHelper->getOriginKeyForBaseUrl();
+        $environment = $this->configHelper->isDemoMode() ? 'test' : 'live';
+        $storeId =(int) $this->storeManager->getStore()->getId();
+        return $this->configHelper->getClientKey($environment, $storeId);
     }
 
     /**
      * @return string
+     * @throws NoSuchEntityException
      */
     public function getCheckoutEnvironment(): string
     {
@@ -240,9 +264,6 @@ abstract class AbstractButton extends Template
         return $this->adyenHelper->getCheckoutEnvironment($storeId);
     }
 
-    /**
-     * @inheritdoc
-     */
     public function getAlias(): string
     {
         return $this->getData(self::ALIAS_ELEMENT_INDEX) ?: '';
@@ -254,5 +275,79 @@ abstract class AbstractButton extends Template
     public function getContainerId(): string
     {
         return $this->getData(self::BUTTON_ELEMENT_INDEX) ?: '';
+    }
+
+    public function getRandomElementId(): string
+    {
+        try {
+            $id = sprintf('%s%s', $this->getContainerId(), random_int(PHP_INT_MIN, PHP_INT_MAX));
+        } catch (Exception $e) {
+            /**
+             * Exception only thrown if an appropriate source of randomness cannot be found.
+             * https://www.php.net/manual/en/function.random-int.php
+             */
+            $id = "0";
+        }
+
+        return $id;
+    }
+
+    /**
+     * Current Quote ID for guests
+     *
+     * @return string
+     * @throws LocalizedException
+     * @throws NoSuchEntityException
+     */
+    public function getQuoteId(): string
+    {
+        try {
+            $config = $this->defaultConfigProvider->getConfig();
+            if (!empty($config['quoteData']['entity_id'])) {
+                return $config['quoteData']['entity_id'];
+            }
+        } catch (NoSuchEntityException $e) {
+            if ($e->getMessage() !== 'No such entity with cartId = ') {
+                throw $e;
+            }
+        }
+        return '';
+    }
+
+    /**
+     * Returns Adyen payment method variant
+     *
+     * @return string
+     */
+    public function getPaymentMethodVariant(): string
+    {
+        return static::PAYMENT_METHOD_VARIANT;
+    }
+
+    /**
+     * Returns the base configuration for express frontend
+     *
+     * @return array[]
+     * @throws LocalizedException
+     * @throws NoSuchEntityException
+     */
+    public function buildConfiguration(): array
+    {
+        $variant = $this->getPaymentMethodVariant();
+
+        return [
+            "Adyen_ExpressCheckout/js/$variant/button" => [
+                'actionSuccess' => $this->getActionSuccess(),
+                'storeCode' => $this->getStorecode(),
+                'countryCode' => $this->getDefaultCountryCode(),
+                'currency' => $this->getCurrency(),
+                'merchantAccount' => $this->getMerchantAccount(),
+                'format' => $this->getFormat(),
+                'locale' => $this->getLocale(),
+                'originkey' => $this->getOriginKey(),
+                'checkoutenv' => $this->getCheckoutEnvironment(),
+                'isProductView' => (bool) $this->getIsProductView()
+            ]
+        ];
     }
 }

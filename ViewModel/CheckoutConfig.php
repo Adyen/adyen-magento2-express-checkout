@@ -14,6 +14,7 @@ declare(strict_types=1);
 namespace Adyen\ExpressCheckout\ViewModel;
 
 use Adyen\Payment\Model\Ui\AdyenGenericConfigProvider;
+use Adyen\Payment\Helper\PlatformInfo;
 use Magento\Framework\DataObject;
 use Magento\Framework\Event\ManagerInterface;
 use Magento\Framework\Exception\NoSuchEntityException;
@@ -27,6 +28,11 @@ class CheckoutConfig implements ArgumentInterface
      * @var AdyenGenericConfigProvider
      */
     private $adyenGenericConfigProvider;
+
+    /**
+     * @var PlatformInfo
+     */
+    private $platformInfo;
 
     /**
      * @var SerializerInterface
@@ -45,17 +51,20 @@ class CheckoutConfig implements ArgumentInterface
 
     /**
      * @param AdyenGenericConfigProvider $adyenGenericConfigProvider
+     * @param PlatformInfo $platformInfo
      * @param SerializerInterface $serializer
      * @param StoreManagerInterface $storeManager
      * @param ManagerInterface $eventManager
      */
     public function __construct(
         AdyenGenericConfigProvider $adyenGenericConfigProvider,
+        PlatformInfo $platformInfo,
         SerializerInterface $serializer,
         StoreManagerInterface $storeManager,
         ManagerInterface $eventManager
     ) {
         $this->adyenGenericConfigProvider = $adyenGenericConfigProvider;
+        $this->platformInfo = $platformInfo;
         $this->serializer = $serializer;
         $this->storeManager = $storeManager;
         $this->eventManager = $eventManager;
@@ -94,5 +103,15 @@ class CheckoutConfig implements ArgumentInterface
     private function getStoreCode(): string
     {
         return $this->storeManager->getStore()->getCode();
+    }
+
+    /**
+     * Return application info values
+     *
+     * @return array
+     */
+    public function getAdyenData(): array
+    {
+        return $this->platformInfo->buildRequestHeaders();
     }
 }

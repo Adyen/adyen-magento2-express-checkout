@@ -1,0 +1,69 @@
+version: '3'
+
+services:
+  db:
+    image: mariadb:11.4
+    container_name: mariadb
+    networks:
+      - backend
+    environment:
+      MARIADB_ROOT_PASSWORD: root_password
+      MARIADB_DATABASE: magento
+      MARIADB_USER: magento
+      MARIADB_PASSWORD: magento
+  opensearch:
+    image: bitnami/opensearch:2
+    container_name: opensearch-container
+    networks:
+      - backend
+    ports:
+      - 9200:9200
+      - 9300:9300
+    environment:
+      - "discovery.type=single-node"
+      - "ES_JAVA_OPTS=-Xms750m -Xmx750m"
+  web:
+    build:
+      context: .
+      args:
+        - PHP_VERSION=${PHP_VERSION}
+        - MAGENTO_VERSION=${MAGENTO_VERSION}
+    container_name: magento2-container
+    extra_hosts:
+      - "magento2.test.com:127.0.0.1"
+    networks:
+      backend:
+        aliases:
+          - magento2.test.com
+    environment:
+      COMPOSER_HOME: /var/www/html/var/composer
+      COMPOSER_DISABLE_ASYNC_ARCHIVE_EXTRACT: 1
+      DB_SERVER: mariadb
+      OPENSEARCH_SERVER: opensearch-container
+      MAGENTO_HOST: magento2.test.com
+      VIRTUAL_HOST: magento2.test.com
+      COMPOSER_MEMORY_LIMIT: -1
+      DEPLOY_SAMPLEDATA:
+      DONATION_ACCOUNT:
+      ADMIN_USERNAME:
+      ADMIN_PASSWORD:
+      ADYEN_MERCHANT:
+      ADYEN_API_KEY:
+      ADYEN_CLIENT_KEY:
+      PHP_VERSION:
+      MAGENTO_VERSION:
+      USE_SSL:
+    depends_on:
+      - db
+      - opensearch
+    volumes:
+      - ../:/data/extensions/workdir
+      - ./Makefile:/var/www/html/Makefile
+      - composer:/usr/local/bin
+      - magento:/var/www/html
+      - ../build:/var/www/html/build
+networks:
+  backend:
+volumes:
+  magento:
+  composer:

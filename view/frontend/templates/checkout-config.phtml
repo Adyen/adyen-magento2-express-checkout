@@ -1,13 +1,17 @@
-<?php /** @var $block \Magento\Framework\View\Element\Template */ ?>
-<?php /** @var \Magento\Framework\View\Helper\SecureHtmlRenderer $secureRenderer */ ?>
-<?php /** @var $viewModel \Adyen\ExpressCheckout\ViewModel\CheckoutConfig */ ?>
-<?php $viewModel = /* @noEscape */ $block->getData('checkoutConfigViewModel'); ?>
-<?php $serializedCheckoutConfig = /* @noEscape */ $viewModel->getSerializedCheckoutConfig();
+<?php
+/** @var $block \Magento\Framework\View\Element\Template */
+/** @var \Magento\Framework\View\Helper\SecureHtmlRenderer $secureRenderer */
+/** @var $viewModel \Adyen\ExpressCheckout\ViewModel\CheckoutConfig */
+$viewModel = $block->getData('checkoutConfigViewModel');
+$serializedCheckoutConfig = $viewModel->getSerializedCheckoutConfig();
+$adyenData = $viewModel->getAdyenData();
+$serializedAdyenData = json_encode($adyenData, JSON_HEX_TAG);
 
-$checkoutConfig = __('window.checkoutConfig = %1;', $serializedCheckoutConfig);
-?>
-<script>
-    <?=$checkoutConfig?>
+$script = <<<SCRIPT
+    window.checkoutConfig = {$serializedCheckoutConfig};
     window.customerData = window.checkoutConfig.customerData;
     window.isCustomerLoggedIn = window.checkoutConfig.isCustomerLoggedIn;
-</script>
+    window.adyenData = {$serializedAdyenData};
+SCRIPT;
+
+/* @noEscape */ echo $secureRenderer->renderTag('script', [], $script, false);

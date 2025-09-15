@@ -439,6 +439,7 @@ define([
                             // this ensures newTotal/newLineItems are valid and well-formed
                             self.afterSetTotalsInfo(response, shippingMethod, self.isProductView, resolve);
                         }).fail((e) => this._onGetTotalsError(e, reject));
+
                 });
             },
 
@@ -611,7 +612,6 @@ define([
                     })
                     .fail((err) => {
                         this._onPlaceOrderError('payment', error, reject);
-                        actions.reject(window.ApplePaySession.STATUS_FAILURE);
                     });
             },
 
@@ -665,6 +665,7 @@ define([
 
                     window.scrollTo({ top: 0, behavior: 'smooth' });
                 }, 1000);
+
             },
 
             getMerchantName: function() {

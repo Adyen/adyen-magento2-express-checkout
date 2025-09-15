@@ -4,17 +4,18 @@ define([
     'uiComponent',
     'mage/translate',
     'Magento_Customer/js/customer-data',
-    'Magento_Checkout/js/model/full-screen-loader',
     'Magento_Checkout/js/model/quote',
     'Adyen_Payment/js/adyen',
     'Adyen_Payment/js/model/adyen-payment-modal',
-    'Adyen_Payment/js/model/adyen-payment-service',
+    'Adyen_ExpressCheckout/js/model/adyen-payment-service',
     'Adyen_ExpressCheckout/js/actions/activateCart',
     'Adyen_ExpressCheckout/js/actions/cancelCart',
     'Adyen_ExpressCheckout/js/actions/createPayment',
     'Adyen_ExpressCheckout/js/actions/getShippingMethods',
     'Adyen_ExpressCheckout/js/actions/getExpressMethods',
+    'Adyen_ExpressCheckout/js/actions/getPaymentStatus',
     'Adyen_ExpressCheckout/js/actions/setShippingInformation',
+    'Adyen_ExpressCheckout/js/actions/setBillingAddress',
     'Adyen_ExpressCheckout/js/actions/setTotalsInfo',
     'Adyen_ExpressCheckout/js/helpers/formatAmount',
     'Adyen_ExpressCheckout/js/helpers/formatCurrency',
@@ -29,11 +30,15 @@ define([
     'Adyen_ExpressCheckout/js/helpers/redirectToSuccess',
     'Adyen_ExpressCheckout/js/helpers/setExpressMethods',
     'Adyen_ExpressCheckout/js/helpers/validatePdpForm',
+    'Adyen_ExpressCheckout/js/helpers/getMaskedIdFromCart',
+    'Adyen_ExpressCheckout/js/model/maskedId',
     'Adyen_ExpressCheckout/js/model/config',
     'Adyen_ExpressCheckout/js/model/countries',
     'Adyen_ExpressCheckout/js/model/totals',
     'Adyen_ExpressCheckout/js/model/currency',
-    'mage/cookies',
+    'Adyen_ExpressCheckout/js/model/virtualQuote',
+    'Adyen_ExpressCheckout/js/helpers/getCurrentPage',
+    'Adyen_ExpressCheckout/js/model/adyen-loader'
 ],
     function (
         $,
@@ -41,9 +46,8 @@ define([
         Component,
         $t,
         customerData,
-        fullScreenLoader,
         quote,
-        AdyenCheckout,
+        AdyenWeb,
         adyenPaymentModal,
         adyenPaymentService,
         activateCart,
@@ -51,7 +55,9 @@ define([
         createPayment,
         getShippingMethods,
         getExpressMethods,
+        getPaymentStatus,
         setShippingInformation,
+        setBillingAddress,
         setTotalsInfo,
         formatAmount,
         formatCurrency,
@@ -66,10 +72,15 @@ define([
         redirectToSuccess,
         setExpressMethods,
         validatePdpForm,
+        getMaskedIdFromCart,
+        maskedIdModel,
         configModel,
         countriesModel,
         totalsModel,
-        currencyModel
+        currencyModel,
+        virtualQuoteModel,
+        getCurrentPage,
+        loader
     ) {
         'use strict';
 
@@ -84,7 +95,7 @@ define([
                 isProductView: false,
                 maskedId: null,
                 googlePayComponent: null,
-                modalLabel: 'googlepay_actionmodal',
+                modalLabel: 'adyen-checkout-action_modal',
                 orderId: 0
             },
 
@@ -105,6 +116,7 @@ define([
                     this.initializeOnPDP(config, element);
                 } else {
                     let googlePaymentMethod = await getPaymentMethod('googlepay', this.isProductView);
+                    virtualQuoteModel().setIsVirtual(false);
 
                     if (!googlePaymentMethod) {
                         const cart = customerData.get('cart');
@@ -124,6 +136,7 @@ define([
             initializeOnPDP: async function (config, element) {
                 const response = await getExpressMethods().getRequest(element);
                 const cart = customerData.get('cart');
+                virtualQuoteModel().setIsVirtual(true, response);
 
                 cart.subscribe(function () {
                     this.reloadGooglePayButton(element);
@@ -131,7 +144,7 @@ define([
 
                 setExpressMethods(response);
                 totalsModel().setTotal(response.totals.grand_total);
-                currencyModel().setCurrency(response.totals.quote_currency_code)
+                currencyModel().setCurrency(response.totals.quote_currency_code);
 
                 const $priceBox = getPdpPriceBox();
                 const pdpForm = getPdpForm(element);
@@ -160,10 +173,27 @@ define([
 
             initialiseGooglePayComponent: async function (googlePaymentMethod, element) {
                 const config = configModel().getConfig();
-                this.checkoutComponent = await new AdyenCheckout({
+                const adyenData = window.adyenData;
+
+                this.checkoutComponent = await window.AdyenWeb.AdyenCheckout({
                     locale: config.locale,
+                    countryCode: config.countryCode,
                     clientKey: config.originkey,
                     environment: config.checkoutenv,
+                    analytics: {
+                        analyticsData: {
+                            applicationInfo: {
+                                merchantApplication: {
+                                    name: adyenData['merchant-application-name'],
+                                    version: adyenData['merchant-application-version']
+                                },
+                                externalPlatform: {
+                                    name: adyenData['external-platform-name'],
+                                    version: adyenData['external-platform-version']
+                                }
+                            }
+                        }
+                    },
                     paymentMethodsResponse: getPaymentMethod('googlepay', this.isProductView),
                     onAdditionalDetails: this.handleOnAdditionalDetails.bind(this),
                     risk: {
@@ -172,7 +202,11 @@ define([
                 });
                 const googlePayConfig = this.getGooglePayConfig(googlePaymentMethod, element);
 
-                this.googlePayComponent = this.checkoutComponent.create(googlePaymentMethod, googlePayConfig);
+                this.googlePayComponent = await window.AdyenWeb.createComponent(
+                    "googlepay",
+                    this.checkoutComponent,
+                    googlePayConfig
+                );
 
                 this.googlePayComponent.isAvailable()
                     .then(function () {
@@ -197,8 +231,11 @@ define([
                 if (this.isProductView) {
                     const pdpResponse = await getExpressMethods().getRequest(element);
 
+                    virtualQuoteModel().setIsVirtual(true, pdpResponse);
                     setExpressMethods(pdpResponse);
                     totalsModel().setTotal(pdpResponse.totals.grand_total);
+                } else {
+                    virtualQuoteModel().setIsVirtual(false);
                 }
 
                 this.unmountGooglePay();
@@ -214,6 +251,9 @@ define([
                 const googlePayStyles = getGooglePayStyles();
                 const config = configModel().getConfig();
                 const pdpForm = getPdpForm(element);
+                const isVirtual = virtualQuoteModel().getIsVirtual();
+                const currentPage = getCurrentPage(this.isProductView, element);
+
                 let currency;
 
                 if (this.isProductView) {
@@ -225,14 +265,14 @@ define([
                     currency = paymentMethodExtraDetails.configuration.amount.currency;
                 }
 
-                return {
+                let configuration = {
                     showPayButton: true,
                     countryCode: config.countryCode,
                     environment: config.checkoutenv.toUpperCase(),
                     showButton: true,
                     emailRequired: true,
-                    shippingAddressRequired: true,
-                    shippingOptionRequired: true,
+                    shippingAddressRequired: !isVirtual,
+                    shippingOptionRequired: !isVirtual,
                     shippingAddressParameters: {
                         phoneNumberRequired: true
                     },
@@ -241,16 +281,14 @@ define([
                         format: 'FULL',
                         phoneNumberRequired: true
                     },
-                    callbackIntents: ['SHIPPING_ADDRESS', 'SHIPPING_OPTION'],
+                    isExpress: true,
+                    expressPage: currentPage,
                     transactionInfo: {
                         totalPriceStatus: 'ESTIMATED',
                         totalPrice: this.isProductView
                             ? formatAmount(totalsModel().getTotal())
                             : formatAmount(getCartSubtotal()),
                         currencyCode: currency
-                    },
-                    paymentDataCallbacks: {
-                    onPaymentDataChanged: this.onPaymentDataChanged.bind(this)
                     },
                     allowedPaymentMethods: ['CARD'],
                     phoneNumberRequired: true,
@@ -265,10 +303,23 @@ define([
                     onError: () => cancelCart(this.isProductView),
                     ...googlePayStyles
                 };
+
+                if (!isVirtual) {
+                    configuration.callbackIntents = ['SHIPPING_ADDRESS', 'SHIPPING_OPTION'];
+                    configuration.paymentDataCallbacks = {
+                        onPaymentDataChanged: this.onPaymentDataChanged.bind(this)
+                    };
+                }
+
+                return configuration;
             },
 
             onPaymentDataChanged: function (data) {
                 return new Promise((resolve, reject) => {
+                    if (virtualQuoteModel().getIsVirtual()) {
+                        resolve();
+                    }
+
                     const payload = {
                         address: {
                             country_id: data.shippingAddress.countryCode,
@@ -280,7 +331,15 @@ define([
                     activateCart(this.isProductView)
                         .then(() => getShippingMethods(payload, this.isProductView))
                         .then(function (response) {
-                            // Stop if no shipping methods.
+
+                        // If the shipping_method is not available, remove it from the response array.
+                        for (let key in response) {
+                            if (response[key].available === false) {
+                                response.splice(key, 1);
+                            }
+                        }
+
+                        // Stop if no shipping methods.
                         if (response.length === 0) {
                             reject($t('There are no shipping methods available for you right now. Please try again or use an alternative payment method.'));
                             return;
@@ -371,60 +430,70 @@ define([
 
             startPlaceOrder: function (paymentData) {
                 let self = this;
-                let componentData = self.googlePayComponent.data;
+                const isVirtual = virtualQuoteModel().getIsVirtual();
 
-                this.setShippingInformation(paymentData)
-                    .done(function () {
-                        const payload = {
-                            email: paymentData.email,
-                            shippingAddress: this.mapAddress(paymentData.shippingAddress),
-                            billingAddress: this.mapAddress(paymentData.paymentMethodData.info.billingAddress),
-                            paymentMethod: {
-                                method: 'adyen_hpp',
-                                additional_data: {
-                                    brand_code: self.googlePayComponent.props.type,
-                                    stateData: JSON.stringify(componentData)
-                                },
-                                extension_attributes: getExtensionAttributes(paymentData)
-                            }
-                        };
+                loader.startLoader();
 
-                        if (window.checkout && window.checkout.agreementIds) {
-                            payload.paymentMethod.extension_attributes = {
-                                agreement_ids: window.checkout.agreementIds
-                            };
-                        }
-
-                        createPayment(JSON.stringify(payload), this.isProductView)
-                            .done( function (orderId) {
-                                if (!!orderId) {
-                                    self.orderId = orderId;
-                                    adyenPaymentService.getOrderPaymentStatus(orderId).
-                                    done(function (responseJSON) {
-                                        self.handleAdyenResult(responseJSON, orderId);
-                                    })
-                                }
-                            })
-                            .fail(function (e) {
-                                console.error('Adyen GooglePay Unable to take payment', e);
+                activateCart(this.isProductView).then(function () {
+                    self.setBillingAddress(paymentData).done(function () {
+                        if (!isVirtual) {
+                            self.setShippingInformation(paymentData).done(function () {
+                                self.placeOrder(paymentData);
                             });
-                    }.bind(this));
+                        } else {
+                            self.placeOrder(paymentData);
+                        }
+                    });
+                });
+            },
+
+            placeOrder: function (paymentData) {
+                let self = this;
+                let componentData = this.googlePayComponent.data;
+
+                const payload = {
+                    email: paymentData.authorizedEvent.email,
+                    paymentMethod: {
+                        method: 'adyen_googlepay',
+                        additional_data: {
+                            brand_code: this.googlePayComponent.props.type,
+                            stateData: JSON.stringify(componentData),
+                            frontendType: 'default'
+                        },
+                        extension_attributes: getExtensionAttributes(paymentData)
+                    }
+                };
+
+                if (window.checkout && window.checkout.agreementIds) {
+                    payload.paymentMethod.extension_attributes = {
+                        agreement_ids: window.checkout.agreementIds
+                    };
+                }
+
+                createPayment(JSON.stringify(payload), this.isProductView)
+                    .done(function (orderId) {
+                        if (!!orderId) {
+                            self.orderId = orderId;
+
+                            getPaymentStatus(orderId, self.isProductView).then(function (responseJSON) {
+                                self.handleAdyenResult(responseJSON, orderId);
+                            });
+                        }
+                    })
+                    .fail(function (e) {
+                        console.error('Adyen GooglePay Unable to take payment', e);
+                        loader.stopLoader();
+                    });
             },
 
             setShippingInformation: function (paymentData) {
                 const shippingMethod = this.shippingMethods.find(function (method) {
-                    return method.method_code === paymentData.shippingOptionData.id;
+                    return method.method_code === paymentData.authorizedEvent.shippingOptionData.id;
                 });
                 let payload = {
                     'addressInformation': {
                         'shipping_address': {
-                            ...this.mapAddress(paymentData.shippingAddress),
-                            'same_as_billing': 0,
-                            'customer_address_id': 0,
-                            'save_in_address_book': 0
-                        },
-                        'billing_address': {
-                            ...this.mapAddress(paymentData.paymentMethodData.info.billingAddress),
+                            ...this.mapAddress(paymentData.authorizedEvent.shippingAddress),
                             'same_as_billing': 0,
                             'customer_address_id': 0,
                             'save_in_address_book': 0
@@ -438,25 +507,35 @@ define([
                 return setShippingInformation(payload, this.isProductView);
             },
 
+            setBillingAddress: function (paymentData) {
+                let payload = {
+                    'address': this.mapAddress(paymentData.authorizedEvent.paymentMethodData.info.billingAddress),
+                    'useForShipping': false
+                };
+
+                return setBillingAddress(payload, this.isProductView);
+            },
+
             handleOnAdditionalDetails: function (result) {
                 const self = this;
+                const quoteId = this.isProductView ? maskedIdModel().getMaskedId() : getMaskedIdFromCart();
+
                 let request = result.data;
-                adyenPaymentModal.hideModalLabel(this.modalLabel);
-                fullScreenLoader.startLoader();
-                request.orderId = self.orderId;
                 let popupModal = self.showModal();
 
-                adyenPaymentService.paymentDetails(request).
-                done(function(responseJSON) {
-                    fullScreenLoader.stopLoader();
-                    self.handleAdyenResult(responseJSON, self.orderId);
-                }).
-                fail(function(response) {
-                    self.closeModal(popupModal);
-                    errorProcessor.process(response, self.messageContainer);
-                    self.isPlaceOrderActionAllowed(true);
-                    fullScreenLoader.stopLoader();
-                });
+                adyenPaymentModal.hideModalLabel(this.modalLabel);
+                loader.startLoader();
+
+                adyenPaymentService.paymentDetails(request, self.orderId, quoteId)
+                    .done(function(responseJSON) {
+                        self.handleAdyenResult(responseJSON, self.orderId);
+                    })
+                    .fail(function(response) {
+                        self.closeModal(popupModal);
+                        errorProcessor.process(response, self.messageContainer);
+                        self.isPlaceOrderActionAllowed(true);
+                        loader.stopLoader();
+                    });
             },
 
             handleAdyenResult: function (responseJSON, orderId) {
@@ -465,6 +544,7 @@ define([
 
                 if (!!response.isFinal) {
                     // Status is final redirect to the success page
+                    loader.stopLoader();
                     redirectToSuccess()
                 } else {
                     // Handle action
@@ -476,16 +556,22 @@ define([
                 var self = this;
                 let popupModal;
 
-                fullScreenLoader.stopLoader();
-
                 if (action.type === 'threeDS2' || action.type === 'await') {
                     popupModal = self.showModal();
                 }
 
                 try {
-                    self.checkoutComponent.createFromAction(action).mount('#' + this.modalLabel);
+                    self.checkoutComponent.createFromAction(action, {
+                        onActionHandled: function (event) {
+                            if (event.componentType === "3DS2Challenge") {
+                                loader.stopLoader();
+                                popupModal.modal('openModal');
+                            }
+                        }
+                    }).mount('#' + this.modalLabel);
                 } catch (e) {
                     console.log(e);
+                    loader.stopLoader();
                     self.closeModal(popupModal);
                 }
             },
@@ -493,11 +579,12 @@ define([
             showModal: function() {
                 let actionModal = adyenPaymentModal.showModal(
                     adyenPaymentService,
-                    fullScreenLoader,
+                    loader,
                     this.messageContainer,
                     this.orderId,
                     this.modalLabel,
-                    this.isPlaceOrderActionAllowed
+                    this.isPlaceOrderActionAllowed,
+                    false
                 );
 
                 $("." + this.modalLabel + " .action-close").hide();
