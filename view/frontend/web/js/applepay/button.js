@@ -439,7 +439,6 @@ define([
                             // this ensures newTotal/newLineItems are valid and well-formed
                             self.afterSetTotalsInfo(response, shippingMethod, self.isProductView, resolve);
                         }).fail((e) => this._onGetTotalsError(e, reject));
-
                 });
             },
 
@@ -611,7 +610,8 @@ define([
                         actions.resolve(window.ApplePaySession.STATUS_SUCCESS);
                     })
                     .fail((err) => {
-                        this._onPlaceOrderError('payment', error, reject);
+                        this._onPlaceOrderError('payment', error);
+                        actions.reject(window.ApplePaySession.STATUS_FAILURE);
                     });
             },
 
@@ -635,11 +635,7 @@ define([
              * @param {function} reject
              * @private
              */
-            _onPlaceOrderError: function(step, error, reject) {
-                reject({
-                    status: window.ApplePaySession.STATUS_FAILURE,
-                });
-
+            _onPlaceOrderError: function(step, error) {
                 console.error(
                     `Adyen ApplePay: Unable to take payment, something went wrong during ${step} step.`,
                     error,
@@ -665,7 +661,6 @@ define([
 
                     window.scrollTo({ top: 0, behavior: 'smooth' });
                 }, 1000);
-
             },
 
             getMerchantName: function() {
