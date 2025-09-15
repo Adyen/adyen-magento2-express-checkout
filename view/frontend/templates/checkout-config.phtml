@@ -9,8 +9,8 @@ $adyenData = $viewModel->getAdyenData();
 $serializedAdyenData = json_encode($adyenData, JSON_HEX_TAG);
 ?>
 <script>
-    <?=$checkoutConfig?>
+    <?= /* @noEscape */ $checkoutConfig ?>
     window.customerData = window.checkoutConfig.customerData;
     window.isCustomerLoggedIn = window.checkoutConfig.isCustomerLoggedIn;
-    window.adyenData = <?=$serializedAdyenData?>;
+    window.adyenData = <?= /* @noEscape */ $serializedAdyenData ?>;
 </script>

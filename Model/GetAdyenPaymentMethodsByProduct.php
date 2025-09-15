@@ -3,11 +3,14 @@ declare(strict_types=1);
 
 namespace Adyen\ExpressCheckout\Model;
 
+use Adyen\Model\Checkout\PaymentMethodsRequest;
 use Adyen\Payment\Helper\ChargedCurrency;
 use Adyen\Payment\Helper\Config;
 use Adyen\Payment\Helper\Data;
+use Adyen\Payment\Logger\AdyenLogger;
 use Adyen\Payment\Model\AdyenAmountCurrency;
 use Adyen\Payment\Model\AdyenAmountCurrencyFactory;
+use Exception;
 use Magento\Catalog\Api\Data\ProductInterface;
 use Magento\Framework\App\Config\ScopeConfigInterface;
 use Magento\Quote\Api\Data\CartInterface;
@@ -18,50 +21,19 @@ use Magento\Tax\Model\Config as TaxConfig;
 class GetAdyenPaymentMethodsByProduct implements GetAdyenPaymentMethodsByProductInterface
 {
     /**
-     * @var AdyenAmountCurrencyFactory
-     */
-    private $adyenAmountCurrencyFactory;
-
-    /**
-     * @var Data
-     */
-    private $adyenHelper;
-
-    /**
-     * @var Config
-     */
-    private $adyenConfigHelper;
-
-    /**
-     * @var ChargedCurrency
-     */
-    private $chargedCurrency;
-
-    /**
-     * @var ScopeConfigInterface
-     */
-    private $scopeConfig;
-
-    /**
      * @param AdyenAmountCurrencyFactory $adyenAmountCurrencyFactory
      * @param Data $adyenHelper
      * @param Config $adyenConfigHelper
-     * @param ChargedCurrency $chargedCurrency
      * @param ScopeConfigInterface $scopeConfig
+     * @param AdyenLogger $adyenLogger
      */
     public function __construct(
-        AdyenAmountCurrencyFactory $adyenAmountCurrencyFactory,
-        Data $adyenHelper,
-        Config $adyenConfigHelper,
-        ChargedCurrency $chargedCurrency,
-        ScopeConfigInterface $scopeConfig
-    ) {
-        $this->adyenAmountCurrencyFactory = $adyenAmountCurrencyFactory;
-        $this->adyenHelper = $adyenHelper;
-        $this->adyenConfigHelper = $adyenConfigHelper;
-        $this->chargedCurrency = $chargedCurrency;
-        $this->scopeConfig = $scopeConfig;
-    }
+        private readonly AdyenAmountCurrencyFactory $adyenAmountCurrencyFactory,
+        private readonly Data $adyenHelper,
+        private readonly Config $adyenConfigHelper,
+        private readonly ScopeConfigInterface $scopeConfig,
+        private readonly AdyenLogger $adyenLogger
+    ) {}
 
     /**
      * Return Adyen Retrieve Payment Methods response for Product without Quote
@@ -85,20 +57,21 @@ class GetAdyenPaymentMethodsByProduct implements GetAdyenPaymentMethodsByProduct
         if (!$merchantAccount) {
             return [];
         }
-        /** @var AdyenAmountCurrency $quoteAmountCurrency */
-        $quoteAmountCurrency = $this->chargedCurrency->getQuoteAmountCurrency($quote);
+
         $configuredChargeCurrency = $this->adyenConfigHelper->getChargedCurrency(
             $quote->getStoreId()
         );
         $currencyCode = $configuredChargeCurrency === ChargedCurrency::BASE ?
             $quote->getBaseCurrencyCode() :
             $quote->getCurrency()->getQuoteCurrencyCode();
+
         /** @var AdyenAmountCurrency $adyenAmountCurrency */
         $adyenAmountCurrency = $this->adyenAmountCurrencyFactory->create([
             'amount' => $product->getFinalPrice(),
             'currencyCode' => $currencyCode
         ]);
-        $paymentMethodRequest = [
+
+        $paymentMethodsRequest = [
             "channel" => "Web",
             "merchantAccount" => $merchantAccount,
             "countryCode" => $this->getCurrentCountryCode($store),
@@ -108,23 +81,27 @@ class GetAdyenPaymentMethodsByProduct implements GetAdyenPaymentMethodsByProduct
                 "currency" => $currencyCode
             ]
         ];
-        $adyenClient = $this->adyenHelper->initializeAdyenClient(
-            $store->getId()
-        );
-        $service = $this->adyenHelper->createAdyenCheckoutService($adyenClient);
-        $response = $service->paymentMethods(
-            $paymentMethodRequest,
-            $store
-        );
-        if (!$response) {
+
+        try {
+            $adyenClient = $this->adyenHelper->initializeAdyenClient($store->getId());
+            $service = $this->adyenHelper->initializePaymentsApi($adyenClient);
+
+            $paymentMethodsRequestObject = new PaymentMethodsRequest($paymentMethodsRequest);
+
+            $response = $service->paymentMethods($paymentMethodsRequestObject);
+        } catch (Exception $exception) {
+            $message = __('An error occurred while fetching Adyen payment methods on PDP. %1',
+                $exception->getMessage());
+
+            $this->adyenLogger->error($message);
+
             return [];
         }
+
         $responseData = [];
-        $responseData['paymentMethodsResponse'] = $response;
+        $responseData['paymentMethodsResponse'] = $response->toArray();
         $responseData['paymentMethodsExtraDetails'] = [];
-        if (!$response) {
-            return [];
-        }
+
         return $responseData;
     }
 

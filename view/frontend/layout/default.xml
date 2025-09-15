@@ -10,6 +10,7 @@
                     <argument name="checkoutConfigViewModel" xsi:type="object">Adyen\ExpressCheckout\ViewModel\CheckoutConfig</argument>
                 </arguments>
             </block>
+            <block name="adyen.payment.action_container" template="Adyen_ExpressCheckout::action-container.phtml" />
         </referenceContainer>
     </body>
 </page>
