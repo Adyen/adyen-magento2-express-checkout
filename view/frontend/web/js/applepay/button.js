@@ -328,8 +328,16 @@ define([
                     .then((result) => {
                         // Stop if no shipping methods.
                         if (result.length === 0) {
-                            reject($t('There are no shipping methods available for you right now. Please try again or use an alternative payment method.'));
-                        }
+                            console.info('There are no shipping methods available for you right now. Please try again or use an alternative payment method.');
+                            reject({
+                                newTotal: {
+                                    label: this.getMerchantName(),
+                                    amount: this.isProductView
+                                        ? formatAmount(totalsModel().getTotal() * 100)
+                                        : formatAmount(getCartSubtotal() * 100),
+                                },
+                                errors: [new ApplePayError('addressUnserviceable')],
+                            });                        }
                         let shippingMethods = [];
 
                         self.shippingMethods = {};
@@ -383,10 +391,7 @@ define([
                                 .done((response) => {
                                     self.afterSetTotalsInfo(response, shippingMethods, self.isProductView, resolve);
                                 })
-                                .fail((e) => {
-                                    console.error('Adyen ApplePay: Unable to get totals', e);
-                                    reject($t('We\'re unable to fetch the cart totals for you. Please try an alternative payment method.'));
-                                });
+                                .fail((e) => this._onGetTotalsError(e, reject));
                         });
                     });
             },
@@ -433,10 +438,7 @@ define([
                         .done((response) => {
                             // this ensures newTotal/newLineItems are valid and well-formed
                             self.afterSetTotalsInfo(response, shippingMethod, self.isProductView, resolve);
-                        }).fail((e) => {
-                        console.error('Adyen ApplePay: Unable to get totals', e);
-                        reject($t('We\'re unable to fetch the cart totals for you. Please try an alternative payment method.'));
-                    });
+                        }).fail((e) => this._onGetTotalsError(e, reject));
                 });
             },
 
@@ -608,9 +610,57 @@ define([
                         actions.resolve(window.ApplePaySession.STATUS_SUCCESS);
                     })
                     .fail((err) => {
-                        console.error('Adyen ApplePay Unable to take payment', err);
+                        this._onPlaceOrderError('payment', error);
                         actions.reject(window.ApplePaySession.STATUS_FAILURE);
                     });
+            },
+
+            /**
+             * @param {*} error
+             * @param {function} reject
+             * @private
+             */
+            _onGetTotalsError: function (error, reject) {
+                reject({
+                    status: window.ApplePaySession.STATUS_FAILURE,
+                });
+
+                console.error('Adyen ApplePay: Unable to get totals', error);
+                this._displayError($t('We\'re unable to fetch the cart totals for you. Please try an alternative payment method.'));
+            },
+
+            /**
+             * @param {string} step
+             * @param {*} error
+             * @param {function} reject
+             * @private
+             */
+            _onPlaceOrderError: function(step, error) {
+                console.error(
+                    `Adyen ApplePay: Unable to take payment, something went wrong during ${step} step.`,
+                    error,
+                );
+
+                const errorMessage = error?.responseJSON.message ?? $t('Your payment failed, Please try again later');
+                this._displayError(errorMessage);
+            },
+
+            /**
+             * @see https://magento.stackexchange.com/questions/237959/how-to-use-javascript-to-display-page-messages
+             * @param {string} error
+             * @private
+             */
+            _displayError: function (error) {
+                setTimeout(() => {
+                    customerData.set('messages', {
+                        messages: [{
+                            text: error,
+                            type: 'error',
+                        }],
+                    });
+
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                }, 1000);
             },
 
             getMerchantName: function() {
