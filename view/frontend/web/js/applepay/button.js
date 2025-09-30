@@ -610,7 +610,7 @@ define([
                         actions.resolve(window.ApplePaySession.STATUS_SUCCESS);
                     })
                     .fail((err) => {
-                        this._onPlaceOrderError('payment', error);
+                        this._onPlaceOrderError('payment', err);
                         actions.reject(window.ApplePaySession.STATUS_FAILURE);
                     });
             },
