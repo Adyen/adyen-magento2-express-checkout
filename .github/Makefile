@@ -52,15 +52,19 @@ fs:
 	chmod u+x bin/magento
 	echo "memory_limit = -1" > /usr/local/etc/php/conf.d/memory.ini
 
-MAGENTO_ROOT=/var/www/html
-GRAPHQL_XML=${MAGENTO_ROOT}/dev/tests/api-functional/phpunit_graphql.xml.dist
-GRAPHQL_PHP=/data/extensions/workdir/Test/phpunit_graphql.php
-GRAPHQL_SUITE=${MAGENTO_ROOT}/vendor/adyen/adyen-magento2-expresscheckout/Test/api-functional/GraphQl
-
 # GraphQL tests
+MAGENTO_ROOT=/var/www/html
+GRAPHQL_XML_DIST=${MAGENTO_ROOT}/vendor/adyen/adyen-magento2-expresscheckout/Test/phpunit_graphql.xml.dist
+GRAPHQL_XML=${MAGENTO_ROOT}/dev/tests/api-functional/phpunit_graphql.xml
+
+setup-graphql:
+	sed '/TESTS_BASE_URL/s/magento.url/${MAGENTO_HOST}/g' ${GRAPHQL_XML_DIST} >> ${GRAPHQL_XML}
+	bin/magento indexer:set-mode realtime
+	bin/magento cache:clean
+	bin/magento indexer:reindex
+
 graphql:
-	@cd ${MAGENTO_ROOT}/dev/tests/api-functional && \
-		${MAGENTO_ROOT}/vendor/bin/phpunit --prepend ${GRAPHQL_PHP} --configuration ${GRAPHQL_XML} ${GRAPHQL_SUITE}
+	@cd ${MAGENTO_ROOT}/dev/tests/api-functional && ${MAGENTO_ROOT}/vendor/bin/phpunit -c ${GRAPHQL_XML}
 
 phpstan-run:
 	vendor/bin/phpstan analyse -c vendor/adyen/adyen-magento2-expresscheckout/phpstan.neon
