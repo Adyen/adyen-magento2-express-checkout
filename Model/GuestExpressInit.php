@@ -17,33 +17,23 @@ use Adyen\ExpressCheckout\Api\Data\ExpressDataInterface;
 use Adyen\ExpressCheckout\Api\Data\ProductCartParamsInterface;
 use Adyen\ExpressCheckout\Api\ExpressInitInterface;
 use Adyen\ExpressCheckout\Api\GuestExpressInitInterface;
+use Adyen\Payment\Logger\AdyenLogger;
+use Magento\Framework\Exception\LocalizedException;
 use Magento\Framework\Exception\NoSuchEntityException;
-use Magento\Quote\Model\QuoteIdMask;
-use Magento\Quote\Model\QuoteIdMaskFactory;
+use Magento\Quote\Model\MaskedQuoteIdToQuoteIdInterface;
 
 class GuestExpressInit implements GuestExpressInitInterface
 {
     /**
-     * @var ExpressInitInterface
-     */
-    private $expressInit;
-
-    /**
-     * @var QuoteIdMaskFactory
-     */
-    private $quoteMaskFactory;
-
-    /**
      * @param ExpressInitInterface $expressInit
-     * @param QuoteIdMaskFactory $quoteMaskFactory
+     * @param MaskedQuoteIdToQuoteIdInterface $maskedQuoteIdToQuoteId
+     * @param AdyenLogger $adyenLogger
      */
     public function __construct(
-        ExpressInitInterface $expressInit,
-        QuoteIdMaskFactory $quoteMaskFactory
-    ) {
-        $this->quoteMaskFactory = $quoteMaskFactory;
-        $this->expressInit = $expressInit;
-    }
+        private readonly ExpressInitInterface $expressInit,
+        private readonly MaskedQuoteIdToQuoteIdInterface $maskedQuoteIdToQuoteId,
+        private readonly AdyenLogger $adyenLogger
+    ) { }
 
     /**
      * Initialise Express Checkout, return data to use in FE JS
@@ -52,7 +42,8 @@ class GuestExpressInit implements GuestExpressInitInterface
      * @param string|null $guestMaskedId
      * @param string|null $adyenMaskedQuoteId
      * @return ExpressDataInterface|null
-     * @throws ExpressInitException
+     * @throws NoSuchEntityException
+     * @throws LocalizedException
      */
     public function execute(
         ProductCartParamsInterface $productCartParams,
@@ -61,12 +52,16 @@ class GuestExpressInit implements GuestExpressInitInterface
     ): ?ExpressDataInterface {
         $quoteId = null;
         if ($guestMaskedId !== null) {
-            /** @var $quoteIdMask QuoteIdMask */
-            $quoteIdMask = $this->quoteMaskFactory->create()->load(
-                $guestMaskedId,
-                'masked_id'
-            );
-            $quoteId = (int) $quoteIdMask->getQuoteId();
+            try {
+                $quoteId = $this->maskedQuoteIdToQuoteId->execute($guestMaskedId);
+            } catch (NoSuchEntityException $e) {
+                $this->adyenLogger->error(sprintf(
+                    'The quote with ID %s could not be found: %s',
+                    $guestMaskedId,
+                    $e->getMessage()
+                ));
+                throw new LocalizedException(__('The quote with ID %1 could not be found.', $guestMaskedId));
+            }
         }
         return $this->expressInit->execute(
             $productCartParams,

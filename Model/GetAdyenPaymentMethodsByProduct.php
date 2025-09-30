@@ -7,12 +7,14 @@ use Adyen\Model\Checkout\PaymentMethodsRequest;
 use Adyen\Payment\Helper\ChargedCurrency;
 use Adyen\Payment\Helper\Config;
 use Adyen\Payment\Helper\Data;
+use Adyen\Payment\Helper\Locale;
+use Adyen\Payment\Helper\ShopperConversionId;
 use Adyen\Payment\Logger\AdyenLogger;
-use Adyen\Payment\Model\AdyenAmountCurrency;
 use Adyen\Payment\Model\AdyenAmountCurrencyFactory;
 use Exception;
 use Magento\Catalog\Api\Data\ProductInterface;
 use Magento\Framework\App\Config\ScopeConfigInterface;
+use Magento\Framework\Exception\NoSuchEntityException;
 use Magento\Quote\Api\Data\CartInterface;
 use Magento\Store\Api\Data\StoreInterface;
 use Magento\Store\Model\ScopeInterface;
@@ -20,27 +22,48 @@ use Magento\Tax\Model\Config as TaxConfig;
 
 class GetAdyenPaymentMethodsByProduct implements GetAdyenPaymentMethodsByProductInterface
 {
+    private AdyenAmountCurrencyFactory $adyenAmountCurrencyFactory;
+    private Data $adyenHelper;
+    private Locale $localeHelper;
+    private Config $adyenConfigHelper;
+    private ScopeConfigInterface $scopeConfig;
+    private AdyenLogger $adyenLogger;
+    private ShopperConversionId $shopperConversionId;
     /**
      * @param AdyenAmountCurrencyFactory $adyenAmountCurrencyFactory
      * @param Data $adyenHelper
+     * @param Locale $localeHelper
      * @param Config $adyenConfigHelper
      * @param ScopeConfigInterface $scopeConfig
      * @param AdyenLogger $adyenLogger
+     * @param ShopperConversionId $shopperConversionId
      */
     public function __construct(
-        private readonly AdyenAmountCurrencyFactory $adyenAmountCurrencyFactory,
-        private readonly Data $adyenHelper,
-        private readonly Config $adyenConfigHelper,
-        private readonly ScopeConfigInterface $scopeConfig,
-        private readonly AdyenLogger $adyenLogger
-    ) {}
+        AdyenAmountCurrencyFactory $adyenAmountCurrencyFactory,
+        Data $adyenHelper,
+        Locale $localeHelper,
+        Config $adyenConfigHelper,
+        ScopeConfigInterface $scopeConfig,
+        AdyenLogger $adyenLogger,
+        ShopperConversionId $shopperConversionId,
+    ) {
+        $this->adyenAmountCurrencyFactory = $adyenAmountCurrencyFactory;
+        $this->adyenHelper = $adyenHelper;
+        $this->localeHelper = $localeHelper;
+        $this->adyenConfigHelper = $adyenConfigHelper;
+        $this->scopeConfig = $scopeConfig;
+        $this->adyenLogger = $adyenLogger;
+        $this->shopperConversionId = $shopperConversionId;
+    }
 
     /**
      * Return Adyen Retrieve Payment Methods response for Product without Quote
      * Used in PDP for ExpressCheckout when we don't have all options selected yet for Composite
      *
      * @param ProductInterface $product
+     * @param CartInterface $quote
      * @return array
+     * @throws NoSuchEntityException|\Magento\Framework\Exception\LocalizedException
      */
     public function execute(
         ProductInterface $product,
@@ -57,30 +80,31 @@ class GetAdyenPaymentMethodsByProduct implements GetAdyenPaymentMethodsByProduct
         if (!$merchantAccount) {
             return [];
         }
-
         $configuredChargeCurrency = $this->adyenConfigHelper->getChargedCurrency(
             $quote->getStoreId()
         );
         $currencyCode = $configuredChargeCurrency === ChargedCurrency::BASE ?
             $quote->getBaseCurrencyCode() :
             $quote->getCurrency()->getQuoteCurrencyCode();
-
-        /** @var AdyenAmountCurrency $adyenAmountCurrency */
         $adyenAmountCurrency = $this->adyenAmountCurrencyFactory->create([
             'amount' => $product->getFinalPrice(),
             'currencyCode' => $currencyCode
         ]);
-
         $paymentMethodsRequest = [
             "channel" => "Web",
             "merchantAccount" => $merchantAccount,
             "countryCode" => $this->getCurrentCountryCode($store),
-            "shopperLocale" => $this->adyenHelper->getCurrentLocaleCode($store->getId()),
+            "shopperLocale" => $this->localeHelper->getCurrentLocaleCode($store->getId()),
             "amount" => [
                 "value" => $this->adyenHelper->formatAmount($adyenAmountCurrency->getAmount(), $currencyCode),
                 "currency" => $currencyCode
             ]
         ];
+        $shopperConversionId = $this->shopperConversionId->getShopperConversionId($quote);
+
+        if (!empty($shopperConversionId)) {
+            $paymentMethodsRequest["shopperConversionId"] = $shopperConversionId;
+        }
 
         try {
             $adyenClient = $this->adyenHelper->initializeAdyenClient($store->getId());
@@ -90,10 +114,10 @@ class GetAdyenPaymentMethodsByProduct implements GetAdyenPaymentMethodsByProduct
 
             $response = $service->paymentMethods($paymentMethodsRequestObject);
         } catch (Exception $exception) {
-            $message = __('An error occurred while fetching Adyen payment methods on PDP. %1',
-                $exception->getMessage());
-
-            $this->adyenLogger->error($message);
+            $this->adyenLogger->error(
+                sprintf('An error occurred while fetching Adyen payment methods on PDP. %s',
+                $exception->getMessage())
+            );
 
             return [];
         }

@@ -25,45 +25,17 @@ use Magento\Framework\Exception\NoSuchEntityException;
 use Magento\Framework\Exception\ValidatorException;
 use Magento\Quote\Api\CartRepositoryInterface;
 use Magento\Quote\Model\Quote;
-use Magento\Quote\Model\QuoteIdMask;
-use Magento\Quote\Model\QuoteIdMaskFactory;
+use Magento\Quote\Model\MaskedQuoteIdToQuoteIdInterface;
 
 class AdyenPaypalUpdateOrder implements AdyenPaypalUpdateOrderInterface
 {
-    /**
-     * @var PaypalUpdateOrder
-     */
     protected PaypalUpdateOrder $paypalUpdateOrderHelper;
-
-    /**
-     * @var CartRepositoryInterface
-     */
     private CartRepositoryInterface $cartRepository;
-
-    /**
-     * @var PaypalDeliveryMethodValidator
-     */
     private PaypalDeliveryMethodValidator $deliveryMethodValidator;
-
-    /**
-     * @var ChargedCurrency
-     */
     private ChargedCurrency $chargedCurrency;
-
-    /**
-     * @var Data
-     */
     private Data $adyenHelper;
-
-    /**
-     * @var AdyenPaymentResponseCollection
-     */
     private AdyenPaymentResponseCollection $paymentResponseCollection;
-
-    /**
-     * @var QuoteIdMaskFactory
-     */
-    private QuoteIdMaskFactory $quoteIdMaskFactory;
+    private MaskedQuoteIdToQuoteIdInterface $maskedQuoteIdToQuoteId;
 
     /**
      * @param PaypalUpdateOrder $updatePaypalOrderHelper
@@ -72,7 +44,7 @@ class AdyenPaypalUpdateOrder implements AdyenPaypalUpdateOrderInterface
      * @param ChargedCurrency $chargedCurrency
      * @param Data $adyenHelper
      * @param AdyenPaymentResponseCollection $paymentResponseCollection
-     * @param QuoteIdMaskFactory $quoteIdMaskFactory
+     * @param MaskedQuoteIdToQuoteIdInterface $maskedQuoteIdToQuoteId
      */
     public function __construct(
         PaypalUpdateOrder $updatePaypalOrderHelper,
@@ -81,7 +53,7 @@ class AdyenPaypalUpdateOrder implements AdyenPaypalUpdateOrderInterface
         ChargedCurrency $chargedCurrency,
         Data $adyenHelper,
         AdyenPaymentResponseCollection $paymentResponseCollection,
-        QuoteIdMaskFactory $quoteIdMaskFactory
+        MaskedQuoteIdToQuoteIdInterface $maskedQuoteIdToQuoteId
     ) {
         $this->paypalUpdateOrderHelper = $updatePaypalOrderHelper;
         $this->cartRepository = $cartRepository;
@@ -89,7 +61,7 @@ class AdyenPaypalUpdateOrder implements AdyenPaypalUpdateOrderInterface
         $this->chargedCurrency = $chargedCurrency;
         $this->adyenHelper = $adyenHelper;
         $this->paymentResponseCollection = $paymentResponseCollection;
-        $this->quoteIdMaskFactory = $quoteIdMaskFactory;
+        $this->maskedQuoteIdToQuoteId = $maskedQuoteIdToQuoteId;
     }
 
     /**
@@ -108,12 +80,13 @@ class AdyenPaypalUpdateOrder implements AdyenPaypalUpdateOrderInterface
         string $deliveryMethods = ''
     ): string {
         if (is_null($adyenCartId)) {
-            /** @var $quoteIdMask QuoteIdMask */
-            $quoteIdMask = $this->quoteIdMaskFactory->create()->load(
-                $adyenMaskedQuoteId,
-                'masked_id'
-            );
-            $adyenCartId = (int) $quoteIdMask->getQuoteId();
+            try {
+                $adyenCartId = $this->maskedQuoteIdToQuoteId->execute($adyenMaskedQuoteId);
+            } catch (NoSuchEntityException $exception) {
+                throw new NoSuchEntityException(
+                    __('Could not find a cart with ID "%masked_cart_id"', ['masked_cart_id' => $adyenMaskedQuoteId])
+                );
+            }
         }
 
         /** @var Quote $quote */

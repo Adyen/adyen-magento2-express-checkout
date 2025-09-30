@@ -16,9 +16,11 @@ namespace Adyen\ExpressCheckout\Block\ApplePay\Shortcut;
 use Adyen\Payment\Helper\Data as AdyenHelper;
 use Adyen\ExpressCheckout\Block\Buttons\AbstractButton;
 use Adyen\ExpressCheckout\Model\ConfigurationInterface;
+use Adyen\Payment\Helper\Locale;
+use Adyen\Payment\Helper\Config;
+use Magento\Checkout\Model\DefaultConfigProvider;
 use Magento\Checkout\Model\Session;
 use Magento\Catalog\Block\ShortcutInterface;
-use Magento\Checkout\Model\DefaultConfigProvider;
 use Magento\Customer\Model\Session as CustomerSession;
 use Magento\Framework\App\Config\ScopeConfigInterface;
 use Magento\Framework\UrlInterface;
@@ -47,6 +49,8 @@ class Button extends AbstractButton implements ShortcutInterface
      * @param DefaultConfigProvider $defaultConfigProvider
      * @param ScopeConfigInterface $scopeConfig
      * @param AdyenHelper $adyenHelper
+     * @param Locale $localeHelper
+     * @param Config $configHelper
      * @param ConfigurationInterface $configuration
      * @param array $data
      */
@@ -60,6 +64,8 @@ class Button extends AbstractButton implements ShortcutInterface
         DefaultConfigProvider $defaultConfigProvider,
         ScopeConfigInterface $scopeConfig,
         AdyenHelper $adyenHelper,
+        Locale $localeHelper,
+        Config $configHelper,
         ConfigurationInterface $configuration,
         array $data = []
     ) {
@@ -72,12 +78,15 @@ class Button extends AbstractButton implements ShortcutInterface
             $storeManagerInterface,
             $scopeConfig,
             $adyenHelper,
+            $localeHelper,
+            $configHelper,
             $defaultConfigProvider,
             $data
         );
 
         $this->configuration = $configuration;
     }
+
 
     /**
      * @return string

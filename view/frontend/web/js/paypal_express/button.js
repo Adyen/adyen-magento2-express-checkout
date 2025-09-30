@@ -45,7 +45,7 @@ define([
     $t,
     customerData,
     AdyenConfiguration,
-    AdyenCheckout,
+    AdyenWeb,
     activateCart,
     createOrder,
     getShippingMethods,
@@ -246,8 +246,9 @@ define([
             const adyenData = window.adyenData;
             let currentPage = getCurrentPage(this.isProductView, element);
 
-            const adyenCheckoutComponent = await new AdyenCheckout({
+            const adyenCheckoutComponent = await window.AdyenWeb.AdyenCheckout({
                 locale: config.locale,
+                countryCode: config.countryCode,
                 originKey: config.originkey,
                 environment: config.checkoutenv,
                 analytics: {
@@ -267,8 +268,6 @@ define([
                 risk: {
                     enabled: false
                 },
-                isExpress: true,
-                expressPage: currentPage,
                 clientKey: AdyenConfiguration.getClientKey()
             });
 
@@ -280,7 +279,7 @@ define([
             }
 
             try {
-                this.paypalComponent = adyenCheckoutComponent.create('paypal', paypalConfiguration);
+                this.paypalComponent = await window.AdyenWeb.createComponent('paypal', adyenCheckoutComponent, paypalConfiguration);
 
                 if (typeof this.paypalComponent.isAvailable === 'function') {
                     this.paypalComponent
@@ -340,7 +339,7 @@ define([
             const paypalStyles = getPaypalStyles();
             const config = configModel().getConfig();
             const countryCode = config.countryCode;
-
+            const currentPage = getCurrentPage(this.isProductView, element);
             let currency;
             let paypalBaseConfiguration;
 
@@ -359,6 +358,7 @@ define([
                 countryCode: countryCode,
                 environment: config.checkoutenv.toUpperCase(),
                 isExpress: true,
+                expressPage: currentPage,
                 configuration: paypalPaymentMethod.configuration,
                 amount: {
                     currency: currency,
@@ -442,7 +442,7 @@ define([
                     });
                 },
 
-                onShopperDetails: async (shopperDetails, rawData, actions) => {
+                onAuthorized: async (shopperDetails, actions) => {
                     try {
                         const isVirtual = virtualQuoteModel().getIsVirtual();
 
@@ -500,11 +500,11 @@ define([
                     let request = state.data;
                     let self = this;
                     fullScreenLoader.startLoader();
-                    request.orderId = this.orderId;
+                    request.orderId = self.orderId;
 
                     let quoteId = this.isProductView ? maskedIdModel().getMaskedId() : getMaskedIdFromCart();
 
-                    adyenPaymentService.paymentDetails(request, this.orderId, quoteId).
+                    adyenPaymentService.paymentDetails(request, self.orderId, quoteId).
                     done(function(responseJSON) {
                         fullScreenLoader.stopLoader();
                         self.handleAdyenResult(responseJSON, self.orderId);
@@ -526,10 +526,10 @@ define([
 
         setupAddresses: async function (shopperDetails) {
             let billingAddress = {
-                'email': shopperDetails.shopperEmail,
-                'telephone': shopperDetails.telephoneNumber,
-                'firstname': shopperDetails.shopperName.firstName,
-                'lastname': shopperDetails.shopperName.lastName,
+                'email': shopperDetails.authorizedEvent.payer.email_address,
+                'telephone': shopperDetails.authorizedEvent.payer.phone.phone_number.national_number,
+                'firstname': shopperDetails.authorizedEvent.payer.name.given_name,
+                'lastname': shopperDetails.authorizedEvent.payer.name.surname,
                 'street': [
                     shopperDetails.billingAddress.street
                 ],
@@ -545,19 +545,19 @@ define([
             };
 
             let shippingAddress = {
-                'email': shopperDetails.shopperEmail,
-                'telephone': shopperDetails.telephoneNumber,
-                'firstname': shopperDetails.shopperName.firstName,
-                'lastname': shopperDetails.shopperName.lastName,
+                'email': shopperDetails.authorizedEvent.payer.email_address,
+                'telephone': shopperDetails.authorizedEvent.payer.phone.phone_number.national_number,
+                'firstname': shopperDetails.authorizedEvent.payer.name.given_name,
+                'lastname': shopperDetails.authorizedEvent.payer.name.surname,
                 'street': [
-                    shopperDetails.shippingAddress.street
+                    shopperDetails.deliveryAddress.street
                 ],
-                'city': shopperDetails.shippingAddress.city,
-                'region': shopperDetails.shippingAddress.stateOrProvince,
-                'region_id': getRegionId(shopperDetails.shippingAddress.country, shopperDetails.shippingAddress.stateOrProvince),
+                'city': shopperDetails.deliveryAddress.city,
+                'region': shopperDetails.deliveryAddress.stateOrProvince,
+                'region_id': getRegionId(shopperDetails.deliveryAddress.country, shopperDetails.deliveryAddress.stateOrProvince),
                 'region_code': null,
-                'country_id': shopperDetails.shippingAddress.country.toUpperCase(),
-                'postcode': shopperDetails.shippingAddress.postalCode,
+                'country_id': shopperDetails.deliveryAddress.country.toUpperCase(),
+                'postcode': shopperDetails.deliveryAddress.postalCode,
                 'same_as_billing': 0,
                 'customer_address_id': 0,
                 'save_in_address_book': 0

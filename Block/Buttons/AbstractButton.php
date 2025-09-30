@@ -14,6 +14,8 @@ declare(strict_types=1);
 namespace Adyen\ExpressCheckout\Block\Buttons;
 
 use Adyen\Payment\Helper\Data as AdyenHelper;
+use Adyen\Payment\Helper\Locale;
+use Adyen\Payment\Helper\Config;
 use Exception;
 use Magento\Checkout\Model\DefaultConfigProvider;
 use Magento\Checkout\Model\Session;
@@ -33,6 +35,7 @@ abstract class AbstractButton extends Template
     public const ALIAS_ELEMENT_INDEX = 'alias';
     public const BUTTON_ELEMENT_INDEX = 'button_id';
     public const COUNTRY_CODE_PATH = 'general/country/default';
+    public const PAYMENT_METHOD_VARIANT = '';
 
     /**
      * @var Session
@@ -70,6 +73,16 @@ abstract class AbstractButton extends Template
     private AdyenHelper $adyenHelper;
 
     /**
+     * @var Locale
+     */
+    private Locale $localeHelper;
+
+    /**
+     * @var Config
+     */
+    private Config $configHelper;
+
+    /**
      * @var DefaultConfigProvider
      */
     private DefaultConfigProvider $defaultConfigProvider;
@@ -84,8 +97,11 @@ abstract class AbstractButton extends Template
      * @param StoreManagerInterface $storeManagerInterface
      * @param ScopeConfigInterface $scopeConfig
      * @param AdyenHelper $adyenHelper
+     * @param Locale $localeHelper
+     * @param Config $configHelper
      * @param DefaultConfigProvider $defaultConfigProvider
      * @param array $data
+     * @paramm Config $configHelper
      */
     public function __construct(
         Context $context,
@@ -96,6 +112,8 @@ abstract class AbstractButton extends Template
         StoreManagerInterface $storeManagerInterface,
         ScopeConfigInterface $scopeConfig,
         AdyenHelper $adyenHelper,
+        Locale $localeHelper,
+        Config $configHelper,
         DefaultConfigProvider $defaultConfigProvider,
         array $data = []
     ) {
@@ -107,6 +125,8 @@ abstract class AbstractButton extends Template
         $this->storeManager = $storeManagerInterface;
         $this->scopeConfig = $scopeConfig;
         $this->adyenHelper = $adyenHelper;
+        $this->localeHelper = $localeHelper;
+        $this->configHelper = $configHelper;
         $this->defaultConfigProvider = $defaultConfigProvider;
     }
 
@@ -169,7 +189,7 @@ abstract class AbstractButton extends Template
     }
 
     /**
-     * @return string
+     * @return string|null
      */
     public function getDefaultCountryCode(): ?string
     {
@@ -184,7 +204,7 @@ abstract class AbstractButton extends Template
      * @throws NoSuchEntityException
      * @throws LocalizedException
      */
-    public function getCurrency()
+    public function getCurrency(): ?string
     {
         /** @var Store $store */
         $store = $this->storeManager->getStore();
@@ -194,7 +214,8 @@ abstract class AbstractButton extends Template
     }
 
     /**
-     * @return string
+     * @return string|null
+     * @throws NoSuchEntityException
      */
     public function getMerchantAccount(): ?string
     {
@@ -204,18 +225,18 @@ abstract class AbstractButton extends Template
         );
     }
 
-    /**
-     * @return string
-     */
     public function getLocale(): string
     {
-        return $this->adyenHelper->getStoreLocale(
-            $this->storeManager->getStore()->getId()
+        $storeId = (int) $this->storeManager->getStore()->getId();
+        return $this->localeHelper->getStoreLocale(
+            $storeId
         );
     }
 
     /**
-     * @return string
+     * @return int
+     * @throws LocalizedException
+     * @throws NoSuchEntityException
      */
     public function getFormat(): int
     {
@@ -223,15 +244,19 @@ abstract class AbstractButton extends Template
     }
 
     /**
-     * @return string
+     * @return string|null
+     * @throws NoSuchEntityException
      */
     public function getOriginKey(): ?string
     {
-        return $this->adyenHelper->getOriginKeyForBaseUrl();
+        $environment = $this->configHelper->isDemoMode() ? 'test' : 'live';
+        $storeId =(int) $this->storeManager->getStore()->getId();
+        return $this->configHelper->getClientKey($environment, $storeId);
     }
 
     /**
      * @return string
+     * @throws NoSuchEntityException
      */
     public function getCheckoutEnvironment(): string
     {
@@ -239,9 +264,6 @@ abstract class AbstractButton extends Template
         return $this->adyenHelper->getCheckoutEnvironment($storeId);
     }
 
-    /**
-     * @inheritdoc
-     */
     public function getAlias(): string
     {
         return $this->getData(self::ALIAS_ELEMENT_INDEX) ?: '';
