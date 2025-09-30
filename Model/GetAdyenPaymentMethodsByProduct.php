@@ -115,7 +115,7 @@ class GetAdyenPaymentMethodsByProduct implements GetAdyenPaymentMethodsByProduct
             $response = $service->paymentMethods($paymentMethodsRequestObject);
         } catch (Exception $exception) {
             $this->adyenLogger->error(
-                sprintf('An error occurred while fetching Adyen payment methods on PDP. %1',
+                sprintf('An error occurred while fetching Adyen payment methods on PDP. %s',
                 $exception->getMessage())
             );
 
