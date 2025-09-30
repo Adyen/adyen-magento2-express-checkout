@@ -46,6 +46,7 @@ class AdyenInitPaymentsTest extends AbstractAdyenTestCase
     private PlatformInfo|MockObject $platformInfo;
     private MockObject $quote;
     private MockObject $transferMock;
+    private MockObject $returnUrlHelper;
     private array $headers;
     private string $stateData;
 
