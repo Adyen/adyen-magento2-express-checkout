@@ -15,7 +15,6 @@ magento:
 install:
 	composer config --json repositories.local '{"type": "path", "url": "/data/extensions/workdir", "options": { "symlink": false } }'
 	composer require "adyen/adyen-magento2-expresscheckout:*"
-	vendor/bin/phpcs --standard=Magento2 --extensions=php,phtml --error-severity=10 --ignore-annotations -n -p vendor/adyen/adyen-magento2-expresscheckout
 	bin/magento module:enable --all
 	bin/magento setup:upgrade
 	bin/magento setup:di:compile
@@ -53,12 +52,36 @@ fs:
 	chmod u+x bin/magento
 	echo "memory_limit = -1" > /usr/local/etc/php/conf.d/memory.ini
 
-MAGENTO_ROOT=/var/www/html
-GRAPHQL_XML=${MAGENTO_ROOT}/dev/tests/api-functional/phpunit_graphql.xml.dist
-GRAPHQL_PHP=/data/extensions/workdir/Test/phpunit_graphql.php
-GRAPHQL_SUITE=${MAGENTO_ROOT}/vendor/adyen/adyen-magento2-expresscheckout/Test/api-functional/GraphQl
-
 # GraphQL tests
+MAGENTO_ROOT=/var/www/html
+GRAPHQL_XML_DIST=${MAGENTO_ROOT}/vendor/adyen/adyen-magento2-expresscheckout/Test/phpunit_graphql.xml.dist
+GRAPHQL_XML=${MAGENTO_ROOT}/dev/tests/api-functional/phpunit_graphql.xml
+
+setup-graphql:
+	sed '/TESTS_BASE_URL/s/magento.url/${MAGENTO_HOST}/g' ${GRAPHQL_XML_DIST} >> ${GRAPHQL_XML}
+	bin/magento indexer:set-mode realtime
+	bin/magento cache:clean
+	bin/magento indexer:reindex
+
 graphql:
-	@cd ${MAGENTO_ROOT}/dev/tests/api-functional && \
-		${MAGENTO_ROOT}/vendor/bin/phpunit --prepend ${GRAPHQL_PHP} --configuration ${GRAPHQL_XML} ${GRAPHQL_SUITE}
+	@cd ${MAGENTO_ROOT}/dev/tests/api-functional && ${MAGENTO_ROOT}/vendor/bin/phpunit -c ${GRAPHQL_XML}
+
+phpstan-run:
+	vendor/bin/phpstan analyse -c vendor/adyen/adyen-magento2-expresscheckout/phpstan.neon
+
+phpunit-run:
+	cp vendor/adyen/adyen-magento2-expresscheckout/Test/phpunit.xml.dist dev/tests/unit/phpunit.xml
+	cd dev/tests/unit; \
+		../../../vendor/bin/phpunit \
+		--coverage-clover=../../../build/clover.xml \
+		--log-junit=../../../build/tests-log.xml \
+		-c phpunit.xml \
+		../../../vendor/adyen/adyen-magento2-expresscheckout/Test/Unit
+
+codesniffer-run:
+	vendor/bin/phpcs --standard=Magento2 \
+		--extensions=php,phtml \
+		--error-severity=10 \
+		--warning-severity=0 \
+		--ignore-annotations \
+		-p vendor/adyen/adyen-magento2-expresscheckout

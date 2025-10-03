@@ -1,6 +1,6 @@
 services:
   db:
-    image: mariadb:10.4
+    image: mariadb:11.4
     container_name: mariadb
     networks:
       - backend
@@ -10,7 +10,7 @@ services:
       MARIADB_USER: magento
       MARIADB_PASSWORD: magento
   opensearch:
-    image: bitnami/opensearch:2
+    image: opensearchproject/opensearch:2
     container_name: opensearch-container
     networks:
       - backend
@@ -19,7 +19,8 @@ services:
       - 9300:9300
     environment:
       - "discovery.type=single-node"
-      - "ES_JAVA_OPTS=-Xms750m -Xmx750m"
+      - "OPENSEARCH_JAVA_OPTS=-Xms750m -Xmx750m"
+      - "DISABLE_SECURITY_PLUGIN=true"
   web:
     build:
       context: .
@@ -34,6 +35,8 @@ services:
         aliases:
           - magento2.test.com
     environment:
+      COMPOSER_HOME: /var/www/html/var/composer
+      COMPOSER_DISABLE_ASYNC_ARCHIVE_EXTRACT: 1
       DB_SERVER: mariadb
       OPENSEARCH_SERVER: opensearch-container
       MAGENTO_HOST: magento2.test.com
@@ -48,6 +51,7 @@ services:
       ADYEN_CLIENT_KEY:
       PHP_VERSION:
       MAGENTO_VERSION:
+      USE_SSL:
     depends_on:
       - db
       - opensearch
@@ -56,6 +60,7 @@ services:
       - ./Makefile:/var/www/html/Makefile
       - composer:/usr/local/bin
       - magento:/var/www/html
+      - ../build:/var/www/html/build
 networks:
   backend:
 volumes:
