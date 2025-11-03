@@ -3,15 +3,50 @@
 /** @var \Magento\Framework\View\Helper\SecureHtmlRenderer $secureRenderer */
 /** @var $viewModel \Adyen\ExpressCheckout\ViewModel\CheckoutConfig */
 $viewModel = $block->getData('checkoutConfigViewModel');
+
 $serializedCheckoutConfig = $viewModel->getSerializedCheckoutConfig();
 $adyenData = $viewModel->getAdyenData();
 $serializedAdyenData = json_encode($adyenData, JSON_HEX_TAG);
 
 $script = <<<SCRIPT
+(function () {
+    // Expose globals
     window.checkoutConfig = {$serializedCheckoutConfig};
     window.customerData = window.checkoutConfig.customerData;
     window.isCustomerLoggedIn = window.checkoutConfig.isCustomerLoggedIn;
     window.adyenData = {$serializedAdyenData};
+
+    //after "Update Shopping Cart" Ajax, refresh cart section and request Express remount
+    // This needs to be done, as after updating cart from the cart page, we cannot fetch the customerData
+    require(['jquery', 'Magento_Customer/js/customer-data'], function (\$, customerData) {
+        \$(document)
+            .off('ajaxComplete.adyenExpress')
+            .on('ajaxComplete.adyenExpress', function (e, xhr, settings) {
+                if (!settings || !settings.url) { return; }
+
+                // Match both /update and /updatePost endpoints on the cart controller
+                if (/checkout\\/cart\\/(?:update|updatePost)/.test(settings.url)) {
+                    var p = customerData.reload(['cart'], true);
+
+                    var done = function () {
+                        try {
+                            window.dispatchEvent(new CustomEvent('adyen:express:remount'));
+                        } catch (e) {
+                            console.warn('Adyen Express remount event could not be dispatched:', e);
+                        }
+                    };
+
+                    if (p && typeof p.done === 'function') {
+                        p.done(done).fail(done);
+                    } else if (p && typeof p.then === 'function') {
+                        p.then(done).catch(done);
+                    } else {
+                        setTimeout(done, 0);
+                    }
+                }
+            });
+    });
+})();
 SCRIPT;
 
 /* @noEscape */ echo $secureRenderer->renderTag('script', [], $script, false);
