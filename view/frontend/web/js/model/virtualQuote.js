@@ -17,23 +17,33 @@ define([
             return this.isVirtual();
         },
 
-        setIsVirtual: function (isPdp, initExpressResponse = null) {
-            let isVirtual = false;
-
-            if (isPdp && initExpressResponse['is_virtual_quote']) {
-                isVirtual = true;
-            } else if (!isPdp) {
-                const cart = customerData.get('cart');
-                isVirtual = true;
-
-                cart().items.forEach((item) => {
-                   if (!["virtual", "downloadable"].includes(item.product_type)) {
-                       isVirtual = false;
-                   }
-                });
+        setIsVirtual: function (isPdp, initExpressResponse) {
+            // PDP path: trust backend flag when provided
+            if (isPdp) {
+                var pdpVirtual = !!(initExpressResponse && initExpressResponse['is_virtual_quote']);
+                this.isVirtual(pdpVirtual);
+                return this.isVirtual();
             }
 
-            return this.isVirtual(isVirtual);
+            // Cart page path: read customerData safely
+            var cartGetter = customerData.get('cart');
+            var state = (typeof cartGetter === 'function') ? cartGetter() : null;
+            var items = (state && Array.isArray(state.items)) ? state.items : null;
+
+            if (!items) {
+                // While customer-data is refreshing, default to non-virtual (safer)
+                this.isVirtual(false);
+                return this.isVirtual();
+            }
+
+            // Compute: all items are virtual/downloadable → virtual quote
+            var allVirtual = items.length > 0 && items.every(function (it) {
+                return it && (it.product_type === 'virtual' || it.product_type === 'downloadable');
+            });
+
+            this.isVirtual(allVirtual);
+            return this.isVirtual();
         }
+
     });
 });
