@@ -1,7 +1,12 @@
 <?php
-/** @var $block \Magento\Framework\View\Element\Template */
-/** @var \Magento\Framework\View\Helper\SecureHtmlRenderer $secureRenderer */
-/** @var $viewModel \Adyen\ExpressCheckout\ViewModel\CheckoutConfig */
+/** @var $block Template */
+/** @var SecureHtmlRenderer $secureRenderer */
+/** @var $viewModel CheckoutConfig */
+
+use Adyen\ExpressCheckout\ViewModel\CheckoutConfig;
+use Magento\Framework\View\Element\Template;
+use Magento\Framework\View\Helper\SecureHtmlRenderer;
+
 $viewModel = $block->getData('checkoutConfigViewModel');
 
 $serializedCheckoutConfig = $viewModel->getSerializedCheckoutConfig();
