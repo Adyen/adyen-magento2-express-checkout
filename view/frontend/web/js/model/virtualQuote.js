@@ -18,7 +18,7 @@ define([
          * Ensures customer-data cart section is hydrated (items array exists).
          * Resolves with the latest cart payload.
          */
-        _ensureCartReady: function () {
+        _cartReady: function () {
             var cartObs = customerData.get('cart');
             return new Promise(function (resolve) {
                 function ready() {
@@ -42,16 +42,6 @@ define([
 
                 // kick a refresh (true = force reload)
                 customerData.reload(['cart'], true);
-
-                // last-resort timeout so we never hang forever
-                setTimeout(function () {
-                    // resolve with empty items if still not ready
-                    var cart = cartObs() || {};
-                    if (!Array.isArray(cart.items)) {
-                        cart.items = [];
-                    }
-                    resolve(cart);
-                }, 3000);
             });
         },
 
@@ -71,13 +61,12 @@ define([
                 }
 
                 if (isPdp) {
-                    // PDP but no flag present: assume non-virtual unless your PDP API says otherwise
                     self.isVirtual(false);
                     return resolve(false);
                 }
 
-                // Cart page: compute from cart items (async)
-                self._ensureCartReady().then(function (cart) {
+                // Cart page compute from cart items (async)
+                self._cartReady().then(function (cart) {
                     var items = Array.isArray(cart.items) ? cart.items : [];
                     var allVirtual = items.length > 0 && items.every(function (item) {
                         return item && (item.is_virtual === true || ['virtual', 'downloadable'].includes(item.product_type));
