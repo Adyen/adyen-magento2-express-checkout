@@ -94,9 +94,9 @@ define([
                 // If express methods is not set then set it.
                 if (this.isProductView) {
                     const response = await getExpressMethods().getRequest(element);
-                    const cart = customerData.get('cart');
+                    await virtualQuoteModel().setIsVirtual(true, response);
 
-                    virtualQuoteModel().setIsVirtual(true, response);
+                    const cart = customerData.get('cart');
 
                     cart.subscribe(function () {
                         this.reloadApplePayButton(element);
@@ -132,7 +132,7 @@ define([
                     this.initialiseApplePayComponent(applePaymentMethod, element);
                 } else {
                     let applePaymentMethod = await getPaymentMethod('applepay', this.isProductView);
-                    virtualQuoteModel().setIsVirtual(false);
+                    await virtualQuoteModel().setIsVirtual(false);
 
                     if (!applePaymentMethod) {
                         const cart = customerData.get('cart');
@@ -227,11 +227,11 @@ define([
                 if (this.isProductView) {
                     const pdpResponse = await getExpressMethods().getRequest(element);
 
-                    virtualQuoteModel().setIsVirtual(true, pdpResponse);
+                    await virtualQuoteModel().setIsVirtual(true, pdpResponse);
                     setExpressMethods(pdpResponse);
                     totalsModel().setTotal(pdpResponse.totals.grand_total);
                 } else {
-                    virtualQuoteModel().setIsVirtual(false);
+                    await virtualQuoteModel().setIsVirtual(false);
                 }
 
                 this.unmountApplePay();
@@ -269,7 +269,7 @@ define([
                     configuration: {
                         domainName: window.location.hostname,
                         merchantId: applePaymentMethod.configuration.merchantId,
-                        merchantName: applePaymentMethod.configuration.merchantName
+                        merchantName: this.getMerchantName(),
                     },
                     amount: {
                         value: this.isProductView
@@ -490,8 +490,8 @@ define([
                 resolve(update);
             },
 
-            onAuthorized: function (data, actions) {
-                const isVirtual = virtualQuoteModel().getIsVirtual();
+            onAuthorized: async function (data, actions) {
+                const isVirtual = await virtualQuoteModel().getIsVirtual();
                 const event = data && data.authorizedEvent;
                 if (!event || !event.payment) {
                     console.error('Adyen ApplePay: authorizedEvent missing');
