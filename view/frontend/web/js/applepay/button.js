@@ -259,7 +259,7 @@ define([
                 applepayBaseConfiguration = {
                     countryCode: countryCode,
                     currencyCode: currency,
-                    totalPriceLabel: this.getMerchantName(),
+                    totalPriceLabel: applePaymentMethod.configuration.merchantName,
                     configuration: {
                         domainName: window.location.hostname,
                         merchantId: applePaymentMethod.configuration.merchantId,
