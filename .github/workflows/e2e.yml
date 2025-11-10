@@ -3,7 +3,7 @@ run-name: Headless E2E tests for ${{ github.event.pull_request.head.ref }}
 
 on:
   pull_request:
-    branches: [main]
+    branches: [main-2]
 
 jobs:
   build:
