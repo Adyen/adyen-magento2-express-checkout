@@ -3,7 +3,7 @@
  *
  * Adyen Payment Module
  *
- * Copyright (c) 2024 Adyen N.V.
+ * Copyright (c) 2025 Adyen N.V.
  * This file is open source and available under the MIT license.
  * See the LICENSE file for more info.
  *
@@ -19,31 +19,39 @@ use Magento\Framework\Exception\LocalizedException;
 use Magento\Framework\GraphQl\Config\Element\Field;
 use Magento\Framework\GraphQl\Schema\Type\ResolveInfo;
 use Magento\Framework\GraphQl\Query\ResolverInterface;
+use Magento\Store\Model\ScopeInterface;
+use Magento\Store\Model\StoreManagerInterface;
 
 class DisplayAreas implements ResolverInterface
 {
     protected const AREA_MAPPING = [
         ShortcutAreas::CART_PAGE_VALUE => 'CART_PAGE',
         ShortcutAreas::MINICART_VALUE => 'MINI_CART',
-        ShortcutAreas::PRODUCT_VIEW_VALUE => 'PRODUCT_PAGE',
+        ShortcutAreas::PRODUCT_VIEW_VALUE => 'PRODUCT_PAGE'
     ];
 
     /**
      * DisplayAreas Constructor
      *
      * @param Configuration $configuration
+     * @param StoreManagerInterface $storeManager
      */
     public function __construct(
-        public Configuration $configuration,
-    ) {
-    }
+        private readonly Configuration $configuration,
+        private readonly StoreManagerInterface $storeManager
+    ) {}
 
     /**
      * @inheritDoc
      */
     public function resolve(Field $field, $context, ResolveInfo $info, array $value = null, array $args = null): array
     {
-        $areas = $this->configuration->getShowPaymentMethodOn($this->getPaymentMethodVariant($field));
+        $areas = $this->configuration->getShowPaymentMethodOn(
+            $this->getPaymentMethodVariant($field),
+            ScopeInterface::SCOPE_STORE,
+            $this->storeManager->getStore()->getId()
+        );
+
         if ($areas === []) {
             return [];
         }
