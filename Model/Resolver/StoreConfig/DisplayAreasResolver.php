@@ -22,7 +22,7 @@ use Magento\Framework\GraphQl\Query\ResolverInterface;
 use Magento\Store\Model\ScopeInterface;
 use Magento\Store\Model\StoreManagerInterface;
 
-class DisplayAreas implements ResolverInterface
+class DisplayAreasResolver implements ResolverInterface
 {
     protected const AREA_MAPPING = [
         ShortcutAreas::CART_PAGE_VALUE => 'CART_PAGE',
