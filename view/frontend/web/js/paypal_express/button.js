@@ -114,9 +114,10 @@ define([
             this.isProductView = config.isProductView;
 
             if (!this.isProductView) {
+                await virtualQuoteModel().setIsVirtual(false);
+
                 // Retrieve the PayPal payment method
                 let paypalPaymentMethod = await getPaymentMethod('paypal', this.isProductView);
-                virtualQuoteModel().setIsVirtual(false);
 
                 if (!paypalPaymentMethod) {
                     // Subscribe to cart updates if PayPal method is not immediately available
@@ -141,9 +142,9 @@ define([
             // Configuration setup
             try {
                 const response = await getExpressMethods().getRequest(element);
-                const cart = customerData.get('cart');
+                await virtualQuoteModel().setIsVirtual(true, response);
 
-                virtualQuoteModel().setIsVirtual(true, response);
+                const cart = customerData.get('cart');
 
                 cart.subscribe(function () {
                     this.reloadPaypalButton(element);
@@ -319,11 +320,11 @@ define([
             if (this.isProductView) {
                 const pdpResponse = await getExpressMethods().getRequest(element);
 
-                virtualQuoteModel().setIsVirtual(true, pdpResponse);
+                await virtualQuoteModel().setIsVirtual(true, pdpResponse);
                 setExpressMethods(pdpResponse);
                 totalsModel().setTotal(pdpResponse.totals.grand_total);
             } else {
-                virtualQuoteModel().setIsVirtual(false);
+                await virtualQuoteModel().setIsVirtual(false);
             }
 
             this.unmountPaypal();
@@ -444,7 +445,7 @@ define([
 
                 onAuthorized: async (shopperDetails, actions) => {
                     try {
-                        const isVirtual = virtualQuoteModel().getIsVirtual();
+                        const isVirtual = await virtualQuoteModel().getIsVirtual();
 
                         const { billingAddress, shippingAddress } = await this.setupAddresses(shopperDetails);
 
