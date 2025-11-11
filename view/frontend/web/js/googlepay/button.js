@@ -292,7 +292,7 @@ define([
                     configuration: {
                         gatewayMerchantId: googlePaymentMethod.configuration.gatewayMerchantId,
                         merchantId: googlePaymentMethod.configuration.merchantId,
-                        merchantName: config.merchantAccount
+                        merchantName: googlePaymentMethod.configuration.gatewayMerchantId
                     },
                     onAuthorized: this.startPlaceOrder.bind(this),
                     onClick: function (resolve, reject) {validatePdpForm(resolve, reject, pdpForm);},
