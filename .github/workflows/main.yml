@@ -4,9 +4,11 @@ on:
   push:
     branches:
       - main
+      - feature/express-on-shipping-page
   pull_request:
     branches:
       - main
+      - feature/express-on-shipping-page
   workflow_dispatch:
 
 jobs:
