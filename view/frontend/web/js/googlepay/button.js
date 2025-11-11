@@ -117,8 +117,9 @@ define([
                 if (this.isProductView) {
                     this.initializeOnPDP(config, element);
                 } else {
+                    await virtualQuoteModel().setIsVirtual(false);
+
                     let googlePaymentMethod = await getPaymentMethod('googlepay', this.isProductView);
-                    virtualQuoteModel().setIsVirtual(false);
 
                     if (!googlePaymentMethod) {
                         const cart = customerData.get('cart');
@@ -137,8 +138,9 @@ define([
 
             initializeOnPDP: async function (config, element) {
                 const response = await getExpressMethods().getRequest(element);
+                await virtualQuoteModel().setIsVirtual(true, response);
+
                 const cart = customerData.get('cart');
-                virtualQuoteModel().setIsVirtual(true, response);
 
                 cart.subscribe(function () {
                     this.reloadGooglePayButton(element);
@@ -233,11 +235,11 @@ define([
                 if (this.isProductView) {
                     const pdpResponse = await getExpressMethods().getRequest(element);
 
-                    virtualQuoteModel().setIsVirtual(true, pdpResponse);
+                    await virtualQuoteModel().setIsVirtual(true, pdpResponse);
                     setExpressMethods(pdpResponse);
                     totalsModel().setTotal(pdpResponse.totals.grand_total);
                 } else {
-                    virtualQuoteModel().setIsVirtual(false);
+                    await virtualQuoteModel().setIsVirtual(false);
                 }
 
                 this.unmountGooglePay();
