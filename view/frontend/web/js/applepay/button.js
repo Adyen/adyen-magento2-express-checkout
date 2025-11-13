@@ -203,7 +203,7 @@ define([
             },
 
             /**
-             * @param {*} error
+             * @param {HTMLElement} element
              */
             onNotAvailable: function (element) {
                 console.log('Apple pay is unavailable.');
