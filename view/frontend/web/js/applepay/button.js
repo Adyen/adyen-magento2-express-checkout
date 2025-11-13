@@ -1,4 +1,5 @@
 define([
+        'jquery',
         'uiComponent',
         'mage/translate',
         'Magento_Customer/js/customer-data',
@@ -34,6 +35,7 @@ define([
         'Adyen_Payment/js/helper/currencyHelper'
     ],
     function (
+        $,
         Component,
         $t,
         customerData,
@@ -196,15 +198,16 @@ define([
                         this.onAvailable(element);
                     })
                     .catch((e) => {
-                        this.onNotAvailable(e);
+                        this.onNotAvailable(element);
                     });
             },
 
             /**
-             * @param {*} error
+             * @param {HTMLElement} element
              */
-            onNotAvailable: function (error) {
-                console.log('Apple pay is unavailable.', error);
+            onNotAvailable: function (element) {
+                console.log('Apple pay is unavailable.');
+                $(element).remove();
             },
 
             /**
