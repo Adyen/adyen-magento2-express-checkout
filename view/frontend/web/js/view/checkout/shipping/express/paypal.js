@@ -18,15 +18,13 @@ define(
     ) {
         return Component.extend({
             defaults: {
-                template: 'Adyen_ExpressCheckout/checkout/shipping/express',
-                salutation: ko.observable()
+                template: 'Adyen_ExpressCheckout/checkout/shipping/paypal'
             },
 
             initialize: function () {
                 this._super();
 
                 console.log("PayPal express layout on the shipping page has been rendered!");
-                this.salutation('Hello World: PayPal')
             }
         });
     }
