@@ -24,6 +24,7 @@ use Adyen\Payment\Helper\Data;
 use Magento\Checkout\Model\ConfigProviderInterface;
 use Magento\Checkout\Model\Session;
 use Magento\Framework\App\Config\ScopeConfigInterface;
+use Magento\Framework\Exception\LocalizedException;
 use Magento\Framework\Exception\NoSuchEntityException;
 use Magento\Framework\UrlInterface;
 use Magento\Store\Model\ScopeInterface;
@@ -52,6 +53,11 @@ class AdyenExpressConfigProvider implements ConfigProviderInterface
         private readonly UrlInterface $url
     ) {}
 
+    /**
+     * @return array[]
+     * @throws LocalizedException
+     * @throws NoSuchEntityException
+     */
     public function getConfig(): array
     {
         $quote = $this->checkoutSession->getQuote();
@@ -128,6 +134,13 @@ class AdyenExpressConfigProvider implements ConfigProviderInterface
         );
     }
 
+    /**
+     * Makes an Adyen `/paymentMethods` call and returns decoded response
+     *
+     * @return array|null
+     * @throws NoSuchEntityException
+     * @throws LocalizedException
+     */
     private function getPaymentMethodsResponse(): ?array
     {
         $paymentMethodsResponse = $this->adyenPaymentMethodManagement->getPaymentMethods(
