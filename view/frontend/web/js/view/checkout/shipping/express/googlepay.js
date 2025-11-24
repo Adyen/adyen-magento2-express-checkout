@@ -60,9 +60,10 @@ define(
 
         return Component.extend({
             defaults: {
-                template: 'Adyen_ExpressCheckout/checkout/shipping/googlepay',
+                template: 'Adyen_ExpressCheckout/checkout/shipping/express',
                 checkoutComponent: null,
                 modalLabel: 'adyen-checkout-action_modal-googlepay',
+                componentRootNode: 'adyen-express-checkout__googlepay',
                 orderId: 0,
                 shippingMethods: {},
             },
@@ -76,6 +77,7 @@ define(
                 return this;
             },
 
+
             initialize: function () {
                 this._super();
                 this.isAvailable(adyenExpressConfiguration.getIsGooglePayEnabledOnShipping());
@@ -86,6 +88,7 @@ define(
                 const adyenData = window.adyenData;
                 const googlePayStyles = getGooglePayStyles();
                 const isVirtual = adyenExpressConfiguration.getIsVirtual();
+                let self = this;
 
                 this.checkoutComponent = await window.AdyenWeb.AdyenCheckout({
                     locale: adyenConfiguration.getLocale(),
@@ -164,7 +167,7 @@ define(
 
                 this.googlePayComponent.isAvailable()
                     .then(function () {
-                        this.googlePayComponent.mount("#test-googlepay-node");
+                        this.googlePayComponent.mount("#" + self.componentRootNode);
                     }.bind(this))
                     .catch(function (error) {
                         console.log(error);
@@ -468,6 +471,10 @@ define(
             closeModal: function(popupModal) {
                 adyenPaymentModal.closeModal(popupModal, this.modalLabel)
             },
+
+            getComponentRootNoteId: function () {
+                return this.componentRootNode;
+            }
         });
     }
 );
