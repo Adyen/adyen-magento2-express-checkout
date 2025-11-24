@@ -13,6 +13,12 @@ define(
         'use strict';
 
         return {
+            getStoreCode: function () {
+                return window.checkoutConfig.payment.adyenExpress.storeCode;
+            },
+            getActionSuccess: function () {
+                return window.checkoutConfig.payment.adyenExpress.actionSuccess;
+            },
             getCountryCode: function () {
                 return window.checkoutConfig.payment.adyenExpress.countryCode;
             },

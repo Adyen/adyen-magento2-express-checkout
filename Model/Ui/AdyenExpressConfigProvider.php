@@ -25,6 +25,7 @@ use Magento\Checkout\Model\ConfigProviderInterface;
 use Magento\Checkout\Model\Session;
 use Magento\Framework\App\Config\ScopeConfigInterface;
 use Magento\Framework\Exception\NoSuchEntityException;
+use Magento\Framework\UrlInterface;
 use Magento\Store\Model\ScopeInterface;
 use Magento\Store\Model\StoreManagerInterface;
 
@@ -38,6 +39,7 @@ class AdyenExpressConfigProvider implements ConfigProviderInterface
      * @param ChargedCurrency $chargeCurrencyHelper
      * @param Data $adyenHelper
      * @param ScopeConfigInterface $scopeConfig
+     * @param UrlInterface $url
      */
     public function __construct(
         private readonly ConfigurationInterface $configHelper,
@@ -46,7 +48,8 @@ class AdyenExpressConfigProvider implements ConfigProviderInterface
         private readonly Session $checkoutSession,
         private readonly ChargedCurrency $chargeCurrencyHelper,
         private readonly Data $adyenHelper,
-        private readonly ScopeConfigInterface $scopeConfig
+        private readonly ScopeConfigInterface $scopeConfig,
+        private readonly UrlInterface $url
     ) {}
 
     public function getConfig(): array
@@ -98,7 +101,9 @@ class AdyenExpressConfigProvider implements ConfigProviderInterface
                     ],
                     'paypal' => [
                         'isEnabledOnShipping' => $isPayPalEnabledOnShipping
-                    ]
+                    ],
+                    'storeCode' => $this->storeManager->getStore()->getCode(),
+                    'actionSuccess' => $this->url->getUrl('checkout/onepage/success', ['_secure' => true])
                 ]
             ]
         ];

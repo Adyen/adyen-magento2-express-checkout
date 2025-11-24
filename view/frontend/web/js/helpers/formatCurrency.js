@@ -1,14 +1,19 @@
-define(['Adyen_ExpressCheckout/js/model/config'], function (configModel) {
+define([
+    'Adyen_ExpressCheckout/js/model/config',
+    'Adyen_Payment/js/model/adyen-configuration'
+], function (
+    configModel,
+    adyenConfiguration
+) {
     'use strict';
 
     return function (amount, currency) {
-        const config = configModel().getConfig();
-        const locale = config.locale.replace('_', '-');
+        const locale = configModel().getConfig().locale ?? adyenConfiguration.getLocale();
         const options = {
             style: 'currency',
             currency: currency
         };
 
-        return new Intl.NumberFormat(locale, options).format(amount);
+        return new Intl.NumberFormat(locale.replace('_', '-'), options).format(amount);
     };
 });
