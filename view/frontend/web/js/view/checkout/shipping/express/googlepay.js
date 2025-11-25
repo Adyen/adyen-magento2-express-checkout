@@ -62,7 +62,7 @@ define(
             defaults: {
                 template: 'Adyen_ExpressCheckout/checkout/shipping/express',
                 checkoutComponent: null,
-                modalLabel: 'adyen-checkout-action_modal-googlepay',
+                modalLabel: 'adyen-checkout-action_modal',
                 componentRootNode: 'adyen-express-checkout__googlepay',
                 orderId: 0,
                 shippingMethods: {},

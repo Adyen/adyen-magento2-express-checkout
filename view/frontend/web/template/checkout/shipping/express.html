@@ -11,7 +11,7 @@
 -->
 
 <!-- ko if: isAvailable -->
-<div class="adyen-express-checkout">
-    <div data-bind="attr: { id: getComponentRootNoteId()}" afterRender="buildPaymentMethodComponent()"></div>
+<div data-bind="attr: {id: getComponentRootNoteId(), class: 'adyen-express-checkout-shipping__button'}"
+     afterRender="buildPaymentMethodComponent()">
 </div>
 <!-- /ko -->
