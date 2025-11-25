@@ -1,4 +1,5 @@
 define([
+        'jquery',
         'uiComponent',
         'mage/translate',
         'Magento_Customer/js/customer-data',
@@ -34,6 +35,7 @@ define([
         'Adyen_Payment/js/helper/currencyHelper'
     ],
     function (
+        $,
         Component,
         $t,
         customerData,
@@ -94,9 +96,9 @@ define([
                 // If express methods is not set then set it.
                 if (this.isProductView) {
                     const response = await getExpressMethods().getRequest(element);
-                    const cart = customerData.get('cart');
+                    await virtualQuoteModel().setIsVirtual(true, response);
 
-                    virtualQuoteModel().setIsVirtual(true, response);
+                    const cart = customerData.get('cart');
 
                     cart.subscribe(function () {
                         this.reloadApplePayButton(element);
@@ -132,7 +134,7 @@ define([
                     this.initialiseApplePayComponent(applePaymentMethod, element);
                 } else {
                     let applePaymentMethod = await getPaymentMethod('applepay', this.isProductView);
-                    virtualQuoteModel().setIsVirtual(false);
+                    await virtualQuoteModel().setIsVirtual(false);
 
                     if (!applePaymentMethod) {
                         const cart = customerData.get('cart');
@@ -196,15 +198,16 @@ define([
                         this.onAvailable(element);
                     })
                     .catch((e) => {
-                        this.onNotAvailable(e);
+                        this.onNotAvailable(element);
                     });
             },
 
             /**
-             * @param {*} error
+             * @param {HTMLElement} element
              */
-            onNotAvailable: function (error) {
-                console.log('Apple pay is unavailable.', error);
+            onNotAvailable: function (element) {
+                console.log('Apple pay is unavailable.');
+                $(element).remove();
             },
 
             /**
@@ -227,11 +230,11 @@ define([
                 if (this.isProductView) {
                     const pdpResponse = await getExpressMethods().getRequest(element);
 
-                    virtualQuoteModel().setIsVirtual(true, pdpResponse);
+                    await virtualQuoteModel().setIsVirtual(true, pdpResponse);
                     setExpressMethods(pdpResponse);
                     totalsModel().setTotal(pdpResponse.totals.grand_total);
                 } else {
-                    virtualQuoteModel().setIsVirtual(false);
+                    await virtualQuoteModel().setIsVirtual(false);
                 }
 
                 this.unmountApplePay();
@@ -265,11 +268,11 @@ define([
                 applepayBaseConfiguration = {
                     countryCode: countryCode,
                     currencyCode: currency,
-                    totalPriceLabel: this.getMerchantName(),
+                    totalPriceLabel: applePaymentMethod.configuration.merchantName,
                     configuration: {
                         domainName: window.location.hostname,
                         merchantId: applePaymentMethod.configuration.merchantId,
-                        merchantName: applePaymentMethod.configuration.merchantName
+                        merchantName: this.getMerchantName(),
                     },
                     amount: {
                         value: this.isProductView
@@ -490,8 +493,8 @@ define([
                 resolve(update);
             },
 
-            onAuthorized: function (data, actions) {
-                const isVirtual = virtualQuoteModel().getIsVirtual();
+            onAuthorized: async function (data, actions) {
+                const isVirtual = await virtualQuoteModel().getIsVirtual();
                 const event = data && data.authorizedEvent;
                 if (!event || !event.payment) {
                     console.error('Adyen ApplePay: authorizedEvent missing');
