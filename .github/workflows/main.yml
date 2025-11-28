@@ -21,7 +21,7 @@ jobs:
     strategy:
       matrix:
         php-version: ["8.4"]
-        magento-version: ["2.4.8"]
+        magento-version: ["2.4.8-p3"]
 
     env:
       PHP_VERSION: ${{ matrix.php-version }}
