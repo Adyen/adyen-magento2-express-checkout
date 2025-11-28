@@ -357,8 +357,8 @@ define(
                 });
             },
 
-            handleOnError: function() {
-
+            handleOnError: function(error, component) {
+                errorProcessor.process(error, this.messageContainer);
             },
 
             handleAdyenResult: function (responseJSON, orderId) {
