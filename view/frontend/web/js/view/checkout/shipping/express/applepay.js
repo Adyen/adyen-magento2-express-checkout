@@ -10,23 +10,50 @@
 define(
     [
         'ko',
-        'uiComponent'
+        'uiComponent',
+        'Adyen_ExpressCheckout/js/model/adyen-express-configuration'
     ],
     function(
         ko,
-        Component
+        Component,
+        adyenExpressConfiguration
     ) {
         return Component.extend({
             defaults: {
                 template: 'Adyen_ExpressCheckout/checkout/shipping/express',
-                salutation: ko.observable()
+                componentRootNode: 'adyen-express-checkout__applepay'
+            },
+
+            initObservable: function() {
+                this._super().observe([
+                    'isAvailable',
+                    'isPlaceOrderActionAllowed'
+                ]);
+
+                return this;
+            },
+
+
+            initObservable: function() {
+                this._super().observe([
+                    'isAvailable',
+                    'isPlaceOrderActionAllowed'
+                ]);
+
+                return this;
             },
 
             initialize: function () {
                 this._super();
+                this.isAvailable(adyenExpressConfiguration.getIsApplePayEnabledOnShipping());
+            },
 
+            getComponentRootNoteId: function () {
+                return this.componentRootNode;
+            },
+
+            buildPaymentMethodComponent: function () {
                 console.log("Apple Pay express layout on the shipping page has been rendered!");
-                this.salutation('Hello World: Apple Pay')
             }
         });
     }

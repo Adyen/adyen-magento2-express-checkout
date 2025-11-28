@@ -10,23 +10,40 @@
 define(
     [
         'ko',
-        'uiComponent'
+        'uiComponent',
+        'Adyen_ExpressCheckout/js/model/adyen-express-configuration'
     ],
     function(
         ko,
-        Component
+        Component,
+        adyenExpressConfiguration
     ) {
         return Component.extend({
             defaults: {
                 template: 'Adyen_ExpressCheckout/checkout/shipping/express',
-                salutation: ko.observable()
+                componentRootNode: 'adyen-express-checkout__paypal'
+            },
+
+            initObservable: function() {
+                this._super().observe([
+                    'isAvailable',
+                    'isPlaceOrderActionAllowed'
+                ]);
+
+                return this;
             },
 
             initialize: function () {
                 this._super();
+                this.isAvailable(adyenExpressConfiguration.getIsPayPalEnabledOnShipping());
+            },
 
+            getComponentRootNoteId: function () {
+                return this.componentRootNode;
+            },
+
+            buildPaymentMethodComponent: function () {
                 console.log("PayPal express layout on the shipping page has been rendered!");
-                this.salutation('Hello World: PayPal')
             }
         });
     }

@@ -4,7 +4,7 @@
  *
  * Adyen Payment module (https://www.adyen.com/)
  *
- * Copyright (c) 2025 Adyen BV (https://www.adyen.com/)
+ * Copyright (c) 2025 Adyen N.V. (https://www.adyen.com/)
  * See LICENSE.txt for license details.
  *
  * Author: Adyen <magento@adyen.com>
@@ -28,14 +28,49 @@
                                                             <item name="children" xsi:type="array">
                                                                 <item name="before-login-form" xsi:type="array">
                                                                     <item name="children" xsi:type="array">
-                                                                        <item name="adyen-googlepay-on-shipping" xsi:type="array">
+                                                                        <item name="adyen-express-checkout-shipping" xsi:type="array">
+                                                                            <item name="config" xsi:type="array">
+                                                                                <item name="template" xsi:type="string">Adyen_ExpressCheckout/checkout/shipping/express-checkout</item>
+                                                                            </item>
+                                                                            <item name="component" xsi:type="string">uiComponent</item>
+                                                                            <item name="children" xsi:type="array">
+                                                                                <item name="adyen-googlepay-express-shipping" xsi:type="array">
+                                                                                    <item name="component" xsi:type="string">Adyen_ExpressCheckout/js/view/checkout/shipping/express/googlepay</item>
+                                                                                    <item name="displayArea" xsi:type="string">adyen-express-buttons</item>
+                                                                                </item>
+                                                                                <item name="adyen-applepay-express-shipping" xsi:type="array">
+                                                                                    <item name="component" xsi:type="string">Adyen_ExpressCheckout/js/view/checkout/shipping/express/applepay</item>
+                                                                                    <item name="displayArea" xsi:type="string">adyen-express-buttons</item>
+                                                                                </item>
+                                                                                <item name="adyen-paypal-express-shipping" xsi:type="array">
+                                                                                    <item name="component" xsi:type="string">Adyen_ExpressCheckout/js/view/checkout/shipping/express/paypal</item>
+                                                                                    <item name="displayArea" xsi:type="string">adyen-express-buttons</item>
+                                                                                </item>
+                                                                            </item>
+                                                                        </item>
+                                                                    </item>
+                                                                </item>
+                                                            </item>
+                                                        </item>
+                                                        <item name="address-list" xsi:type="array">
+                                                            <item name="children" xsi:type="array">
+                                                                <item name="adyen-express-checkout-shipping" xsi:type="array">
+                                                                    <item name="config" xsi:type="array">
+                                                                        <item name="template" xsi:type="string">Adyen_ExpressCheckout/checkout/shipping/express-checkout</item>
+                                                                    </item>
+                                                                    <item name="component" xsi:type="string">uiComponent</item>
+                                                                    <item name="children" xsi:type="array">
+                                                                        <item name="adyen-googlepay-express-shipping" xsi:type="array">
                                                                             <item name="component" xsi:type="string">Adyen_ExpressCheckout/js/view/checkout/shipping/express/googlepay</item>
+                                                                            <item name="displayArea" xsi:type="string">adyen-express-buttons</item>
                                                                         </item>
-                                                                        <item name="adyen-applepay-on-shipping" xsi:type="array">
+                                                                        <item name="adyen-applepay-express-shipping" xsi:type="array">
                                                                             <item name="component" xsi:type="string">Adyen_ExpressCheckout/js/view/checkout/shipping/express/applepay</item>
+                                                                            <item name="displayArea" xsi:type="string">adyen-express-buttons</item>
                                                                         </item>
-                                                                        <item name="adyen-paypal-on-shipping" xsi:type="array">
+                                                                        <item name="adyen-paypal-express-shipping" xsi:type="array">
                                                                             <item name="component" xsi:type="string">Adyen_ExpressCheckout/js/view/checkout/shipping/express/paypal</item>
+                                                                            <item name="displayArea" xsi:type="string">adyen-express-buttons</item>
                                                                         </item>
                                                                     </item>
                                                                 </item>
