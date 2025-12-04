@@ -474,7 +474,7 @@ define(
                 adyenPaymentModal.closeModal(popupModal, this.modalLabel)
             },
 
-            getComponentRootNoteId: function () {
+            getComponentRootNodeId: function () {
                 return this.componentRootNode;
             }
         });

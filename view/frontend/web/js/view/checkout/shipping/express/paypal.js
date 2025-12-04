@@ -24,7 +24,6 @@ define(
         'Adyen_ExpressCheckout/js/actions/setShippingInformation',
         'Adyen_ExpressCheckout/js/actions/setBillingAddress',
         'Adyen_ExpressCheckout/js/actions/setTotalsInfo',
-        'Adyen_ExpressCheckout/js/helpers/formatCurrency',
         'Adyen_ExpressCheckout/js/helpers/getExtensionAttributes',
         'Adyen_ExpressCheckout/js/actions/initPayments',
         'Adyen_ExpressCheckout/js/actions/updatePaypalOrder',
@@ -50,7 +49,6 @@ define(
         setShippingInformation,
         setBillingAddress,
         setTotalsInfo,
-        formatCurrency,
         getExtensionAttributes,
         initPayments,
         updatePaypalOrder,
@@ -229,7 +227,7 @@ define(
                                 this.isInitialized = true;
                             }.bind(this))
                             .catch(function (e) {
-                                console.log('PayPal is unavailable on shipping.', e);
+                                console.error('PayPal is unavailable on shipping.', e);
                             });
                     } else {
                         rootEl.style.display = 'block';
@@ -527,8 +525,7 @@ define(
             /**
              * /payments/details
              */
-            handleOnAdditionalDetails: function (state) {
-                const self = this;
+            handleOnAdditionalDetails: async function (state) {
                 const quoteId = getMaskedIdFromCart();
 
                 if (!state || !state.data) {
@@ -536,29 +533,28 @@ define(
                 }
 
                 const request = state.data;
-                const popupModal = self.showModal();
+                const popupModal = this.showModal();
 
                 adyenPaymentModal.hideModalLabel(this.modalLabel);
                 loader.startLoader();
                 this.isLoading(true);
                 this.errorMessage('');
 
-                request.orderId = self.orderId;
+                request.orderId = this.orderId;
 
-                adyenPaymentService.paymentDetails(request, self.orderId, quoteId)
-                    .done(function (responseJSON) {
-                        self.handleAdyenResult(responseJSON, self.orderId);
-                    })
-                    .fail(function (response) {
-                        self.closeModal(popupModal);
-                        errorProcessor.process(response, self.messageContainer);
-                        self.isPlaceOrderActionAllowed(true);
-                        loader.stopLoader();
-                        self.isLoading(false);
-                        self.showUserError(
-                            $t('We could not complete your PayPal payment. Please try again.')
-                        );
-                    });
+                try {
+                    const responseJSON = await adyenPaymentService.paymentDetails(request, this.orderId, quoteId);
+                    this.handleAdyenResult(responseJSON, this.orderId);
+                } catch (response) {
+                    this.closeModal(popupModal);
+                    errorProcessor.process(response, this.messageContainer);
+                    this.isPlaceOrderActionAllowed(true);
+                    loader.stopLoader();
+                    this.isLoading(false);
+                    this.showUserError(
+                        $t('We could not complete your PayPal payment. Please try again.')
+                    );
+                }
             },
 
             /**
@@ -821,7 +817,7 @@ define(
                         }
                     }).mount('#' + this.modalLabel);
                 } catch (e) {
-                    console.log(e);
+                    console.error(e);
                     loader.stopLoader();
                     self.closeModal(popupModal);
                 }
@@ -850,7 +846,7 @@ define(
             /**
              * Exposed for template binding.
              */
-            getComponentRootNoteId: function () {
+            getComponentRootNodeId: function () {
                 return this.componentRootNode;
             },
 
