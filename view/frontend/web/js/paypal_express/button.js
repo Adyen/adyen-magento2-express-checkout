@@ -389,6 +389,12 @@ define([
                     });
                 },
                 onShippingAddressChange: async (data, actions, component) => {
+                    const isVirtual = await virtualQuoteModel().getIsVirtual();
+
+                    if (isVirtual) {
+                        return;
+                    }
+
                     try {
                         this.shippingAddress = data.shippingAddress;
                         if(this.isProductView) {
@@ -418,6 +424,12 @@ define([
                     }
                 },
                 onShippingOptionsChange: async (data, actions, component) => {
+                    const isVirtual = await virtualQuoteModel().getIsVirtual();
+
+                    if (isVirtual) {
+                        return;
+                    }
+
                     const currentPaymentData = component.paymentData;
                     const selectedShippingLabel = data.selectedShippingOption.label?.trim();
 
@@ -446,28 +458,28 @@ define([
                 onAuthorized: async (shopperDetails, actions) => {
                     try {
                         const isVirtual = await virtualQuoteModel().getIsVirtual();
-
                         const { billingAddress, shippingAddress } = await this.setupAddresses(shopperDetails);
 
-                        let billingAddressPayload = {
-                            address: billingAddress,
-                            'useForShipping': false
-                        };
-
-                        let shippingInformationPayload = {
-                            addressInformation: {
-                                shipping_address: shippingAddress,
-                                billing_address: billingAddress,
-                                shipping_method_code: this.shippingMethod,
-                                shipping_carrier_code: this.shippingMethods[this.shippingMethod].carrier_code
-                            }
-                        };
                         activateCart(this.isProductView)
                             .then(() => {
+                                let billingAddressPayload = {
+                                    address: billingAddress,
+                                    'useForShipping': false
+                                };
+
                                 return setBillingAddress(billingAddressPayload, this.isProductView);
                             })
                             .then(() => {
                                 if (!isVirtual) {
+                                    let shippingInformationPayload = {
+                                        addressInformation: {
+                                            shipping_address: shippingAddress,
+                                            billing_address: billingAddress,
+                                            shipping_method_code: this.shippingMethod,
+                                            shipping_carrier_code: this.shippingMethods[this.shippingMethod].carrier_code
+                                        }
+                                    };
+
                                     return setShippingInformation(shippingInformationPayload, this.isProductView)
                                         .then(() => {
                                             this.createOrder()
