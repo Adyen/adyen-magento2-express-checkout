@@ -552,6 +552,7 @@ define([
             handleAction: function(action, orderId) {
                 var self = this;
                 let popupModal;
+                let actionNode = document.getElementById(this.modalLabel + 'Content');
 
                 if (action.type === 'threeDS2' || action.type === 'await') {
                     popupModal = self.showModal();
@@ -565,7 +566,7 @@ define([
                                 popupModal.modal('openModal');
                             }
                         }
-                    }).mount('#' + this.modalLabel);
+                    }).mount(actionNode);
                 } catch (e) {
                     console.log(e);
                     loader.stopLoader();
