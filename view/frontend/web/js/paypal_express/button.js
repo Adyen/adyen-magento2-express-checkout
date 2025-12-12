@@ -400,7 +400,7 @@ define([
 
                         if (isVirtual) {
                             // Use the shipping address as the billing for correct taxation for virtual quotes
-                            this.setBillingAndTotalsInfo(data.shippingAddress);
+                            this.setBillingAndTotals(data.shippingAddress);
                         } else {
                             this.shippingAddress = data.shippingAddress;
                             shippingMethods = await this.getShippingMethods(data.shippingAddress);
@@ -687,28 +687,32 @@ define([
             });
         },
 
-        setBillingAndTotalsInfo: async function (addressData) {
-            const address = {
-                countryId: addressData.countryCode,
-                region: addressData.state,
-                regionId: getRegionId(addressData.country_id, addressData.state),
-                postcode: addressData.postalCode
-            };
+        setBillingAndTotals: async function (addressData) {
+            try {
+                const address = {
+                    countryId: addressData.countryCode,
+                    region: addressData.state,
+                    regionId: getRegionId(addressData.country_id, addressData.state),
+                    postcode: addressData.postalCode
+                };
 
-            let billingAddressPayload = {
-                address: address,
-                'useForShipping': false
-            };
+                let billingAddressPayload = {
+                    address: address,
+                    'useForShipping': false
+                };
 
-            await setBillingAddress(billingAddressPayload, this.isProductView);
+                await setBillingAddress(billingAddressPayload, this.isProductView);
 
-            let totalsPayload= {
-                addressInformation: {
-                    address: address
+                let totalsPayload= {
+                    addressInformation: {
+                        address: address
+                    }
                 }
-            }
 
-            await setTotalsInfo(totalsPayload, this.isProductView)
+                await setTotalsInfo(totalsPayload, this.isProductView)
+            } catch (error) {
+                console.error('Failed to update billing address: ', error);
+            }
         }
     });
 });
