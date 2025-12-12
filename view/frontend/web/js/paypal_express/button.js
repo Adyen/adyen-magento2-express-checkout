@@ -703,7 +703,7 @@ define([
 
                 await setBillingAddress(billingAddressPayload, this.isProductView);
 
-                let totalsPayload= {
+                let totalsPayload = {
                     addressInformation: {
                         address: address
                     }
