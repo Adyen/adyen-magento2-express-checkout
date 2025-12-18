@@ -177,10 +177,10 @@ class AdyenInitPaymentsTest extends AbstractAdyenTestCase
 
         $this->transferFactory->method('create')->willReturn($this->transferMock);
         $this->transactionPaymentClient->method('placeRequest')->willReturn([
-            ['resultCode' => 'Authorised', 'action' => null],
+            ['resultCode' => 'Pending', 'action' => null],
         ]);
         $this->paymentResponseHandler->method('formatPaymentResponse')
-            ->with('Authorised', null)
+            ->with('Pending', null)
             ->willReturn(['status' => 'success']);
 
         $result = $this->adyenInitPayments->execute($this->stateData, null, $maskedId);
@@ -286,10 +286,10 @@ class AdyenInitPaymentsTest extends AbstractAdyenTestCase
 
         $this->transferFactory->method('create')->willReturn($this->transferMock);
         $this->transactionPaymentClient->method('placeRequest')->willReturn([
-            ['resultCode' => 'Authorised', 'action' => null],
+            ['resultCode' => 'Pending', 'action' => null],
         ]);
         $this->paymentResponseHandler->method('formatPaymentResponse')
-            ->with('Authorised', null)
+            ->with('Pending', null)
             ->willReturn(['status' => 'success']);
 
         $response = $this->adyenInitPayments->execute($stateData, 1);
@@ -336,11 +336,11 @@ class AdyenInitPaymentsTest extends AbstractAdyenTestCase
 
         $this->transactionPaymentClient->method('placeRequest')->willReturn([
             'hasOnlyGiftCards' => true,
-            ['resultCode' => 'Authorised', 'action' => null],
+            ['resultCode' => 'Pending', 'action' => null],
         ]);
 
         $this->paymentResponseHandler->method('formatPaymentResponse')
-            ->with('Authorised', null)
+            ->with('Pending', null)
             ->willReturn(['status' => 'cleaned']);
 
         $response = $this->adyenInitPayments->execute($this->stateData, 1);
@@ -394,7 +394,7 @@ class AdyenInitPaymentsTest extends AbstractAdyenTestCase
         ]);
 
         $this->transactionPaymentClient->method('placeRequest')->willReturn([
-            ['resultCode' => 'Authorised', 'action' => null]
+            ['resultCode' => 'Pending', 'action' => null]
         ]);
         $this->paymentResponseHandler->method('formatPaymentResponse')->willReturn(['status' => 'ok-with-lines']);
 
@@ -443,7 +443,7 @@ class AdyenInitPaymentsTest extends AbstractAdyenTestCase
 
         $this->transactionPaymentClient->method('placeRequest')->willReturn([
             [
-                'resultCode' => 'Authorised',
+                'resultCode' => 'Pending',
                 'pspReference' => 'PSP-123',
                 'action' => $action,
                 'additionalData' => $additionalData,
@@ -461,7 +461,7 @@ class AdyenInitPaymentsTest extends AbstractAdyenTestCase
 
         $this->paymentResponseHandler->expects($this->once())
             ->method('formatPaymentResponse')
-            ->with('Authorised', $action)
+            ->with('Pending', $action)
             ->willReturn(['status' => 'success']);
 
         $result = $this->adyenInitPayments->execute($this->stateData, 1);
@@ -469,7 +469,7 @@ class AdyenInitPaymentsTest extends AbstractAdyenTestCase
         $this->assertJson($result);
         $this->assertStringContainsString('success', $result);
         $this->assertSame([
-            ['resultCode', 'Authorised'],
+            ['resultCode', 'Pending'],
             ['pspReference', 'PSP-123'],
             ['action', $action],
             ['additionalData', $additionalData],
@@ -566,12 +566,12 @@ class AdyenInitPaymentsTest extends AbstractAdyenTestCase
         $this->transferFactory->method('create')->willReturn($this->transferMock);
 
         $this->transactionPaymentClient->method('placeRequest')->willReturn([
-            ['resultCode' => 'Authorised', 'action' => null],
+            ['resultCode' => 'Pending', 'action' => null],
         ]);
 
         $this->paymentResponseHandler->expects($this->once())
             ->method('formatPaymentResponse')
-            ->with('Authorised', null)
+            ->with('Pending', null)
             ->willReturn(['status' => 'no-payment-object']);
 
         $result = $this->adyenInitPayments->execute($this->stateData, 1);
