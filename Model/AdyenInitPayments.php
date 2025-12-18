@@ -169,18 +169,11 @@ class AdyenInitPayments implements AdyenInitPaymentsInterface
             $paymentsResponse = $this->returnFirstTransactionPaymentResponse($response);
             $quotePayment = $quote->getPayment();
             if ($quotePayment) {
-                $quotePayment->setAdditionalInformation('resultCode', $paymentsResponse['resultCode'] ?? null);
-                if (!empty($paymentsResponse['pspReference'])) {
-                    $quotePayment->setAdditionalInformation('pspReference', $paymentsResponse['pspReference']);
-                }
-                if (!empty($paymentsResponse['action'])) {
-                    $quotePayment->setAdditionalInformation('action', $paymentsResponse['action']);
-                }
-                if (!empty($paymentsResponse['additionalData'])) {
-                    $quotePayment->setAdditionalInformation('additionalData', $paymentsResponse['additionalData']);
-                }
-                if (!empty($paymentsResponse['details'])) {
-                    $quotePayment->setAdditionalInformation('details', $paymentsResponse['details']);
+                $keysToSet = ['resultCode', 'pspReference', 'action', 'additionalData', 'details'];
+                foreach ($keysToSet as $key) {
+                    if (!empty($paymentsResponse[$key])) {
+                        $quotePayment->setAdditionalInformation($key, $paymentsResponse[$key]);
+                    }
                 }
             }
 

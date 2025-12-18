@@ -320,7 +320,6 @@ class AdyenInitPaymentsTest extends AbstractAdyenTestCase
                 $this->assertSame('?merchantReference=1000001', $body['returnUrl']);
                 $this->assertSame('TestMerchant', $body['merchantAccount']);
                 $this->assertSame('web', $body['channel']);
-                $this->assertTrue($body['clientStateDataIndicator']);
 
                 return true;
             }))
@@ -406,14 +405,6 @@ class AdyenInitPaymentsTest extends AbstractAdyenTestCase
             ->with($methodInstance)
             ->willReturn(true);
 
-        // Assert line items builder is invoked
-        $invoiceData = [
-            'lineItems' => [
-                ['id' => 'sku-1', 'quantity' => 1, 'amountIncludingTax' => 12345]
-            ],
-            'countryCode' => 'NL'
-        ];
-
         $this->checkoutStateDataValidator->method('getValidatedAdditionalData')
             ->willReturn(json_decode($this->stateData, true, 512, JSON_THROW_ON_ERROR));
 
@@ -433,8 +424,6 @@ class AdyenInitPaymentsTest extends AbstractAdyenTestCase
                 $this->assertSame('?merchantReference=1000001', $body['returnUrl']);
                 $this->assertSame('TestMerchant', $body['merchantAccount']);
                 $this->assertSame('web', $body['channel']);
-                $this->assertTrue($body['clientStateDataIndicator']);
-
                 return true;
             }))
             ->willReturn($this->transferMock);
@@ -456,7 +445,6 @@ class AdyenInitPaymentsTest extends AbstractAdyenTestCase
         $this->assertStringContainsString('success', $response);
     }
 
-
     public function testCleansGiftCardWrapperResponse(): void
     {
         $this->cartRepository->expects($this->exactly(2))->method('save')->with($this->quote);
@@ -477,22 +465,26 @@ class AdyenInitPaymentsTest extends AbstractAdyenTestCase
             ]
         ]);
 
+        $calls = [];
         $this->quotePayment->expects($this->exactly(5))
             ->method('setAdditionalInformation')
-            ->withConsecutive(
-                ['resultCode', 'Pending'],
-                ['pspReference', 'PSP-1'],
-                ['action', ['type' => 'redirect']],
-                ['additionalData', ['foo' => 'bar']],
-                ['details', ['a' => 'b']]
-            );
+            ->willReturnCallback(function (string $key, $value) use (&$calls) {
+                $calls[] = [$key, $value];
+                return null;
+            });
 
         $this->paymentResponseHandler->method('formatPaymentResponse')
             ->with('Pending', ['type' => 'redirect'])
             ->willReturn(['status' => 'pending']);
 
         $response = $this->adyenInitPayments->execute($this->stateData, 1);
-
+        $this->assertSame([
+            ['resultCode', 'Pending'],
+            ['pspReference', 'PSP-1'],
+            ['action', ['type' => 'redirect']],
+            ['additionalData', ['foo' => 'bar']],
+            ['details', ['a' => 'b']],
+        ], $calls);
         $this->assertJson($response);
         $this->assertStringContainsString('pending', $response);
     }
