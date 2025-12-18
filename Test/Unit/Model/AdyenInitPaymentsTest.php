@@ -403,4 +403,181 @@ class AdyenInitPaymentsTest extends AbstractAdyenTestCase
         $this->assertStringContainsString('ok-with-lines', $resp);
     }
 
+    public function testExecuteSetsAdditionalInformationOnQuotePaymentWithAllFields(): void
+    {
+        $paymentMock = $this->createMock(\Magento\Quote\Model\Quote\Payment::class);
+
+        $this->quote->method('reserveOrderId')->willReturnSelf();
+        $this->cartRepository->method('get')->willReturn($this->quote);
+
+        $this->cartRepository->expects($this->exactly(2))->method('save')->with($this->quote);
+
+        $this->quote->method('getStoreId')->willReturn(1);
+        $this->quote->method('getReservedOrderId')->willReturn('order123');
+        $this->quote->method('getPayment')->willReturn($paymentMock);
+
+        $this->quote->method('__call')->willReturnMap([
+            ['getQuoteCurrencyCode', [], 'EUR'],
+            ['getSubtotalWithDiscount', [], 100.0],
+        ]);
+
+        $this->returnUrlHelper->method('getStoreReturnUrl')->willReturn('https://example.test/adyen/return');
+        $this->shopperConversionId->method('getShopperConversionId')->willReturn(null);
+
+        $pmInstance = $this->createMock(MethodInterface::class);
+        $this->dataHelper->method('getMethodInstance')->with('adyen_paypal')->willReturn($pmInstance);
+        $this->paymentMethodsHelper->method('getRequiresLineItems')->with($pmInstance)->willReturn(false);
+        $this->lineItemsDataBuilder->method('getOpenInvoiceDataForQuote')->willReturn([]);
+
+        $this->platformInfo->method('buildRequestHeaders')->willReturn($this->headers);
+        $this->checkoutStateDataValidator->method('getValidatedAdditionalData')->willReturn(json_decode($this->stateData, true));
+        $this->adyenHelper->method('formatAmount')->with(100.0, 'EUR')->willReturn(10000);
+        $this->configHelper->method('getMerchantAccount')->with(1)->willReturn('TestMerchant');
+        $this->userContext->method('getUserType')->willReturn(UserContextInterface::USER_TYPE_GUEST);
+
+        $this->transferFactory->method('create')->willReturn($this->transferMock);
+
+        $action = ['type' => 'redirect', 'url' => 'https://example.test/redirect'];
+        $additionalData = ['foo' => 'bar'];
+        $details = ['payload' => 'abc'];
+
+        $this->transactionPaymentClient->method('placeRequest')->willReturn([
+            [
+                'resultCode' => 'Authorised',
+                'pspReference' => 'PSP-123',
+                'action' => $action,
+                'additionalData' => $additionalData,
+                'details' => $details,
+            ],
+        ]);
+
+        $calls = [];
+        $paymentMock->expects($this->exactly(5))
+            ->method('setAdditionalInformation')
+            ->willReturnCallback(function (string $key, $value) use (&$calls) {
+                $calls[] = [$key, $value];
+                return null;
+            });
+
+        $this->paymentResponseHandler->expects($this->once())
+            ->method('formatPaymentResponse')
+            ->with('Authorised', $action)
+            ->willReturn(['status' => 'success']);
+
+        $result = $this->adyenInitPayments->execute($this->stateData, 1);
+
+        $this->assertJson($result);
+        $this->assertStringContainsString('success', $result);
+        $this->assertSame([
+            ['resultCode', 'Authorised'],
+            ['pspReference', 'PSP-123'],
+            ['action', $action],
+            ['additionalData', $additionalData],
+            ['details', $details],
+        ], $calls);
+    }
+
+    public function testExecuteSetsOnlyResultCodeWhenOptionalFieldsAreMissing(): void
+    {
+        $paymentMock = $this->createMock(\Magento\Quote\Model\Quote\Payment::class);
+
+        $this->quote->method('reserveOrderId')->willReturnSelf();
+        $this->cartRepository->method('get')->willReturn($this->quote);
+        $this->cartRepository->expects($this->exactly(2))->method('save')->with($this->quote);
+
+        $this->quote->method('getStoreId')->willReturn(1);
+        $this->quote->method('getReservedOrderId')->willReturn('order123');
+        $this->quote->method('getPayment')->willReturn($paymentMock);
+
+        $this->quote->method('__call')->willReturnMap([
+            ['getQuoteCurrencyCode', [], 'USD'],
+            ['getSubtotalWithDiscount', [], 99.0],
+        ]);
+
+        $this->returnUrlHelper->method('getStoreReturnUrl')->willReturn('https://example.test/adyen/return');
+        $this->shopperConversionId->method('getShopperConversionId')->willReturn(null);
+
+        $pmInstance = $this->createMock(MethodInterface::class);
+        $this->dataHelper->method('getMethodInstance')->with('adyen_paypal')->willReturn($pmInstance);
+        $this->paymentMethodsHelper->method('getRequiresLineItems')->with($pmInstance)->willReturn(false);
+        $this->lineItemsDataBuilder->method('getOpenInvoiceDataForQuote')->willReturn([]);
+
+        $this->platformInfo->method('buildRequestHeaders')->willReturn($this->headers);
+        $this->checkoutStateDataValidator->method('getValidatedAdditionalData')->willReturn(json_decode($this->stateData, true));
+        $this->adyenHelper->method('formatAmount')->with(99.0, 'USD')->willReturn(9900);
+        $this->configHelper->method('getMerchantAccount')->with(1)->willReturn('TestMerchant');
+        $this->userContext->method('getUserType')->willReturn(UserContextInterface::USER_TYPE_GUEST);
+
+        $this->transferFactory->method('create')->willReturn($this->transferMock);
+
+        $this->transactionPaymentClient->method('placeRequest')->willReturn([
+            ['resultCode' => 'Refused', 'action' => null],
+        ]);
+
+        $calls = [];
+        $paymentMock->expects($this->once())
+            ->method('setAdditionalInformation')
+            ->willReturnCallback(function (string $key, $value) use (&$calls) {
+                $calls[] = [$key, $value];
+                return null;
+            });
+
+        $this->paymentResponseHandler->expects($this->once())
+            ->method('formatPaymentResponse')
+            ->with('Refused', null)
+            ->willReturn(['status' => 'refused']);
+
+        $result = $this->adyenInitPayments->execute($this->stateData, 1);
+
+        $this->assertSame([['resultCode', 'Refused']], $calls);
+        $this->assertJson($result);
+        $this->assertStringContainsString('refused', $result);
+    }
+
+    public function testExecuteDoesNotSetAdditionalInformationWhenQuotePaymentIsNull(): void
+    {
+        $this->quote->method('reserveOrderId')->willReturnSelf();
+        $this->cartRepository->method('get')->willReturn($this->quote);
+        $this->cartRepository->expects($this->exactly(2))->method('save')->with($this->quote);
+
+        $this->quote->method('getStoreId')->willReturn(1);
+        $this->quote->method('getReservedOrderId')->willReturn('order123');
+        $this->quote->method('getPayment')->willReturn(null);
+
+        $this->quote->method('__call')->willReturnMap([
+            ['getQuoteCurrencyCode', [], 'EUR'],
+            ['getSubtotalWithDiscount', [], 10.0],
+        ]);
+
+        $this->returnUrlHelper->method('getStoreReturnUrl')->willReturn('https://example.test/adyen/return');
+        $this->shopperConversionId->method('getShopperConversionId')->willReturn(null);
+
+        $pmInstance = $this->createMock(MethodInterface::class);
+        $this->dataHelper->method('getMethodInstance')->with('adyen_paypal')->willReturn($pmInstance);
+        $this->paymentMethodsHelper->method('getRequiresLineItems')->with($pmInstance)->willReturn(false);
+        $this->lineItemsDataBuilder->method('getOpenInvoiceDataForQuote')->willReturn([]);
+
+        $this->platformInfo->method('buildRequestHeaders')->willReturn($this->headers);
+        $this->checkoutStateDataValidator->method('getValidatedAdditionalData')->willReturn(json_decode($this->stateData, true));
+        $this->adyenHelper->method('formatAmount')->with(10.0, 'EUR')->willReturn(1000);
+        $this->configHelper->method('getMerchantAccount')->with(1)->willReturn('TestMerchant');
+        $this->userContext->method('getUserType')->willReturn(UserContextInterface::USER_TYPE_GUEST);
+
+        $this->transferFactory->method('create')->willReturn($this->transferMock);
+
+        $this->transactionPaymentClient->method('placeRequest')->willReturn([
+            ['resultCode' => 'Authorised', 'action' => null],
+        ]);
+
+        $this->paymentResponseHandler->expects($this->once())
+            ->method('formatPaymentResponse')
+            ->with('Authorised', null)
+            ->willReturn(['status' => 'no-payment-object']);
+
+        $result = $this->adyenInitPayments->execute($this->stateData, 1);
+
+        $this->assertJson($result);
+        $this->assertStringContainsString('no-payment-object', $result);
+    }
+
 }
