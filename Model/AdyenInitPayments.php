@@ -167,7 +167,18 @@ class AdyenInitPayments implements AdyenInitPaymentsInterface
         try {
             $response = $this->transactionPaymentClient->placeRequest($transfer);
             $paymentsResponse = $this->returnFirstTransactionPaymentResponse($response);
+            $quotePayment = $quote->getPayment();
+            if ($quotePayment) {
+                $keysToSet = ['resultCode', 'pspReference', 'action', 'additionalData', 'details'];
+                foreach ($keysToSet as $key) {
+                    if (!empty($paymentsResponse[$key])) {
+                        $quotePayment->setAdditionalInformation($key, $paymentsResponse[$key]);
+                    }
+                }
+            }
 
+            // Persist quote changes
+            $this->cartRepository->save($quote);
             return json_encode(
                 $this->paymentResponseHandler->formatPaymentResponse($paymentsResponse['resultCode'], $paymentsResponse['action'])
             );
