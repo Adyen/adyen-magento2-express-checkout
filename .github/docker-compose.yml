@@ -1,6 +1,6 @@
 services:
   db:
-    image: mariadb:11.4
+    image: mariadb:11.8
     container_name: mariadb
     networks:
       - backend
