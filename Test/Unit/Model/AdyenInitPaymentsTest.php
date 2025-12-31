@@ -177,10 +177,10 @@ class AdyenInitPaymentsTest extends AbstractAdyenTestCase
 
         $this->transferFactory->method('create')->willReturn($this->transferMock);
         $this->transactionPaymentClient->method('placeRequest')->willReturn([
-            ['resultCode' => 'Authorised', 'action' => null],
+            ['resultCode' => 'Pending', 'action' => null],
         ]);
         $this->paymentResponseHandler->method('formatPaymentResponse')
-            ->with('Authorised', null)
+            ->with('Pending', null)
             ->willReturn(['status' => 'success']);
 
         $result = $this->adyenInitPayments->execute($this->stateData, null, $maskedId);
@@ -286,10 +286,10 @@ class AdyenInitPaymentsTest extends AbstractAdyenTestCase
 
         $this->transferFactory->method('create')->willReturn($this->transferMock);
         $this->transactionPaymentClient->method('placeRequest')->willReturn([
-            ['resultCode' => 'Authorised', 'action' => null],
+            ['resultCode' => 'Pending', 'action' => null],
         ]);
         $this->paymentResponseHandler->method('formatPaymentResponse')
-            ->with('Authorised', null)
+            ->with('Pending', null)
             ->willReturn(['status' => 'success']);
 
         $response = $this->adyenInitPayments->execute($stateData, 1);
@@ -336,11 +336,11 @@ class AdyenInitPaymentsTest extends AbstractAdyenTestCase
 
         $this->transactionPaymentClient->method('placeRequest')->willReturn([
             'hasOnlyGiftCards' => true,
-            ['resultCode' => 'Authorised', 'action' => null],
+            ['resultCode' => 'Pending', 'action' => null],
         ]);
 
         $this->paymentResponseHandler->method('formatPaymentResponse')
-            ->with('Authorised', null)
+            ->with('Pending', null)
             ->willReturn(['status' => 'cleaned']);
 
         $response = $this->adyenInitPayments->execute($this->stateData, 1);
@@ -394,13 +394,164 @@ class AdyenInitPaymentsTest extends AbstractAdyenTestCase
         ]);
 
         $this->transactionPaymentClient->method('placeRequest')->willReturn([
-            ['resultCode' => 'Authorised', 'action' => null]
+            ['resultCode' => 'Pending', 'action' => null]
         ]);
         $this->paymentResponseHandler->method('formatPaymentResponse')->willReturn(['status' => 'ok-with-lines']);
 
         $resp = $this->adyenInitPayments->execute($this->stateData, 1);
         $this->assertJson($resp);
         $this->assertStringContainsString('ok-with-lines', $resp);
+    }
+
+    /**
+     * @dataProvider additionalInformationProvider
+     */
+    public function testExecuteSetsAdditionalInformationFromPaymentsResponse(
+        array $paymentsResponse,
+        array $expectedAdditionalInformationCalls,
+        array $expectedFormatPaymentResponseArgs,
+        string $expectedStatus
+    ): void {
+        $paymentMock = $this->createMock(\Magento\Quote\Model\Quote\Payment::class);
+
+        $this->quote->method('reserveOrderId')->willReturnSelf();
+        $this->cartRepository->method('get')->willReturn($this->quote);
+        $this->cartRepository->expects($this->exactly(2))->method('save')->with($this->quote);
+
+        $this->quote->method('getStoreId')->willReturn(1);
+        $this->quote->method('getReservedOrderId')->willReturn('order123');
+        $this->quote->method('getPayment')->willReturn($paymentMock);
+
+        $this->quote->method('__call')->willReturnMap([
+            ['getQuoteCurrencyCode', [], 'EUR'],
+            ['getSubtotalWithDiscount', [], 100.0],
+        ]);
+
+        $this->returnUrlHelper->method('getStoreReturnUrl')->willReturn('https://example.test/adyen/return');
+        $this->shopperConversionId->method('getShopperConversionId')->willReturn(null);
+
+        $pmInstance = $this->createMock(MethodInterface::class);
+        $this->dataHelper->method('getMethodInstance')->with('adyen_paypal')->willReturn($pmInstance);
+        $this->paymentMethodsHelper->method('getRequiresLineItems')->with($pmInstance)->willReturn(false);
+        $this->lineItemsDataBuilder->method('getOpenInvoiceDataForQuote')->willReturn([]);
+
+        $this->platformInfo->method('buildRequestHeaders')->willReturn($this->headers);
+        $this->checkoutStateDataValidator->method('getValidatedAdditionalData')->willReturn(json_decode($this->stateData, true));
+        $this->adyenHelper->method('formatAmount')->with(100.0, 'EUR')->willReturn(10000);
+        $this->configHelper->method('getMerchantAccount')->with(1)->willReturn('TestMerchant');
+        $this->userContext->method('getUserType')->willReturn(UserContextInterface::USER_TYPE_GUEST);
+
+        $this->transferFactory->method('create')->willReturn($this->transferMock);
+
+        $this->transactionPaymentClient->method('placeRequest')->willReturn([
+            $paymentsResponse,
+        ]);
+
+        // Capture setAdditionalInformation calls (PHPUnit 10 compatible)
+        $calls = [];
+        $paymentMock->expects($this->exactly(count($expectedAdditionalInformationCalls)))
+            ->method('setAdditionalInformation')
+            ->willReturnCallback(function (string $key, $value) use (&$calls) {
+                $calls[] = [$key, $value];
+                return null;
+            });
+
+        $this->paymentResponseHandler->expects($this->once())
+            ->method('formatPaymentResponse')
+            ->with(...$expectedFormatPaymentResponseArgs)
+            ->willReturn(['status' => $expectedStatus]);
+
+        $result = $this->adyenInitPayments->execute($this->stateData, 1);
+
+        $this->assertJson($result);
+        $this->assertStringContainsString($expectedStatus, $result);
+        $this->assertSame($expectedAdditionalInformationCalls, $calls);
+    }
+
+    public static function additionalInformationProvider(): array
+    {
+        $action = ['type' => 'redirect', 'url' => 'https://example.test/redirect'];
+        $additionalData = ['foo' => 'bar'];
+        $details = ['payload' => 'abc'];
+
+        return [
+            'all fields present' => [
+                'paymentsResponse' => [
+                    'resultCode' => 'Authorised',
+                    'pspReference' => 'PSP-123',
+                    'action' => $action,
+                    'additionalData' => $additionalData,
+                    'details' => $details,
+                ],
+                'expectedAdditionalInformationCalls' => [
+                    ['resultCode', 'Authorised'],
+                    ['pspReference', 'PSP-123'],
+                    ['action', $action],
+                    ['additionalData', $additionalData],
+                    ['details', $details],
+                ],
+                'expectedFormatPaymentResponseArgs' => ['Authorised', $action],
+                'expectedStatus' => 'success',
+            ],
+
+            'only resultCode present' => [
+                'paymentsResponse' => [
+                    'resultCode' => 'Refused',
+                    'action' => null,
+                ],
+                'expectedAdditionalInformationCalls' => [
+                    ['resultCode', 'Refused'],
+                ],
+                'expectedFormatPaymentResponseArgs' => ['Refused', null],
+                'expectedStatus' => 'refused',
+            ],
+        ];
+    }
+
+    public function testExecuteDoesNotSetAdditionalInformationWhenQuotePaymentIsNull(): void
+    {
+        $this->quote->method('reserveOrderId')->willReturnSelf();
+        $this->cartRepository->method('get')->willReturn($this->quote);
+        $this->cartRepository->expects($this->exactly(2))->method('save')->with($this->quote);
+
+        $this->quote->method('getStoreId')->willReturn(1);
+        $this->quote->method('getReservedOrderId')->willReturn('order123');
+        $this->quote->method('getPayment')->willReturn(null);
+
+        $this->quote->method('__call')->willReturnMap([
+            ['getQuoteCurrencyCode', [], 'EUR'],
+            ['getSubtotalWithDiscount', [], 10.0],
+        ]);
+
+        $this->returnUrlHelper->method('getStoreReturnUrl')->willReturn('https://example.test/adyen/return');
+        $this->shopperConversionId->method('getShopperConversionId')->willReturn(null);
+
+        $pmInstance = $this->createMock(MethodInterface::class);
+        $this->dataHelper->method('getMethodInstance')->with('adyen_paypal')->willReturn($pmInstance);
+        $this->paymentMethodsHelper->method('getRequiresLineItems')->with($pmInstance)->willReturn(false);
+        $this->lineItemsDataBuilder->method('getOpenInvoiceDataForQuote')->willReturn([]);
+
+        $this->platformInfo->method('buildRequestHeaders')->willReturn($this->headers);
+        $this->checkoutStateDataValidator->method('getValidatedAdditionalData')->willReturn(json_decode($this->stateData, true));
+        $this->adyenHelper->method('formatAmount')->with(10.0, 'EUR')->willReturn(1000);
+        $this->configHelper->method('getMerchantAccount')->with(1)->willReturn('TestMerchant');
+        $this->userContext->method('getUserType')->willReturn(UserContextInterface::USER_TYPE_GUEST);
+
+        $this->transferFactory->method('create')->willReturn($this->transferMock);
+
+        $this->transactionPaymentClient->method('placeRequest')->willReturn([
+            ['resultCode' => 'Pending', 'action' => null],
+        ]);
+
+        $this->paymentResponseHandler->expects($this->once())
+            ->method('formatPaymentResponse')
+            ->with('Pending', null)
+            ->willReturn(['status' => 'no-payment-object']);
+
+        $result = $this->adyenInitPayments->execute($this->stateData, 1);
+
+        $this->assertJson($result);
+        $this->assertStringContainsString('no-payment-object', $result);
     }
 
 }
