@@ -20,6 +20,7 @@ class ShortcutAreas implements OptionSourceInterface
     public const PRODUCT_VIEW_VALUE = 1;
     public const CART_PAGE_VALUE = 2;
     public const MINICART_VALUE = 3;
+    public const SHIPPING_PAGE_VALUE = 4;
 
     /**
      * @inheritDoc
@@ -38,6 +39,10 @@ class ShortcutAreas implements OptionSourceInterface
             [
                 'value' => self::MINICART_VALUE,
                 'label' => 'Minicart'
+            ],
+            [
+                'value' => self::SHIPPING_PAGE_VALUE,
+                'label' => 'Shipping Page'
             ]
         ];
     }

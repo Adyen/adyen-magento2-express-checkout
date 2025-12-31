@@ -1,9 +1,13 @@
-define(['Adyen_ExpressCheckout/js/model/config'], function (configModel) {
+define([
+    'Adyen_ExpressCheckout/js/model/config',
+    'Adyen_ExpressCheckout/js/model/adyen-express-configuration'
+], function (
+    configModel,
+    adyenExpressConfiguration
+) {
     'use strict';
 
     return function () {
-        const config = configModel().getConfig();
-
-        document.location = config.actionSuccess;
+        document.location = configModel().getConfig().actionSuccess ?? adyenExpressConfiguration.getActionSuccess();
     };
 });
