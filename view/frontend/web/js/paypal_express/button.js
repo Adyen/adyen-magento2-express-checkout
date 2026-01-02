@@ -517,7 +517,20 @@ define([
             return paypalBaseConfiguration;
         },
 
+        _splitFullName: function(fullName) {
+            if (!fullName || typeof fullName !== 'string') {
+                return { firstName: '', lastName: '' };
+            }
+
+            const nameParts = fullName.trim().split(/\s+/);
+            const firstName = nameParts[0] || '';
+            const lastName = nameParts.length > 1 ? nameParts.slice(1).join(' ') : '';
+
+            return { firstName, lastName };
+        },
+
         setupAddresses: async function (shopperDetails) {
+            const deliveryName = this._splitFullName(shopperDetails.deliveryAddress.firstName);
             let billingAddress = {
                 'email': shopperDetails.authorizedEvent.payer.email_address,
                 'telephone': shopperDetails.authorizedEvent.payer.phone.phone_number.national_number,
@@ -540,8 +553,8 @@ define([
             let shippingAddress = {
                 'email': shopperDetails.authorizedEvent.payer.email_address,
                 'telephone': shopperDetails.authorizedEvent.payer.phone.phone_number.national_number,
-                'firstname': shopperDetails.authorizedEvent.payer.name.given_name,
-                'lastname': shopperDetails.authorizedEvent.payer.name.surname,
+                'firstname': deliveryName.firstName,
+                'lastname': deliveryName.lastName,
                 'street': [
                     shopperDetails.deliveryAddress.street
                 ],
