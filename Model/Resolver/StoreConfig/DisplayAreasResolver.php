@@ -44,8 +44,13 @@ class DisplayAreasResolver implements ResolverInterface
     /**
      * @inheritDoc
      */
-    public function resolve(Field $field, $context, ResolveInfo $info, array $value = null, array $args = null): array
-    {
+    public function resolve(
+        Field $field,
+        $context,
+        ResolveInfo $info,
+        ?array $value = null,
+        ?array $args = null
+    ): array {
         $areas = $this->configuration->getShowPaymentMethodOn(
             $this->getPaymentMethodVariant($field),
             ScopeInterface::SCOPE_STORE,
