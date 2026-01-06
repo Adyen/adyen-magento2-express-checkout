@@ -3,13 +3,15 @@ define([
     'Adyen_ExpressCheckout/js/helpers/getIsLoggedIn',
     'Adyen_ExpressCheckout/js/model/maskedId',
     'Adyen_ExpressCheckout/js/model/config',
-    'Adyen_ExpressCheckout/js/helpers/getMaskedIdFromCart'
+    'Adyen_ExpressCheckout/js/helpers/getMaskedIdFromCart',
+    'Adyen_ExpressCheckout/js/model/adyen-express-configuration'
 ], function (
     storage,
     isLoggedIn,
     maskedIdModel,
     configModel,
-    getMaskedIdFromCart
+    getMaskedIdFromCart,
+    adyenExpressConfiguration
 ) {
     'use strict';
 
@@ -20,11 +22,11 @@ define([
                 ? maskedIdModel().getMaskedId()
                 : getMaskedIdFromCart();
 
-            const config = configModel().getConfig();
+            const storeCode = configModel().getConfig().storeCode ?? adyenExpressConfiguration.getStoreCode();
 
             let url = isLoggedIn()
-                ? 'rest/' + config.storeCode + '/V1/adyen/orders/carts/mine/payment-status'
-                : 'rest/' + config.storeCode + '/V1/adyen/orders/guest-carts/' + maskedId + '/payment-status';
+                ? 'rest/' + storeCode + '/V1/adyen/orders/carts/mine/payment-status'
+                : 'rest/' + storeCode + '/V1/adyen/orders/guest-carts/' + maskedId + '/payment-status';
 
             let payload = {
                 orderId: orderId

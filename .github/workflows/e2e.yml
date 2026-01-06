@@ -11,7 +11,7 @@ jobs:
     strategy:
       matrix:
         php-version: ["8.3"]
-        magento-version: ["2.4.8"]
+        magento-version: ["2.4.8-p3"]
     runs-on:
       group: larger-runners
       labels: ubuntu-latest-8-cores
@@ -58,7 +58,7 @@ jobs:
       - name: Run E2E tests
         run: docker compose -f .github/docker-compose.e2e.yml run --rm playwright /e2e.sh express-checkout
         env:
-          INTEGRATION_TESTS_BRANCH: ${{ env.TEST_BRANCH }}
+          INTEGRATION_TESTS_BRANCH: develop
           MAGENTO_ADMIN_USERNAME: ${{secrets.MAGENTO_ADMIN_USERNAME}}
           MAGENTO_ADMIN_PASSWORD: ${{secrets.MAGENTO_ADMIN_PASSWORD}}
           MAGENTO_BASE_URL: ${{secrets.MAGENTO_BASE_URL}}

@@ -114,9 +114,10 @@ define([
             this.isProductView = config.isProductView;
 
             if (!this.isProductView) {
+                await virtualQuoteModel().setIsVirtual(false);
+
                 // Retrieve the PayPal payment method
                 let paypalPaymentMethod = await getPaymentMethod('paypal', this.isProductView);
-                virtualQuoteModel().setIsVirtual(false);
 
                 if (!paypalPaymentMethod) {
                     // Subscribe to cart updates if PayPal method is not immediately available
@@ -141,9 +142,9 @@ define([
             // Configuration setup
             try {
                 const response = await getExpressMethods().getRequest(element);
-                const cart = customerData.get('cart');
+                await virtualQuoteModel().setIsVirtual(true, response);
 
-                virtualQuoteModel().setIsVirtual(true, response);
+                const cart = customerData.get('cart');
 
                 cart.subscribe(function () {
                     this.reloadPaypalButton(element);
@@ -319,11 +320,11 @@ define([
             if (this.isProductView) {
                 const pdpResponse = await getExpressMethods().getRequest(element);
 
-                virtualQuoteModel().setIsVirtual(true, pdpResponse);
+                await virtualQuoteModel().setIsVirtual(true, pdpResponse);
                 setExpressMethods(pdpResponse);
                 totalsModel().setTotal(pdpResponse.totals.grand_total);
             } else {
-                virtualQuoteModel().setIsVirtual(false);
+                await virtualQuoteModel().setIsVirtual(false);
             }
 
             this.unmountPaypal();
@@ -388,15 +389,24 @@ define([
                     });
                 },
                 onShippingAddressChange: async (data, actions, component) => {
+                    const isVirtual = virtualQuoteModel().getIsVirtual();
+
                     try {
-                        this.shippingAddress = data.shippingAddress;
-                        if(this.isProductView) {
+                        if (this.isProductView) {
                             await activateCart(this.isProductView);
                         }
 
-                        const shippingMethods = await this.getShippingMethods(data.shippingAddress);
-                        let shippingMethod = shippingMethods.find(method => method.identifier === this.shippingMethod);
-                        await this.setShippingAndTotals(shippingMethod, data.shippingAddress);
+                        let shippingMethods = [];
+
+                        if (isVirtual) {
+                            // Use the shipping address as the billing for correct taxation for virtual quotes
+                            this.setBillingAndTotals(data.shippingAddress);
+                        } else {
+                            this.shippingAddress = data.shippingAddress;
+                            shippingMethods = await this.getShippingMethods(data.shippingAddress);
+                            let shippingMethod = shippingMethods.find(method => method.identifier === this.shippingMethod);
+                            await this.setShippingAndTotals(shippingMethod, data.shippingAddress);
+                        }
 
                         const currentPaymentData = component.paymentData;
 
@@ -445,51 +455,34 @@ define([
                 onAuthorized: async (shopperDetails, actions) => {
                     try {
                         const isVirtual = virtualQuoteModel().getIsVirtual();
-
                         const { billingAddress, shippingAddress } = await this.setupAddresses(shopperDetails);
 
-                        let billingAddressPayload = {
-                            address: billingAddress,
-                            'useForShipping': false
-                        };
+                        await activateCart(this.isProductView);
 
-                        let shippingInformationPayload = {
-                            addressInformation: {
-                                shipping_address: shippingAddress,
-                                billing_address: billingAddress,
-                                shipping_method_code: this.shippingMethod,
-                                shipping_carrier_code: this.shippingMethods[this.shippingMethod].carrier_code
-                            }
-                        };
-                        activateCart(this.isProductView)
-                            .then(() => {
-                                return setBillingAddress(billingAddressPayload, this.isProductView);
-                            })
-                            .then(() => {
-                                if (!isVirtual) {
-                                    return setShippingInformation(shippingInformationPayload, this.isProductView)
-                                        .then(() => {
-                                            this.createOrder()
-                                                .then(() => {
-                                                    actions.resolve();
-                                                })
-                                                .catch(() => {
-                                                    actions.reject();
-                                                });
-                                        })
-                                } else {
-                                    this.createOrder()
-                                        .then(() => {
-                                            actions.resolve();
-                                        })
-                                        .catch(() => {
-                                            actions.reject();
-                                        });
+                        if (!isVirtual) {
+                            let shippingInformationPayload = {
+                                addressInformation: {
+                                    shipping_address: shippingAddress,
+                                    billing_address: billingAddress,
+                                    shipping_method_code: this.shippingMethod,
+                                    shipping_carrier_code: this.shippingMethods[this.shippingMethod].carrier_code
                                 }
-                            })
-                            .catch((error) => {
-                                console.error('An error occurred:', error);
-                            });
+                            };
+
+                            await setShippingInformation(shippingInformationPayload, this.isProductView);
+                        } else {
+                            // Use the shipping address as the billing for correct taxation for virtual quotes
+                            let billingAddressPayload = {
+                                address: shippingAddress,
+                                'useForShipping': false
+                            };
+
+                            await setBillingAddress(billingAddressPayload, this.isProductView);
+                        }
+
+                        this.createOrder().then(() => {
+                            actions.resolve();
+                        });
                     } catch (error) {
                         console.error('Failed to complete order:', error);
                         actions.reject();
@@ -524,7 +517,20 @@ define([
             return paypalBaseConfiguration;
         },
 
+        _splitFullName: function(fullName) {
+            if (!fullName || typeof fullName !== 'string') {
+                return { firstName: '', lastName: '' };
+            }
+
+            const nameParts = fullName.trim().split(/\s+/);
+            const firstName = nameParts[0] || '';
+            const lastName = nameParts.length > 1 ? nameParts.slice(1).join(' ') : '';
+
+            return { firstName, lastName };
+        },
+
         setupAddresses: async function (shopperDetails) {
+            const deliveryName = this._splitFullName(shopperDetails.deliveryAddress.firstName);
             let billingAddress = {
                 'email': shopperDetails.authorizedEvent.payer.email_address,
                 'telephone': shopperDetails.authorizedEvent.payer.phone.phone_number.national_number,
@@ -547,8 +553,8 @@ define([
             let shippingAddress = {
                 'email': shopperDetails.authorizedEvent.payer.email_address,
                 'telephone': shopperDetails.authorizedEvent.payer.phone.phone_number.national_number,
-                'firstname': shopperDetails.authorizedEvent.payer.name.given_name,
-                'lastname': shopperDetails.authorizedEvent.payer.name.surname,
+                'firstname': deliveryName.firstName,
+                'lastname': deliveryName.lastName,
                 'street': [
                     shopperDetails.deliveryAddress.street
                 ],
@@ -692,6 +698,34 @@ define([
                 console.error('Failed to set shipping and totals information:', error);
                 throw new Error($t('Failed to set shipping and totals information. Please try again later.'));
             });
+        },
+
+        setBillingAndTotals: async function (addressData) {
+            try {
+                const address = {
+                    countryId: addressData.countryCode,
+                    region: addressData.state,
+                    regionId: getRegionId(addressData.country_id, addressData.state),
+                    postcode: addressData.postalCode
+                };
+
+                let billingAddressPayload = {
+                    address: address,
+                    'useForShipping': false
+                };
+
+                await setBillingAddress(billingAddressPayload, this.isProductView);
+
+                let totalsPayload = {
+                    addressInformation: {
+                        address: address
+                    }
+                }
+
+                await setTotalsInfo(totalsPayload, this.isProductView)
+            } catch (error) {
+                console.error('Failed to update billing address: ', error);
+            }
         }
     });
 });

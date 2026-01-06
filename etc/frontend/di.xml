@@ -51,4 +51,11 @@
     <type name="Magento\Checkout\Controller\Cart\Add">
         <plugin name="setCorrectQuote" type="Adyen\ExpressCheckout\Plugin\Checkout\Controller\Cart\Add" />
     </type>
+    <type name="Magento\Checkout\Model\CompositeConfigProvider">
+        <arguments>
+            <argument name="configProviders" xsi:type="array">
+                <item name="adyen_express_config_provider" xsi:type="object">Adyen\ExpressCheckout\Model\Ui\AdyenExpressConfigProvider</item>
+            </argument>
+        </arguments>
+    </type>
 </config>
