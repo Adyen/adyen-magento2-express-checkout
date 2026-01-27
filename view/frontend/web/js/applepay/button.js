@@ -32,7 +32,8 @@ define([
         'Adyen_ExpressCheckout/js/model/currency',
         'Adyen_ExpressCheckout/js/helpers/getCurrentPage',
         'Adyen_ExpressCheckout/js/model/virtualQuote',
-        'Adyen_Payment/js/helper/currencyHelper'
+        'Adyen_Payment/js/helper/currencyHelper',
+        'Adyen_ExpressCheckout/js/helpers/getAgreementIds',
     ],
     function (
         $,
@@ -68,7 +69,8 @@ define([
         currencyModel,
         getCurrentPage,
         virtualQuoteModel,
-        currencyHelper
+        currencyHelper,
+        getAgreementIds
     ) {
         'use strict';
 
@@ -507,6 +509,8 @@ define([
                     const billingContact  = event.payment.billingContact  || {};
 
                     // 1) Build and stash the /payments payload for onSubmit
+                    let extensionAttributes = getExtensionAttributes(event.payment);
+
                     const componentData = this.applePayComponent.data;
                     const postData = {
                         email: shippingContact.emailAddress,
@@ -517,14 +521,13 @@ define([
                                 stateData: JSON.stringify(componentData),
                                 frontendType: 'default'
                             },
-                            extension_attributes: getExtensionAttributes(event.payment)
+                            extensionAttributes:  {
+                                ...extensionAttributes,
+                                agreement_ids: getAgreementIds(),
+                            }
                         }
                     };
-                    if (window.checkout && window.checkout.agreementIds) {
-                        postData.paymentMethod.extension_attributes = {
-                            agreement_ids: window.checkout.agreementIds
-                        };
-                    }
+
                     this._applePayPostData = postData;
 
                     // 2) Prepare billing (and shipping for non-virtual), then resolve
@@ -582,7 +585,7 @@ define([
                                     },
                                     'shipping_method_code': this.shippingMethods[this.shippingMethod].method_code,
                                     'shipping_carrier_code': this.shippingMethods[this.shippingMethod].carrier_code,
-                                    'extension_attributes': getExtensionAttributes(event.payment)
+                                    'extension_attributes': extensionAttributes
                                 }
                             };
 
