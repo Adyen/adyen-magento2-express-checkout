@@ -14,13 +14,17 @@ define([
 
         initialize: function () {
             this._super();
-            if (!Object.keys(this.countries).length || !this.fetchingCountries) {
+
+            if (!Object.keys(this.countries()).length && !this.fetchingCountries) {
                 this.fetchingCountries = true;
+
                 getCountries()
                     .done(function (countries) {
                         const processedCountries = processCountries(countries);
 
                         this.setCountries(processedCountries);
+                    }.bind(this))
+                    .always(function () {
                         this.fetchingCountries = false;
                     }.bind(this));
             }
