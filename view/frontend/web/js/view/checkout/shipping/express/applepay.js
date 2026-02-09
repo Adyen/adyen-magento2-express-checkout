@@ -17,7 +17,6 @@ define(
         'Adyen_Payment/js/adyen',
         'Adyen_Payment/js/model/adyen-configuration',
         'Adyen_ExpressCheckout/js/model/adyen-express-configuration',
-        'Adyen_ExpressCheckout/js/helpers/getApplePayStyles',
         'Adyen_ExpressCheckout/js/actions/getShippingMethods',
         'Adyen_ExpressCheckout/js/helpers/getRegionId',
         'Adyen_ExpressCheckout/js/actions/setShippingInformation',
@@ -39,7 +38,6 @@ define(
         AdyenWeb,
         adyenConfiguration,
         adyenExpressConfiguration,
-        getApplePayStyles,
         getShippingMethods,
         getRegionId,
         setShippingInformation,
@@ -98,7 +96,6 @@ define(
             buildPaymentMethodComponent: async function () {
                 const paymentMethodsResponse = adyenExpressConfiguration.getPaymentMethodsResponse();
                 const adyenData = window.adyenData;
-                const applePayStyles = getApplePayStyles();
                 const isVirtual = adyenExpressConfiguration.getIsVirtual();
 
                 if (!paymentMethodsResponse || !paymentMethodsResponse.paymentMethods) {
@@ -150,6 +147,8 @@ define(
                         countryCode: countryCode,
                         currencyCode: currency,
                         totalPriceLabel: applePayMethod.configuration.merchantName,
+                        buttonColor: adyenExpressConfiguration.getApplePayButtonColor(),
+                        buttonType: 'plain',
                         configuration: {
                             domainName: window.location.hostname,
                             merchantId: applePayMethod.configuration.merchantId,
@@ -171,8 +170,7 @@ define(
                         onClick: function (resolve /*, reject */) {
                             resolve();
                         },
-                        onError: this.handleOnError.bind(this),
-                        ...applePayStyles
+                        onError: this.handleOnError.bind(this)
                     };
 
                     if (!isVirtual) {
