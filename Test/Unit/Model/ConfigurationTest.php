@@ -79,7 +79,7 @@ class ConfigurationTest extends AbstractAdyenTestCase
     {
         $this->scopeConfig->expects($this->once())
             ->method('getValue')
-            ->with(Configuration::APPLE_PAY_BUTTON_COLOR_CONFIG_PATH, ScopeInterface::SCOPE_STORE, null)
+            ->with('payment/adyen_applepay/express_button_color', ScopeInterface::SCOPE_STORE, null)
             ->willReturn(ButtonColor::WHITE);
 
         $this->assertSame(ButtonColor::WHITE, $this->subject->getApplePayButtonColor());
@@ -90,7 +90,7 @@ class ConfigurationTest extends AbstractAdyenTestCase
     {
         $this->scopeConfig->expects($this->once())
             ->method('getValue')
-            ->with(Configuration::APPLE_PAY_BUTTON_COLOR_CONFIG_PATH, ScopeInterface::SCOPE_STORE, null)
+            ->with('payment/adyen_applepay/express_button_color', ScopeInterface::SCOPE_STORE, null)
             ->willReturn('');
 
         $this->assertSame(ButtonColor::BLACK, $this->subject->getApplePayButtonColor());
