@@ -13,6 +13,7 @@ declare(strict_types=1);
 
 namespace Adyen\ExpressCheckout\Block\Buttons;
 
+use Adyen\ExpressCheckout\Model\ConfigurationInterface;
 use Adyen\Payment\Helper\Data as AdyenHelper;
 use Exception;
 use Magento\Checkout\Model\DefaultConfigProvider;
@@ -24,6 +25,7 @@ use Magento\Framework\UrlInterface;
 use Magento\Framework\View\Element\Template;
 use Magento\Framework\View\Element\Template\Context;
 use Magento\Payment\Model\MethodInterface;
+use Magento\Store\Model\ScopeInterface;
 use Magento\Store\Model\Store;
 use Magento\Store\Model\StoreManagerInterface;
 use Magento\Framework\App\Config\ScopeConfigInterface;
@@ -75,6 +77,11 @@ abstract class AbstractButton extends Template
     private DefaultConfigProvider $defaultConfigProvider;
 
     /**
+     * @var ConfigurationInterface
+     */
+    private ConfigurationInterface $expressConfig;
+
+    /**
      * Button constructor.
      * @param Context $context
      * @param Session $checkoutSession
@@ -85,6 +92,7 @@ abstract class AbstractButton extends Template
      * @param ScopeConfigInterface $scopeConfig
      * @param AdyenHelper $adyenHelper
      * @param DefaultConfigProvider $defaultConfigProvider
+     * @param ConfigurationInterface $expressConfig
      * @param array $data
      */
     public function __construct(
@@ -97,6 +105,7 @@ abstract class AbstractButton extends Template
         ScopeConfigInterface $scopeConfig,
         AdyenHelper $adyenHelper,
         DefaultConfigProvider $defaultConfigProvider,
+        ConfigurationInterface $expressConfig,
         array $data = []
     ) {
         parent::__construct($context, $data);
@@ -107,6 +116,7 @@ abstract class AbstractButton extends Template
         $this->storeManager = $storeManagerInterface;
         $this->scopeConfig = $scopeConfig;
         $this->adyenHelper = $adyenHelper;
+        $this->expressConfig = $expressConfig;
         $this->defaultConfigProvider = $defaultConfigProvider;
     }
 
@@ -324,7 +334,11 @@ abstract class AbstractButton extends Template
                 'locale' => $this->getLocale(),
                 'originkey' => $this->getOriginKey(),
                 'checkoutenv' => $this->getCheckoutEnvironment(),
-                'isProductView' => (bool) $this->getIsProductView()
+                'isProductView' => (bool) $this->getIsProductView(),
+                'buttonColor' => $this->expressConfig->getApplePayButtonColor(
+                    ScopeInterface::SCOPE_STORE,
+                    $this->storeManager->getStore()->getId()
+                )
             ]
         ];
     }
