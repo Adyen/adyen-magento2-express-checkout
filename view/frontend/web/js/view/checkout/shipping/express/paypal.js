@@ -194,14 +194,7 @@ define(
                         emailRequired: true,
                         shippingAddressRequired: !isVirtual,
                         shippingOptionRequired: !isVirtual,
-                        shippingAddressParameters: {
-                            phoneNumberRequired: true
-                        },
                         billingAddressRequired: true,
-                        billingAddressParameters: {
-                            format: 'FULL',
-                            phoneNumberRequired: true
-                        },
                         style: paypalStyles,
 
                         onSubmit: this.handleOnSubmit.bind(this),
