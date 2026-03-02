@@ -62,7 +62,8 @@ define(
                 shippingMethodsList: [],
                 shippingAddress: null,
                 shippingMethod: null,
-                _applePayPostData: null
+                _applePayPostData: null,
+                applePayMerchantName: null
             },
 
             initObservable: function () {
@@ -143,16 +144,18 @@ define(
                     const amountValue = adyenExpressConfiguration.getAmountValue();
                     const minorAmount = currencyHelper.formatAmount(amountValue, currency);
 
+                    this.applePayMerchantName = applePayMethod.configuration.merchantName;
+
                     let configuration = {
                         countryCode: countryCode,
                         currencyCode: currency,
-                        totalPriceLabel: applePayMethod.configuration.merchantName,
+                        totalPriceLabel: this.applePayMerchantName,
                         buttonColor: adyenExpressConfiguration.getApplePayButtonColor(),
                         buttonType: 'plain',
                         configuration: {
                             domainName: window.location.hostname,
                             merchantId: applePayMethod.configuration.merchantId,
-                            merchantName: this.getMerchantName()
+                            merchantName: adyenConfiguration.getMerchantAccount() || $t('Grand Total')
                         },
                         amount: {
                             value: minorAmount,
@@ -227,7 +230,7 @@ define(
                         console.info('No shipping methods available for current Apple Pay address.');
                         reject({
                             newTotal: {
-                                label: this.getMerchantName(),
+                                label: this.applePayMerchantName,
                                 amount: this.toAmountString(amountValue)
                             },
                             errors: [new ApplePayError('addressUnserviceable')]
@@ -364,7 +367,7 @@ define(
                 const update = {
                     newTotal: {
                         type: 'final',
-                        label: this.getMerchantName(),
+                        label: this.applePayMerchantName,
                         amount: grandTotal
                     },
                     newLineItems: [
@@ -585,10 +588,6 @@ define(
 
                     window.scrollTo({ top: 0, behavior: 'smooth' });
                 }, 1000);
-            },
-
-            getMerchantName: function () {
-                return adyenConfiguration.getMerchantAccount() || $t('Grand Total');
             },
 
             getComponentRootNodeId: function () {
