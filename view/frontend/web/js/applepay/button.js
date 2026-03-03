@@ -76,6 +76,7 @@ define([
                 isProductView: false,
                 maskedId: null,
                 applePayComponent: null,
+                applePayMerchantName: null
             },
 
             initialize: async function (config, element) {
@@ -256,14 +257,16 @@ define([
                     currency = paymentMethodExtraDetails.configuration.amount.currency;
                 }
 
+                this.applePayMerchantName = applePaymentMethod.configuration.merchantName;
+
                 applepayBaseConfiguration = {
                     countryCode: countryCode,
                     currencyCode: currency,
-                    totalPriceLabel: applePaymentMethod.configuration.merchantName,
+                    totalPriceLabel: this.applePayMerchantName,
                     configuration: {
                         domainName: window.location.hostname,
                         merchantId: applePaymentMethod.configuration.merchantId,
-                        merchantName: this.getMerchantName(),
+                        merchantName: config?.merchantAccount ?? $t('Grand Total'),
                     },
                     amount: {
                         value: this.isProductView
@@ -427,7 +430,7 @@ define([
 
                 applePayShippingMethodUpdate.newTotal = {
                     type: 'final',
-                    label: this.getMerchantName(),
+                    label: this.applePayMerchantName,
                     amount: (response.grand_total).toString()
                 };
 
@@ -570,12 +573,7 @@ define([
                         }
                     });
                 });
-            },
-
-            getMerchantName: function() {
-                const config = configModel().getConfig();
-                return config?.merchantAccount ?? $t('Grand Total');
-            },
+            }
         });
     }
 );
