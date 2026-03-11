@@ -13,6 +13,7 @@ declare(strict_types=1);
 
 namespace Adyen\ExpressCheckout\Model;
 
+use Adyen\ExpressCheckout\Block\ApplePay\Shortcut\Button as ApplePayButton;
 use Adyen\ExpressCheckout\Model\Config\Source\ApplePay\ButtonColor;
 use Magento\Store\Model\ScopeInterface;
 use Magento\Framework\App\Config\ScopeConfigInterface;
@@ -66,11 +67,15 @@ class Configuration implements ConfigurationInterface
         string $scopeType = ScopeInterface::SCOPE_STORE,
                $scopeCode = null
     ): string {
-        $value = $this->scopeConfig->getValue(
-            self::APPLE_PAY_BUTTON_COLOR_CONFIG_PATH,
-            $scopeType,
-            $scopeCode
+        $configPath = sprintf(
+            "%s/%s_%s/%s",
+            self::CONFIG_PATH_PAYMENT,
+            self::CONFIG_PATH_ADYEN_PREFIX,
+            ApplePayButton::PAYMENT_METHOD_VARIANT,
+            self::CONFIG_PATH_EXPRESS_BUTTON_COLOR
         );
+
+        $value = $this->scopeConfig->getValue($configPath, $scopeType, $scopeCode);
 
         return $value ?: ButtonColor::BLACK;
     }

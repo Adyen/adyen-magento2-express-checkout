@@ -80,6 +80,7 @@ define([
                 isProductView: false,
                 maskedId: null,
                 applePayComponent: null,
+                applePayMerchantName: null
             },
 
             toAmountString: function (val) {
@@ -157,6 +158,7 @@ define([
                 const config = configModel().getConfig();
                 const adyenData = window.adyenData;
                 let currentPage = getCurrentPage(this.isProductView, element);
+                this.applePayMerchantName = applePaymentMethod.configuration.merchantName;
 
                 const adyenCheckoutComponent = await window.AdyenWeb.AdyenCheckout({
                     locale: config.locale,
@@ -270,11 +272,11 @@ define([
                 applepayBaseConfiguration = {
                     countryCode: countryCode,
                     currencyCode: currency,
-                    totalPriceLabel: applePaymentMethod.configuration.merchantName,
+                    totalPriceLabel: this.applePayMerchantName,
                     configuration: {
                         domainName: window.location.hostname,
                         merchantId: applePaymentMethod.configuration.merchantId,
-                        merchantName: this.getMerchantName(),
+                        merchantName: config?.merchantAccount ?? $t('Grand Total'),
                     },
                     amount: {
                         value: this.isProductView
@@ -336,7 +338,7 @@ define([
                             console.info('There are no shipping methods available for you right now. Please try again or use an alternative payment method.');
                             reject({
                                 newTotal: {
-                                    label: this.getMerchantName(),
+                                    label: this.applePayMerchantName,
                                     amount: this.isProductView
                                         ? formatAmount(totalsModel().getTotal() * 100)
                                         : formatAmount(getCartSubtotal() * 100),
@@ -456,7 +458,7 @@ define([
                 const update = {
                     newTotal: {
                         type: 'final',
-                        label: this.getMerchantName(),
+                        label: this.applePayMerchantName,
                         amount: grandTotal
                     },
                     newLineItems: [
@@ -667,12 +669,7 @@ define([
 
                     window.scrollTo({ top: 0, behavior: 'smooth' });
                 }, 1000);
-            },
-
-            getMerchantName: function() {
-                const config = configModel().getConfig();
-                return config?.merchantAccount ?? $t('Grand Total');
-            },
+            }
         });
     }
 );

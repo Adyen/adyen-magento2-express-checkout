@@ -533,7 +533,7 @@ define([
             const deliveryName = this._splitFullName(shopperDetails.deliveryAddress.firstName);
             let billingAddress = {
                 'email': shopperDetails.authorizedEvent.payer.email_address,
-                'telephone': shopperDetails.authorizedEvent.payer.phone.phone_number.national_number,
+                'telephone': shopperDetails.authorizedEvent.payer.phone?.phone_number?.national_number ?? '',
                 'firstname': shopperDetails.authorizedEvent.payer.name.given_name,
                 'lastname': shopperDetails.authorizedEvent.payer.name.surname,
                 'street': [
@@ -552,7 +552,7 @@ define([
 
             let shippingAddress = {
                 'email': shopperDetails.authorizedEvent.payer.email_address,
-                'telephone': shopperDetails.authorizedEvent.payer.phone.phone_number.national_number,
+                'telephone': shopperDetails.authorizedEvent.payer.phone?.phone_number?.national_number ?? '',
                 'firstname': deliveryName.firstName,
                 'lastname': deliveryName.lastName,
                 'street': [

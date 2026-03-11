@@ -17,7 +17,6 @@ define(
         'Adyen_Payment/js/adyen',
         'Adyen_Payment/js/model/adyen-configuration',
         'Adyen_ExpressCheckout/js/model/adyen-express-configuration',
-        'Adyen_ExpressCheckout/js/helpers/getApplePayStyles',
         'Adyen_ExpressCheckout/js/actions/getShippingMethods',
         'Adyen_ExpressCheckout/js/helpers/getRegionId',
         'Adyen_ExpressCheckout/js/actions/setShippingInformation',
@@ -39,7 +38,6 @@ define(
         AdyenWeb,
         adyenConfiguration,
         adyenExpressConfiguration,
-        getApplePayStyles,
         getShippingMethods,
         getRegionId,
         setShippingInformation,
@@ -64,7 +62,8 @@ define(
                 shippingMethodsList: [],
                 shippingAddress: null,
                 shippingMethod: null,
-                _applePayPostData: null
+                _applePayPostData: null,
+                applePayMerchantName: null
             },
 
             initObservable: function () {
@@ -98,7 +97,6 @@ define(
             buildPaymentMethodComponent: async function () {
                 const paymentMethodsResponse = adyenExpressConfiguration.getPaymentMethodsResponse();
                 const adyenData = window.adyenData;
-                const applePayStyles = getApplePayStyles();
                 const isVirtual = adyenExpressConfiguration.getIsVirtual();
 
                 if (!paymentMethodsResponse || !paymentMethodsResponse.paymentMethods) {
@@ -146,14 +144,18 @@ define(
                     const amountValue = adyenExpressConfiguration.getAmountValue();
                     const minorAmount = currencyHelper.formatAmount(amountValue, currency);
 
+                    this.applePayMerchantName = applePayMethod.configuration.merchantName;
+
                     let configuration = {
                         countryCode: countryCode,
                         currencyCode: currency,
-                        totalPriceLabel: applePayMethod.configuration.merchantName,
+                        totalPriceLabel: this.applePayMerchantName,
+                        buttonColor: adyenExpressConfiguration.getApplePayButtonColor(),
+                        buttonType: 'plain',
                         configuration: {
                             domainName: window.location.hostname,
                             merchantId: applePayMethod.configuration.merchantId,
-                            merchantName: this.getMerchantName()
+                            merchantName: adyenConfiguration.getMerchantAccount() || $t('Grand Total')
                         },
                         amount: {
                             value: minorAmount,
@@ -171,8 +173,7 @@ define(
                         onClick: function (resolve /*, reject */) {
                             resolve();
                         },
-                        onError: this.handleOnError.bind(this),
-                        ...applePayStyles
+                        onError: this.handleOnError.bind(this)
                     };
 
                     if (!isVirtual) {
@@ -229,7 +230,7 @@ define(
                         console.info('No shipping methods available for current Apple Pay address.');
                         reject({
                             newTotal: {
-                                label: this.getMerchantName(),
+                                label: this.applePayMerchantName,
                                 amount: this.toAmountString(amountValue)
                             },
                             errors: [new ApplePayError('addressUnserviceable')]
@@ -366,7 +367,7 @@ define(
                 const update = {
                     newTotal: {
                         type: 'final',
-                        label: this.getMerchantName(),
+                        label: this.applePayMerchantName,
                         amount: grandTotal
                     },
                     newLineItems: [
@@ -587,10 +588,6 @@ define(
 
                     window.scrollTo({ top: 0, behavior: 'smooth' });
                 }, 1000);
-            },
-
-            getMerchantName: function () {
-                return adyenConfiguration.getMerchantAccount() || $t('Grand Total');
             },
 
             getComponentRootNodeId: function () {

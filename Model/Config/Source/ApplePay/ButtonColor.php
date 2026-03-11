@@ -22,7 +22,7 @@ class ButtonColor implements OptionSourceInterface
 {
     public const BLACK = 'black';
     public const WHITE = 'white';
-    public const WHITE_WITH_LINE = 'white-with-line';
+    public const WHITE_WITH_LINE = 'white-outline';
 
     /**
      * @inheritDoc
