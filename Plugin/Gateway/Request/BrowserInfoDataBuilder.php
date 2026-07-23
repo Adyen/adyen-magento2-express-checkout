@@ -14,41 +14,32 @@ declare(strict_types=1);
 namespace Adyen\ExpressCheckout\Plugin\Gateway\Request;
 
 use Adyen\Payment\Gateway\Request\BrowserInfoDataBuilder as Subject;
-use Adyen\ExpressCheckout\Model\IsExpressMethodResolverInterface;
 use Magento\Framework\Locale\Resolver as LocaleResolver;
-use Magento\Payment\Gateway\Data\PaymentDataObject;
-use Magento\Payment\Gateway\Helper\SubjectReader;
-use Magento\Store\Api\Data\StoreInterface;
-use Magento\Store\Api\StoreRepositoryInterface;
-use Magento\Store\Model\Store;
-use Psr\Log\LoggerInterface;
 
 class BrowserInfoDataBuilder
 {
-    /**
-     * @var IsExpressMethodResolverInterface
-     */
-    private $isExpressMethodResolver;
-
     /**
      * @var LocaleResolver
      */
     private $localeResolver;
 
     /**
-     * @param IsExpressMethodResolverInterface $isExpressMethodResolver
      * @param LocaleResolver $localeResolver
      */
     public function __construct(
-        IsExpressMethodResolverInterface $isExpressMethodResolver,
         LocaleResolver $localeResolver
     ) {
-        $this->isExpressMethodResolver = $isExpressMethodResolver;
         $this->localeResolver = $localeResolver;
     }
 
     /**
-     * After build intercept and ensure language is set in browser info if express
+     * After build intercept and ensure language is set in browser info.
+     *
+     * The Adyen Web Components SDK collects browserInfo.language client-side;
+     * when it doesn't (e.g. after the v6 SDK upgrade, or unsupported browsers),
+     * Adyen refuses 3DS2 authorisations with "Required field language missing
+     * for device channel browser". Back-filling from the store locale here
+     * applies to every payment method, not just express wallets.
      *
      * @param Subject $subject
      * @param array $result
@@ -60,22 +51,19 @@ class BrowserInfoDataBuilder
         array $result,
         array $buildSubject
     ): array {
-        /** @var PaymentDataObject $paymentDataObject */
-        $paymentDataObject = SubjectReader::readPayment($buildSubject);
-        $payment = $paymentDataObject->getPayment();
-        if ($this->isExpressMethodResolver->execute($payment)) {
-            $languageSet = $result['body']['browserInfo']['language'] ?? null;
-            $currentLocale = $this->getCurrentStoreLanguageCode($buildSubject);
-            if ($languageSet === null ||
-                ($currentLocale !== null && $languageSet !== $currentLocale)) {
-                $result['body']['browserInfo']['language'] = $currentLocale;
-            }
+        $languageSet = $result['body']['browserInfo']['language'] ?? null;
+        $currentLocale = $this->getCurrentStoreLanguageCode();
+        if ($languageSet === null ||
+            ($currentLocale !== null && $languageSet !== $currentLocale)) {
+            $result['body']['browserInfo']['language'] = $currentLocale;
         }
         return $result;
     }
 
     /**
-     * Return Current Stores language
+     * Return the current store locale as a BCP-47 language tag
+     * (e.g. "en-GB"), matching the format a browser's navigator.language
+     * would report.
      *
      * @return string|null
      */
@@ -83,8 +71,7 @@ class BrowserInfoDataBuilder
     {
         $currentLocale = $this->localeResolver->getLocale() ?: null;
         if ($currentLocale !== null) {
-            $languageCodeSplit = explode('_', $currentLocale);
-            $currentLocale = $languageCodeSplit[1] ?? $currentLocale;
+            $currentLocale = str_replace('_', '-', $currentLocale);
         }
         return $currentLocale;
     }
