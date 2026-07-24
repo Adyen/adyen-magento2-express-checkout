@@ -33,13 +33,18 @@ class BrowserInfoDataBuilder
     }
 
     /**
-     * After build intercept and ensure language is set in browser info.
+     * After build intercept and back-fill browserInfo.language when the client
+     * did not supply one.
      *
      * The Adyen Web Components SDK collects browserInfo.language client-side;
      * when it doesn't (e.g. after the v6 SDK upgrade, or unsupported browsers),
      * Adyen refuses 3DS2 authorisations with "Required field language missing
      * for device channel browser". Back-filling from the store locale here
      * applies to every payment method, not just express wallets.
+     *
+     * A value already present is left untouched even if it differs from the
+     * store locale — it is the customer's real browser locale and feeds 3DS2
+     * device fingerprinting, so it must not be replaced.
      *
      * @param Subject $subject
      * @param array $result
@@ -52,10 +57,11 @@ class BrowserInfoDataBuilder
         array $buildSubject
     ): array {
         $languageSet = $result['body']['browserInfo']['language'] ?? null;
-        $currentLocale = $this->getCurrentStoreLanguageCode();
-        if ($languageSet === null ||
-            ($currentLocale !== null && $languageSet !== $currentLocale)) {
-            $result['body']['browserInfo']['language'] = $currentLocale;
+        if ($languageSet === null || $languageSet === '') {
+            $currentLocale = $this->getCurrentStoreLanguageCode();
+            if ($currentLocale !== null) {
+                $result['body']['browserInfo']['language'] = $currentLocale;
+            }
         }
         return $result;
     }
