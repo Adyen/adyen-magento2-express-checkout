@@ -198,7 +198,9 @@ define([
                             }
                         }
                     },
-                    paymentMethodsResponse: getPaymentMethod('googlepay', this.isProductView),
+                    paymentMethodsResponse: {
+                        paymentMethods: googlePaymentMethod ? [googlePaymentMethod] : []
+                    },
                     onAdditionalDetails: this.handleOnAdditionalDetails.bind(this),
                     risk: {
                         enabled: false
@@ -306,6 +308,10 @@ define([
                     onError: () => cancelCart(this.isProductView),
                     ...googlePayStyles
                 };
+
+                if (Array.isArray(googlePaymentMethod.brands) && googlePaymentMethod.brands.length > 0) {
+                    configuration.brands = googlePaymentMethod.brands;
+                }
 
                 if (!isVirtual) {
                     configuration.callbackIntents = ['SHIPPING_ADDRESS', 'SHIPPING_OPTION'];
