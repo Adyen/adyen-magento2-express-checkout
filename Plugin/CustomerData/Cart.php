@@ -80,7 +80,7 @@ class Cart
         $quoteId = $this->checkoutSession->getQuoteId();
         $paymentMethods = $quoteId ?
             json_decode(
-                $this->adyenPaymentMethodManagement->getPaymentMethods($quoteId),
+                $this->adyenPaymentMethodManagement->getPaymentMethods((string)$quoteId),
                 true
             ) : [];
         $result[self::PAYMENT_METHODS_KEY] = $paymentMethods;
