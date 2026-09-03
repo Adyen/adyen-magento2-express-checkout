@@ -28,6 +28,12 @@ type Mutation {
     ): AdyenExpressPaypalUpdateOrderStatus @resolver(class: "Adyen\\ExpressCheckout\\Model\\Resolver\\AdyenExpressPaypalUpdateOrderResolver")
 }
 
+type Query {
+    adyenPaymentMethodsByProduct(
+        input: AdyenPaymentMethodsByProductInput!
+    ): AdyenPaymentMethods @resolver(class: "Adyen\\ExpressCheckout\\Model\\Resolver\\PaymentMethodsByProduct") @doc(description: "Returns Adyen payment methods available for a product on PDP, without requiring a cart.")
+}
+
 type ExpressData {
     masked_quote_id: String @doc(description: "Adyen express quote ID for PDP")
     is_virtual_quote: Boolean @doc(description: "Shows whether if the quote is virtual or not")
@@ -166,6 +172,10 @@ input PaypalDeliveryMethodInput {
 input AmountInput {
     value: Int @doc(description: "Amount value in minor units")
     currency: String @doc(description: "Currency")
+}
+
+input AdyenPaymentMethodsByProductInput @doc(description: "Specifies the product for which to retrieve Adyen payment methods on PDP.") {
+    sku: String! @doc(description: "SKU of the product to evaluate payment methods against.")
 }
 
 enum AdyenExpressDisplayArea {
