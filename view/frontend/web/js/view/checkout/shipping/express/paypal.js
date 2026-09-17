@@ -33,7 +33,8 @@ define(
         'Adyen_Payment/js/model/adyen-payment-modal',
         'Adyen_ExpressCheckout/js/helpers/getMaskedIdFromCart',
         'Adyen_ExpressCheckout/js/model/adyen-payment-service',
-        'Magento_Checkout/js/model/error-processor'
+        'Magento_Checkout/js/model/error-processor',
+        'Adyen_ExpressCheckout/js/actions/cancelCart'
     ],
     function (
         $,
@@ -58,7 +59,8 @@ define(
         adyenPaymentModal,
         getMaskedIdFromCart,
         adyenPaymentService,
-        errorProcessor
+        errorProcessor,
+        cancelCart
     ) {
         'use strict';
 
@@ -555,6 +557,7 @@ define(
              */
             handleOnError: function (error) {
                 console.error('Adyen PayPal Express – onError', error);
+                cancelCart(false);
                 errorProcessor.process(error, this.messageContainer);
                 this.showUserError(
                     $t('Something went wrong with PayPal. Please try again or choose another payment method.')
