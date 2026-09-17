@@ -24,7 +24,7 @@ class ExpressCancel implements ExpressCancelInterface
     }
 
     /**
-     * Set Adyen quote to inactive check for original quote and set it to active
+     * Release the reserved order ID and, when the Adyen quote is a clone, restore the original cart
      *
      * @param int $adyenCartId
      * @throws NoSuchEntityException
@@ -32,22 +32,27 @@ class ExpressCancel implements ExpressCancelInterface
     public function execute(int $adyenCartId): void
     {
         $adyenQuote = $this->cartRepository->get($adyenCartId);
-        if ($adyenQuote->getIsActive()) {
-            $adyenQuote->setIsActive(false);
-            $this->cartRepository->save($adyenQuote);
-        }
         $originalQuoteId = $adyenQuote->getAdyenOgQuoteId();
-        if ($originalQuoteId) {
-            try {
-                $originalQuote = $this->cartRepository->get($originalQuoteId);
-            } catch (NoSuchEntityException $e) {
-                $originalQuote = null;
-            }
-            if ($originalQuote !== null &&
-                !$originalQuote->getIsActive()) {
-                $originalQuote->setIsActive(true);
-                $this->cartRepository->save($originalQuote);
-            }
+
+        $adyenQuote->setReservedOrderId(null);
+
+        if (!$originalQuoteId) {
+            $this->cartRepository->save($adyenQuote);
+            return;
+        }
+
+        $adyenQuote->setIsActive(false);
+        $this->cartRepository->save($adyenQuote);
+
+        try {
+            $originalQuote = $this->cartRepository->get($originalQuoteId);
+        } catch (NoSuchEntityException $e) {
+            $originalQuote = null;
+        }
+        if ($originalQuote !== null &&
+            !$originalQuote->getIsActive()) {
+            $originalQuote->setIsActive(true);
+            $this->cartRepository->save($originalQuote);
         }
     }
 }
