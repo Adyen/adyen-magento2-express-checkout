@@ -39,7 +39,8 @@ define([
     'Adyen_ExpressCheckout/js/helpers/getCurrentPage',
     'Adyen_ExpressCheckout/js/helpers/getMaskedIdFromCart',
     'Adyen_Payment/js/helper/currencyHelper',
-    'Adyen_ExpressCheckout/js/actions/cancelCart'
+    'Adyen_ExpressCheckout/js/actions/cancelCart',
+    'Magento_Checkout/js/model/error-processor'
 ], function (
     Component,
     $t,
@@ -81,7 +82,8 @@ define([
     getCurrentPage,
     getMaskedIdFromCart,
     currencyHelper,
-    cancelCart
+    cancelCart,
+    errorProcessor
 ) {
     'use strict';
 
@@ -661,8 +663,13 @@ define([
             let response = JSON.parse(responseJSON);
 
             if (response.isFinal) {
-                // Status is final redirect to the success page
-                redirectToSuccess();
+                if (['Authorised', 'Received', 'PresentToShopper'].includes(response.resultCode)) {
+                    // Status is final redirect to the success page
+                    redirectToSuccess();
+                } else {
+                    errorProcessor.process({responseText: responseJSON}, self.messageContainer);
+                    self.isPlaceOrderActionAllowed(true);
+                }
             } else {
                 // Handle action
                 self.handleAction(response.action, orderId); // Complete this
