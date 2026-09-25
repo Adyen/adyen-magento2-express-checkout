@@ -539,7 +539,7 @@ define(
 
                 try {
                     const responseJSON = await adyenPaymentService.paymentDetails(request, this.orderId, quoteId);
-                    this.handleAdyenResult(responseJSON, this.orderId);
+                    this.handleAdyenResult(responseJSON, this.orderId, popupModal);
                 } catch (response) {
                     this.closeModal(popupModal);
                     errorProcessor.process(response, this.messageContainer);
@@ -683,14 +683,24 @@ define(
             /**
              * Handles Adyen result coming back from /payments/details.
              */
-            handleAdyenResult: function (responseJSON) {
+            handleAdyenResult: function (responseJSON, orderId, popupModal = null) {
                 const self = this;
                 const response = JSON.parse(responseJSON || '{}');
 
                 if (response.isFinal) {
                     loader.stopLoader();
                     this.isLoading(false);
-                    redirectToSuccess();
+
+                    if (['Authorised', 'Received', 'PresentToShopper'].includes(response.resultCode)) {
+                        redirectToSuccess();
+                    } else {
+                        if (popupModal) {
+                            self.closeModal(popupModal);
+                        }
+
+                        errorProcessor.process({responseText: responseJSON}, self.messageContainer);
+                        self.isPlaceOrderActionAllowed(true);
+                    }
                 } else if (response.action) {
                     self.handleAction(response.action, self.orderId);
                 } else {
