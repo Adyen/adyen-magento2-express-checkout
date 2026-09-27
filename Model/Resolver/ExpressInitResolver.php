@@ -14,6 +14,7 @@ declare(strict_types=1);
 namespace Adyen\ExpressCheckout\Model\Resolver;
 
 use Adyen\ExpressCheckout\Api\Data\ProductCartParamsInterfaceFactory;
+use Adyen\ExpressCheckout\Exception\GraphQlExpressInitException;
 use Adyen\ExpressCheckout\Model\ExpressInit;
 use Adyen\Payment\Logger\AdyenLogger;
 use Exception;
@@ -83,16 +84,30 @@ class ExpressInitResolver implements ResolverInterface
             }
 
             $result = function () use ($productCartParams, $quoteId, $adyenMaskedQuoteId, $provider) {
-                return $provider->execute($productCartParams, $quoteId, $adyenMaskedQuoteId);
+                try {
+                    return $provider->execute($productCartParams, $quoteId, $adyenMaskedQuoteId);
+                } catch (Exception $e) {
+                    $this->onError($e);
+                }
             };
 
             return $this->valueFactory->create($result);
         } catch (Exception $e) {
-            $errorMessage = "An error occurred while initiating the express quote";
-            $logMessage = sprintf("%s: %s", $errorMessage, $e->getMessage());
-            $this->adyenLogger->error($logMessage);
-
-            throw new LocalizedException(__($errorMessage));
+            $this->onError($e);
         }
+    }
+
+    /**
+     * @param Exception $exception
+     * @return void
+     * @throws GraphQlExpressInitException
+     */
+    protected function onError(Exception $exception): void
+    {
+        $errorMessage = "An error occurred while initiating the express quote";
+        $logMessage = sprintf("%s: %s", $errorMessage, $exception->getMessage());
+        $this->adyenLogger->error($logMessage);
+
+        throw new GraphQlExpressInitException(__($errorMessage), $exception);
     }
 }
