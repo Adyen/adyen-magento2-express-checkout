@@ -274,7 +274,7 @@ define([
                 let configuration = {
                     showPayButton: true,
                     countryCode: config.countryCode,
-                    environment: config.checkoutenv.toUpperCase(),
+                    environment: config.checkoutenv,
                     showButton: true,
                     emailRequired: true,
                     shippingAddressRequired: !isVirtual,
