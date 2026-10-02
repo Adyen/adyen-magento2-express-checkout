@@ -355,7 +355,7 @@ define([
                                 identifier: result[i].method_code,
                                 label: result[i].method_title,
                                 detail: result[i].carrier_title ? result[i].carrier_title : '',
-                                amount: this.toAmountString(result[i].amount)
+                                amount: this.toAmountString(result[i].price_incl_tax ?? result[i].amount)
                             };
 
                             // Add method object to array.
@@ -412,7 +412,10 @@ define([
                         reject($t('No shipping methods available.'));
                         return;
                     }
-                    shippingMethod = { identifier: firstKey, amount: self.shippingMethods[firstKey].amount };
+                    shippingMethod = {
+                        identifier: firstKey,
+                        amount: self.shippingMethods[firstKey].price_incl_tax ?? self.shippingMethods[firstKey].amount
+                    };
                 }
 
                 const address = {
@@ -451,7 +454,8 @@ define([
                 // Guard against missing/NaN totals
                 const grandTotal = this.toAmountString(response && response.grand_total);
                 const subtotal   = this.toAmountString(response && response.subtotal);
-                const tax        = this.toAmountString(response && response.tax_amount);
+                // Shipping tax is already included in the shipping line
+                const tax        = this.toAmountString(response && response.tax_amount - (response.shipping_tax_amount || 0));
 
                 const update = {
                     newTotal: {
