@@ -114,9 +114,11 @@ class AdyenPaypalUpdateOrderTest extends AbstractAdyenTestCase
         $merchantReference = 'ORD123';
         $currency = 'USD';
         $grandTotal = 100;
-        $taxAmount = 5;
+        $taxAmount = 5.0;
+        $shippingTaxAmount = 1.0;
         $formattedAmount = 10000;
-        $formattedTaxAmount = 500;
+        // Shipping tax is part of the delivery method amount, so taxTotal excludes it
+        $formattedTaxAmount = 400;
 
         $quote = $this->createMockWithMethods(
             Quote::class,
@@ -129,11 +131,13 @@ class AdyenPaypalUpdateOrderTest extends AbstractAdyenTestCase
         $quote->method('getGrandTotal')->willReturn($grandTotal);
         $quote->method('isVirtual')->willReturn(false);
 
-        $address = $this->getMockBuilder(\Magento\Quote\Model\Quote\Address::class)
-            ->disableOriginalConstructor()
-            ->addMethods(['getTaxAmount'])
-            ->getMock();
+        $address = $this->createMockWithMethods(
+            \Magento\Quote\Model\Quote\Address::class,
+            [],
+            ['getTaxAmount', 'getShippingTaxAmount']
+        );
         $address->method('getTaxAmount')->willReturn($taxAmount);
+        $address->method('getShippingTaxAmount')->willReturn($shippingTaxAmount);
 
         $quote->method('getShippingAddress')->willReturn($address);
 
@@ -150,7 +154,7 @@ class AdyenPaypalUpdateOrderTest extends AbstractAdyenTestCase
 
         $this->adyenHelper->method('formatAmount')->willReturnMap([
             [$grandTotal, $currency, $formattedAmount],
-            [$taxAmount, $currency, $formattedTaxAmount]
+            [$taxAmount - $shippingTaxAmount, $currency, $formattedTaxAmount]
         ]);
 
         $validatedDeliveryMethod = [
@@ -162,6 +166,10 @@ class AdyenPaypalUpdateOrderTest extends AbstractAdyenTestCase
         ];
 
         $this->deliveryMethodValidator->method('getValidatedDeliveryMethod')->willReturn($validatedDeliveryMethod);
+
+        $this->paypalUpdateOrderHelper->expects($this->once())
+            ->method('buildPaypalUpdateOrderRequest')
+            ->with('PSP123', 'somePaymentData', $formattedAmount, $formattedTaxAmount, $currency);
 
         $this->adyenHelper->expects($this->once())->method('logRequest');
 

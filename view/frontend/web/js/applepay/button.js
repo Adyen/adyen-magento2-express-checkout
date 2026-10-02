@@ -338,7 +338,7 @@ define([
                             identifier: result[i].method_code,
                             label: result[i].method_title,
                             detail: result[i].carrier_title ? result[i].carrier_title : '',
-                            amount: parseFloat(result[i].amount).toFixed(2)
+                            amount: parseFloat(result[i].price_incl_tax ?? result[i].amount).toFixed(2)
                         };
                         // Add method object to array.
 
@@ -453,11 +453,14 @@ define([
                     }
                 ];
 
-                if (response.tax_amount > 0) {
+                // Shipping tax is already included in the shipping line
+                const tax = response.tax_amount - (response.shipping_tax_amount || 0);
+
+                if (tax > 0) {
                     applePayShippingMethodUpdate.newLineItems.push({
                         type: 'final',
                         label: $t('Tax'),
-                        amount: response.tax_amount.toString()
+                        amount: tax.toFixed(2)
                     })
                 }
 
