@@ -90,7 +90,7 @@ define([
                 this._super();
 
                 configModel().setConfig(config);
-                countriesModel();
+                countriesModel().setCountries(config.countries);
 
                 this.isProductView = config.isProductView;
 

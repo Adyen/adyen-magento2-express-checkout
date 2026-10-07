@@ -25,6 +25,7 @@ define(
         'Adyen_ExpressCheckout/js/helpers/getExtensionAttributes',
         'Adyen_ExpressCheckout/js/actions/createPayment',
         'Adyen_ExpressCheckout/js/model/adyen-loader',
+        'Adyen_ExpressCheckout/js/model/countries',
         'Adyen_ExpressCheckout/js/helpers/redirectToSuccess',
         'Adyen_ExpressCheckout/js/helpers/getSupportedNetworks',
         'Adyen_Payment/js/helper/currencyHelper'
@@ -46,6 +47,7 @@ define(
         getExtensionAttributes,
         createPayment,
         loader,
+        countriesModel,
         redirectToSuccess,
         getSupportedNetworks,
         currencyHelper
@@ -77,6 +79,7 @@ define(
 
             initialize: function () {
                 this._super();
+                countriesModel().setCountries(adyenExpressConfiguration.getCountries());
                 this.isAvailable(adyenExpressConfiguration.getIsApplePayEnabledOnShipping ?
                     adyenExpressConfiguration.getIsApplePayEnabledOnShipping() :
                     true
