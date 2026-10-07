@@ -16,6 +16,7 @@ use Adyen\ExpressCheckout\Block\ApplePay\Shortcut\Button as ApplePayButton;
 use Adyen\ExpressCheckout\Block\Buttons\AbstractButton;
 use Adyen\ExpressCheckout\Block\GooglePay\Shortcut\Button as GooglePayButton;
 use Adyen\ExpressCheckout\Block\Paypal\Shortcut\Button as PayPalButton;
+use Adyen\ExpressCheckout\Helper\Countries;
 use Adyen\ExpressCheckout\Model\Config\Source\ShortcutAreas;
 use Adyen\ExpressCheckout\Model\ConfigurationInterface;
 use Adyen\Payment\Api\AdyenPaymentMethodManagementInterface;
@@ -41,6 +42,7 @@ class AdyenExpressConfigProvider implements ConfigProviderInterface
      * @param Data $adyenHelper
      * @param ScopeConfigInterface $scopeConfig
      * @param UrlInterface $url
+     * @param Countries $countries
      */
     public function __construct(
         private readonly ConfigurationInterface $configHelper,
@@ -50,7 +52,8 @@ class AdyenExpressConfigProvider implements ConfigProviderInterface
         private readonly ChargedCurrency $chargeCurrencyHelper,
         private readonly Data $adyenHelper,
         private readonly ScopeConfigInterface $scopeConfig,
-        private readonly UrlInterface $url
+        private readonly UrlInterface $url,
+        private readonly Countries $countries
     ) {}
 
     /**
@@ -109,7 +112,8 @@ class AdyenExpressConfigProvider implements ConfigProviderInterface
                         'isEnabledOnShipping' => $isPayPalEnabledOnShipping
                     ],
                     'storeCode' => $this->storeManager->getStore()->getCode(),
-                    'actionSuccess' => $this->url->getUrl('checkout/onepage/success', ['_secure' => true])
+                    'actionSuccess' => $this->url->getUrl('checkout/onepage/success', ['_secure' => true]),
+                    'countries' => $this->countries->getCountries()
                 ]
             ]
         ];

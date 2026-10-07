@@ -2,7 +2,7 @@ define(['Adyen_ExpressCheckout/js/model/countries'], function (countriesModel) {
     'use strict';
 
     return function (countryCode, regionName, byRegionCode = false) {
-        const countries = countriesModel().getCountires(byRegionCode);
+        const countries = countriesModel().getCountries(byRegionCode);
         if (typeof regionName !== 'string') {
             return null;
         }

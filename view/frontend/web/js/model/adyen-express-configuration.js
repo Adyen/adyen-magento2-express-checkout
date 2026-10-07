@@ -45,7 +45,10 @@ define(
             },
             getPaymentMethodsResponse: function () {
                 return window.checkoutConfig.payment.adyenExpress.paymentMethodsResponse;
-            }
+            },
+            getCountries: function () {
+                return window.checkoutConfig.payment.adyenExpress.countries;
+            },
         };
     },
 );
