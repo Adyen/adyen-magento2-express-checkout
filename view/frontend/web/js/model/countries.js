@@ -7,7 +7,7 @@ define([
 
     return Component.extend({
         defaults: {
-            countries: ko.observable({}).extend({notify: 'always'})
+            countries: ko.observable([]).extend({notify: 'always'})
         },
 
         getCountries: function (byRegionCode = false) {
