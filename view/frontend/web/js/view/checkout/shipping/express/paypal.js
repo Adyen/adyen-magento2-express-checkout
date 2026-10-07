@@ -302,6 +302,8 @@ define(
                 const payload = {
                     address: {
                         country_id: shippingAddress.countryCode,
+                        region: shippingAddress.state,
+                        city: shippingAddress.city,
                         postcode: shippingAddress.postalCode,
                         street: ['']
                     }
@@ -724,7 +726,7 @@ define(
                     identifier: method.method_code,
                     label: label,
                     detail: description,
-                    amount: method.amount,
+                    amount: method.price_incl_tax ?? method.amount,
                     carrierCode: method.carrier_code
                 };
             },
