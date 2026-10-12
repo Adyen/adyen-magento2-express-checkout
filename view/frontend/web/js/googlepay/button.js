@@ -198,7 +198,9 @@ define([
                             }
                         }
                     },
-                    paymentMethodsResponse: getPaymentMethod('googlepay', this.isProductView),
+                    paymentMethodsResponse: {
+                        paymentMethods: googlePaymentMethod ? [googlePaymentMethod] : []
+                    },
                     onAdditionalDetails: this.handleOnAdditionalDetails.bind(this),
                     risk: {
                         enabled: false
@@ -272,7 +274,7 @@ define([
                 let configuration = {
                     showPayButton: true,
                     countryCode: config.countryCode,
-                    environment: config.checkoutenv.toUpperCase(),
+                    environment: config.checkoutenv,
                     showButton: true,
                     emailRequired: true,
                     shippingAddressRequired: !isVirtual,
@@ -306,6 +308,10 @@ define([
                     onError: () => cancelCart(this.isProductView),
                     ...googlePayStyles
                 };
+
+                if (Array.isArray(googlePaymentMethod.brands) && googlePaymentMethod.brands.length > 0) {
+                    configuration.brands = googlePaymentMethod.brands;
+                }
 
                 if (!isVirtual) {
                     configuration.callbackIntents = ['SHIPPING_ADDRESS', 'SHIPPING_OPTION'];
@@ -525,7 +531,7 @@ define([
 
                 adyenPaymentService.paymentDetails(request, self.orderId, quoteId)
                     .done(function(responseJSON) {
-                        self.handleAdyenResult(responseJSON, self.orderId);
+                        self.handleAdyenResult(responseJSON, self.orderId, popupModal);
                     })
                     .fail(function(response) {
                         self.closeModal(popupModal);
@@ -535,14 +541,24 @@ define([
                     });
             },
 
-            handleAdyenResult: function (responseJSON, orderId) {
+            handleAdyenResult: function (responseJSON, orderId, popupModal = null) {
                 var self = this;
                 var response = JSON.parse(responseJSON);
 
                 if (!!response.isFinal) {
-                    // Status is final redirect to the success page
-                    loader.stopLoader();
-                    redirectToSuccess()
+                    if (['Authorised', 'Received', 'PresentToShopper'].includes(response.resultCode)) {
+                        // Status is final redirect to the success page
+                        loader.stopLoader();
+                        redirectToSuccess()
+                    } else {
+                        if (popupModal) {
+                            self.closeModal(popupModal);
+                        }
+
+                        errorProcessor.process({responseText: responseJSON}, self.messageContainer);
+                        self.isPlaceOrderActionAllowed(true);
+                        loader.stopLoader();
+                    }
                 } else {
                     // Handle action
                     self.handleAction(response.action, orderId);

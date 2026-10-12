@@ -43,11 +43,12 @@ class ExpressCancelTest extends AbstractAdyenTestCase
 
         $adyenQuote = $this->getMockBuilder(Quote::class)
             ->disableOriginalConstructor()
-            ->onlyMethods(['getIsActive', 'setIsActive'])
+            ->onlyMethods(['getIsActive', 'setIsActive', 'setReservedOrderId'])
             ->addMethods(['getAdyenOgQuoteId'])
             ->getMock();
         $adyenQuote->method('getIsActive')->willReturn(true);
         $adyenQuote->expects($this->once())->method('setIsActive')->with(false);
+        $adyenQuote->expects($this->once())->method('setReservedOrderId')->with(null);
         $adyenQuote->method('getAdyenOgQuoteId')->willReturn($originalQuoteId);
 
         $originalQuote = $this->getMockBuilder(Quote::class)
@@ -119,21 +120,23 @@ class ExpressCancelTest extends AbstractAdyenTestCase
     /**
      * @throws NoSuchEntityException
      */
-    public function testExecute_NoOriginalQuoteId_OnlyDeactivatesAdyenQuote(): void
+    public function testExecute_NoOriginalQuoteId_ClearsReservationAndKeepsCartActive(): void
     {
         $adyenCartId = 1001;
 
         $adyenQuote = $this->getMockBuilder(Quote::class)
             ->disableOriginalConstructor()
-            ->onlyMethods(['getIsActive', 'setIsActive'])
+            ->onlyMethods(['getIsActive', 'setIsActive', 'setReservedOrderId'])
             ->addMethods(['getAdyenOgQuoteId'])
             ->getMock();
 
-        // Adyen quote is active, should be deactivated and saved
         $adyenQuote->method('getIsActive')->willReturn(true);
+        $adyenQuote->expects($this->never())
+            ->method('setIsActive');
+
         $adyenQuote->expects($this->once())
-            ->method('setIsActive')
-            ->with(false);
+            ->method('setReservedOrderId')
+            ->with(null);
 
         // No original quote id present
         $adyenQuote->method('getAdyenOgQuoteId')->willReturn(null);
@@ -206,19 +209,20 @@ class ExpressCancelTest extends AbstractAdyenTestCase
     /**
      * @throws NoSuchEntityException
      */
-    public function testExecute_AdyenQuoteAlreadyInactive_SkipsAdyenSave_StillHandlesOriginal(): void
+    public function testExecute_AdyenQuoteAlreadyInactive_StillClearsReservationAndHandlesOriginal(): void
     {
         $adyenCartId = 1001;
         $originalQuoteId = 2002;
 
-        // Adyen quote mock: already inactive -> should not be saved again
+        // Already inactive, but still saved to persist the cleared reservation
         $adyenQuote = $this->getMockBuilder(Quote::class)
             ->disableOriginalConstructor()
-            ->onlyMethods(['getIsActive', 'setIsActive'])
+            ->onlyMethods(['getIsActive', 'setIsActive', 'setReservedOrderId'])
             ->addMethods(['getAdyenOgQuoteId'])
             ->getMock();
         $adyenQuote->method('getIsActive')->willReturn(false);
-        $adyenQuote->expects($this->never())->method('setIsActive');
+        $adyenQuote->expects($this->once())->method('setIsActive')->with(false);
+        $adyenQuote->expects($this->once())->method('setReservedOrderId')->with(null);
         $adyenQuote->method('getAdyenOgQuoteId')->willReturn($originalQuoteId);
 
         // Original quote mock: inactive -> should be activated and saved
@@ -236,10 +240,9 @@ class ExpressCancelTest extends AbstractAdyenTestCase
             ->method('get')
             ->willReturnOnConsecutiveCalls($adyenQuote, $originalQuote);
 
-        // Save only the original quote (Adyen quote already inactive)
-        $this->cartRepository->expects($this->once())
+        $this->cartRepository->expects($this->exactly(2))
             ->method('save')
-            ->with($originalQuote);
+            ->with($this->isInstanceOf(Quote::class));
 
         // Session should be switched to the original quote
         $this->checkoutSession->expects($this->once())

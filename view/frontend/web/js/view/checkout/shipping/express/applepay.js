@@ -247,7 +247,7 @@ define(
                             identifier: method.method_code,
                             label: method.method_title,
                             detail: method.carrier_title ? method.carrier_title : '',
-                            amount: this.toAmountString(method.amount)
+                            amount: this.toAmountString(method.price_incl_tax ?? method.amount)
                         };
 
                         appleShippingMethods.push(appleMethod);
@@ -311,7 +311,7 @@ define(
                     }
                     shippingMethod = {
                         identifier: firstKey,
-                        amount: this.shippingMethods[firstKey].amount
+                        amount: this.shippingMethods[firstKey].price_incl_tax ?? this.shippingMethods[firstKey].amount
                     };
                 }
 
@@ -362,7 +362,8 @@ define(
             afterSetTotalsInfo: function (response, shippingMethod, resolve) {
                 const grandTotal = this.toAmountString(response && response.grand_total);
                 const subtotal   = this.toAmountString(response && response.subtotal);
-                const tax        = this.toAmountString(response && response.tax_amount);
+                // Shipping tax is already included in the shipping line
+                const tax        = this.toAmountString(response && response.tax_amount - (response.shipping_tax_amount || 0));
 
                 const update = {
                     newTotal: {

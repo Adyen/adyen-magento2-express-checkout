@@ -146,7 +146,9 @@ class AdyenPaypalUpdateOrder implements AdyenPaypalUpdateOrderInterface
         if ($quote->isVirtual()) {
             $taxAmount = $quote->getBillingAddress()->getTaxAmount();
         } else {
-            $taxAmount = $quote->getShippingAddress()->getTaxAmount();
+            $shippingAddress = $quote->getShippingAddress();
+            // Delivery method amounts include shipping tax, so it must not be counted again in taxTotal
+            $taxAmount = (float) $shippingAddress->getTaxAmount() - (float) $shippingAddress->getShippingTaxAmount();
         }
 
         $formattedTaxAmount = $this->adyenHelper->formatAmount($taxAmount, $amountCurrency);

@@ -27,6 +27,8 @@ class OverrideOrderStateFromOrderCommand
                 return $proceed($payment, $amount, $order);
             }
 
+            $payment->setMethod(Button::PAYPAL_METHOD_NAME);
+
             $order->setState(Order::STATE_NEW);
             $order->setStatus($order->getConfig()->getStateDefaultStatus(Order::STATE_NEW));
 

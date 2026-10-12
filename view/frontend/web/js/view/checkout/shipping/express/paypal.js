@@ -33,7 +33,8 @@ define(
         'Adyen_Payment/js/model/adyen-payment-modal',
         'Adyen_ExpressCheckout/js/helpers/getMaskedIdFromCart',
         'Adyen_ExpressCheckout/js/model/adyen-payment-service',
-        'Magento_Checkout/js/model/error-processor'
+        'Magento_Checkout/js/model/error-processor',
+        'Adyen_ExpressCheckout/js/actions/cancelCart'
     ],
     function (
         $,
@@ -58,7 +59,8 @@ define(
         adyenPaymentModal,
         getMaskedIdFromCart,
         adyenPaymentService,
-        errorProcessor
+        errorProcessor,
+        cancelCart
     ) {
         'use strict';
 
@@ -297,6 +299,8 @@ define(
                 const payload = {
                     address: {
                         country_id: shippingAddress.countryCode,
+                        region: shippingAddress.state,
+                        city: shippingAddress.city,
                         postcode: shippingAddress.postalCode,
                         street: ['']
                     }
@@ -537,7 +541,7 @@ define(
 
                 try {
                     const responseJSON = await adyenPaymentService.paymentDetails(request, this.orderId, quoteId);
-                    this.handleAdyenResult(responseJSON, this.orderId);
+                    this.handleAdyenResult(responseJSON, this.orderId, popupModal);
                 } catch (response) {
                     this.closeModal(popupModal);
                     errorProcessor.process(response, this.messageContainer);
@@ -555,6 +559,7 @@ define(
              */
             handleOnError: function (error) {
                 console.error('Adyen PayPal Express – onError', error);
+                cancelCart(false);
                 errorProcessor.process(error, this.messageContainer);
                 this.showUserError(
                     $t('Something went wrong with PayPal. Please try again or choose another payment method.')
@@ -680,14 +685,24 @@ define(
             /**
              * Handles Adyen result coming back from /payments/details.
              */
-            handleAdyenResult: function (responseJSON) {
+            handleAdyenResult: function (responseJSON, orderId, popupModal = null) {
                 const self = this;
                 const response = JSON.parse(responseJSON || '{}');
 
                 if (response.isFinal) {
                     loader.stopLoader();
                     this.isLoading(false);
-                    redirectToSuccess();
+
+                    if (['Authorised', 'Received', 'PresentToShopper'].includes(response.resultCode)) {
+                        redirectToSuccess();
+                    } else {
+                        if (popupModal) {
+                            self.closeModal(popupModal);
+                        }
+
+                        errorProcessor.process({responseText: responseJSON}, self.messageContainer);
+                        self.isPlaceOrderActionAllowed(true);
+                    }
                 } else if (response.action) {
                     self.handleAction(response.action, self.orderId);
                 } else {
@@ -708,7 +723,7 @@ define(
                     identifier: method.method_code,
                     label: label,
                     detail: description,
-                    amount: method.amount,
+                    amount: method.price_incl_tax ?? method.amount,
                     carrierCode: method.carrier_code
                 };
             },

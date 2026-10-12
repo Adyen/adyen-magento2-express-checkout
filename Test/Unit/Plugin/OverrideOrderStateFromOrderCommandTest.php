@@ -28,7 +28,7 @@ class OverrideOrderStateFromOrderCommandTest extends AbstractAdyenTestCase
     {
         $this->plugin = new OverrideOrderStateFromOrderCommand();
         $this->payment = $this->getMockBuilder(OrderPaymentInterface::class)
-            ->onlyMethods(['getMethod'])
+            ->onlyMethods(['getMethod', 'setMethod'])
             ->addMethods(['getIsTransactionPending', 'getIsFraudDetected'])
             ->getMockForAbstractClass();
         $this->order = $this->getMockBuilder(Order::class)
@@ -57,6 +57,11 @@ class OverrideOrderStateFromOrderCommandTest extends AbstractAdyenTestCase
         $currencyMock = $this->createMock(Currency::class);
         $currencyMock->method('formatTxt')->with(self::AMOUNT)->willReturn('€10.00');
         $this->order->method('getBaseCurrency')->willReturn($currencyMock);
+
+        $this->payment->expects($this->once())
+            ->method('setMethod')
+            ->with(Button::PAYPAL_METHOD_NAME)
+            ->willReturnSelf();
 
         $this->order->expects($this->once())
             ->method('setState')
