@@ -20,8 +20,10 @@ use Magento\Framework\View\Element\AbstractBlock;
 use Magento\Quote\Api\Data\PaymentInterface;
 use Magento\Sales\Model\Order;
 use Magento\Sales\Model\Order\Config;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\MockObject\MockObject;
 
+#[\PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations]
 class UpdatePaypalOrderStatusTest extends AbstractAdyenTestCase
 {
     protected ?UpdatePaypalOrderStatus $updatePaypalOrderStatusObserver;
@@ -49,10 +51,7 @@ class UpdatePaypalOrderStatusTest extends AbstractAdyenTestCase
         $this->orderMock->method('getConfig')->willReturn($orderConfigMock);
 
 
-        $eventMock = $this->getMockBuilder(AbstractBlock::class)
-            ->addMethods(['getOrder'])
-            ->disableOriginalConstructor()
-            ->getMock();
+        $eventMock = $this->createGeneratedMock(AbstractBlock::class, [], ['getOrder']);
 
         $eventMock->method('getOrder')->willReturn($this->orderMock);
 
@@ -98,6 +97,7 @@ class UpdatePaypalOrderStatusTest extends AbstractAdyenTestCase
      * @dataProvider nonAdyenPayPalExpressMethodProvider
      * @return void
      */
+    #[DataProvider('nonAdyenPayPalExpressMethodProvider')]
     public function testUpdatePaypalOrderStatusNonAdyenExpressOrders($paymentMethodName)
     {
         $this->paymentMock->method('getMethod')->willReturn($paymentMethodName);
@@ -114,7 +114,7 @@ class UpdatePaypalOrderStatusTest extends AbstractAdyenTestCase
      *
      * @return array[]
      */
-    private static function nonAdyenPayPalExpressMethodProvider(): array
+    public static function nonAdyenPayPalExpressMethodProvider(): array
     {
         return [
             ['paymentMethodName' => 'irrelevant_payment_method'],

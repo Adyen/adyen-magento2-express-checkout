@@ -19,6 +19,7 @@ use Magento\Quote\Model\MaskedQuoteIdToQuoteIdInterface;
 use PHPUnit\Framework\MockObject\Exception;
 use PHPUnit\Framework\MockObject\MockObject;
 
+#[\PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations]
 class AdyenExpressInitPaymentsResolverTest extends AbstractAdyenResolverTestCase
 {
     protected MockObject&AdyenInitPaymentsInterface $adyenInitPaymentsMock;

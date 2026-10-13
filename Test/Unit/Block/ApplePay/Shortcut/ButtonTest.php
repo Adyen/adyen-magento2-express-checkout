@@ -22,6 +22,7 @@ use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\Test;
 
 #[CoversClass(Button::class)]
+#[\PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations]
 class ButtonTest extends AbstractAdyenTestCase
 {
     private Button $subject;
@@ -39,21 +40,15 @@ class ButtonTest extends AbstractAdyenTestCase
         $configHelperMock = $this->createMock(Config::class);
         $expressConfigMock = $this->createMock(ConfigurationInterface::class);
 
-        $storeMock = $this->getMockBuilder(StoreInterface::class)
-            ->addMethods(['getBaseCurrencyCode'])
-            ->getMockForAbstractClass();
+        $storeMock = $this->createMock(StoreInterface::class);
         $storeMock->method('getId')->willReturn(1);
         $storeMock->method('getCode')->willReturn('default');
         $storeManagerMock->method('getStore')->willReturn($storeMock);
 
-        $currencyMock = $this->getMockBuilder(\stdClass::class)
-            ->addMethods(['getBaseCurrencyCode'])
-            ->getMock();
+        $currencyMock = $this->createGeneratedMock(\stdClass::class, [], ['getBaseCurrencyCode']);
         $currencyMock->method('getBaseCurrencyCode')->willReturn('EUR');
 
-        $quoteMock = $this->getMockBuilder(\stdClass::class)
-            ->addMethods(['getCurrency', 'getBaseGrandTotal'])
-            ->getMock();
+        $quoteMock = $this->createGeneratedMock(\stdClass::class, [], ['getCurrency', 'getBaseGrandTotal']);
         $quoteMock->method('getCurrency')->willReturn($currencyMock);
         $checkoutSessionMock->method('getQuote')->willReturn($quoteMock);
 

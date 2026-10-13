@@ -17,6 +17,7 @@ use Adyen\ExpressCheckout\Observer\AddGooglePayShortcuts;
 use Magento\Store\Api\Data\StoreInterface;
 use Magento\Store\Model\StoreManagerInterface;
 
+#[\PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations]
 class AddGooglePayShortcutsTest extends AbstractPaymentMethodShortcutsTestCase
 {
     protected function setUp(): void

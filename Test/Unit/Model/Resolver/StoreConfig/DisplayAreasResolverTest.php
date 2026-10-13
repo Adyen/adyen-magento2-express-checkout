@@ -21,9 +21,11 @@ use Magento\Framework\GraphQl\Schema\Type\ResolveInfo;
 use Magento\Store\Api\Data\StoreInterface;
 use Magento\Store\Model\ScopeInterface;
 use Magento\Store\Model\StoreManagerInterface;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\MockObject\Exception;
 use PHPUnit\Framework\MockObject\MockObject;
 
+#[\PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations]
 class DisplayAreasResolverTest extends AbstractAdyenTestCase
 {
     private DisplayAreasResolver $displayAreasResolver;
@@ -190,6 +192,7 @@ class DisplayAreasResolverTest extends AbstractAdyenTestCase
      * @return void
      * @throws \Exception
      */
+    #[DataProvider('fieldNameProvider')]
     public function testResolveExtractsVariantCorrectly(string $fieldName, string $expectedVariant): void
     {
         $this->setupResolverMocks($fieldName, [], $expectedVariant);
@@ -202,7 +205,7 @@ class DisplayAreasResolverTest extends AbstractAdyenTestCase
      *
      * @return array
      */
-    public function fieldNameProvider(): array
+    public static function fieldNameProvider(): array
     {
         return [
             'applepay' => ['adyen_express_applepay_display_areas', 'applepay'],
