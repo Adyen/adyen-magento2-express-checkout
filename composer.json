@@ -11,7 +11,8 @@
     }
   ],
   "require": {
-    "adyen/module-payment": "^10.2.0 || ^11.0.0"
+    "adyen/module-payment": "^10.2.0 || ^11.0.0",
+    "magento/module-quote-graph-ql": ">=100.4.6"
   },
   "require-dev": {
     "phpunit/phpunit": "^10.5",
