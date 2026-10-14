@@ -24,6 +24,7 @@ use Magento\GraphQl\Model\Query\Context;
 use Magento\Quote\Model\MaskedQuoteIdToQuoteIdInterface;
 use Magento\Quote\Model\QuoteIdMask;
 use Magento\Framework\GraphQl\Query\ResolverInterface;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\MockObject\MockObject;
 
 abstract class AbstractAdyenResolverTestCase extends AbstractAdyenTestCase
@@ -89,16 +90,17 @@ abstract class AbstractAdyenResolverTestCase extends AbstractAdyenTestCase
      * @return void
      * @throws Exception|\PHPUnit\Framework\MockObject\Exception
      */
+    #[DataProvider('successfulResolverDataProvider')]
     public function testSuccessfulResolving($args)
     {
         $returnValueMock = $this->createMock(Value::class);
         $this->valueFactoryMock->method('create')->willReturn($returnValueMock);
 
-        $quoteIdMaskMock = $this->getMockBuilder(QuoteIdMask::class)
-            ->addMethods(['getQuoteId'])
-            ->onlyMethods(['load'])
-            ->disableOriginalConstructor()
-            ->getMock();
+        $quoteIdMaskMock = $this->createGeneratedMock(
+            QuoteIdMask::class,
+            ['load'],
+            ['getQuoteId']
+        );
 
         $quoteIdMaskMock->method('load')->willReturnSelf();
         $quoteIdMaskMock->method('getQuoteId')->willReturn(1);
@@ -123,6 +125,7 @@ abstract class AbstractAdyenResolverTestCase extends AbstractAdyenTestCase
      * @return void
      * @throws GraphQlInputException|Exception
      */
+    #[DataProvider('emptyArgumentAssertionDataProvider')]
     public function testResolverShouldThrowExceptionWithEmptyArgument(array $args)
     {
         $this->expectException(GraphQlInputException::class);
@@ -144,6 +147,7 @@ abstract class AbstractAdyenResolverTestCase extends AbstractAdyenTestCase
      * @return void
      * @throws Exception
      */
+    #[DataProvider('missingQuoteAssertionDataProvider')]
     public function testMissingQuoteShouldThrowException($args)
     {
         $this->expectException(LocalizedException::class);

@@ -17,6 +17,7 @@ use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\MockObject\MockObject;
 
 #[CoversClass(ExpressActivate::class)]
+#[\PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations]
 class ExpressActivateTest extends AbstractAdyenTestCase
 {
     /** @var CartRepositoryInterface&MockObject */
@@ -53,11 +54,11 @@ class ExpressActivateTest extends AbstractAdyenTestCase
     /** Adyen target quote (we only need setIsActive + custom getAdyenOgQuoteId) */
     private function createAdyenQuoteMock(): QuoteModel&MockObject
     {
-        return $this->getMockBuilder(QuoteModel::class)
-            ->disableOriginalConstructor()
-            ->onlyMethods(['setIsActive'])
-            ->addMethods(['getAdyenOgQuoteId']) // method the model calls
-            ->getMock();
+        return $this->createGeneratedMock(
+            QuoteModel::class,
+            ['setIsActive'],
+            ['getAdyenOgQuoteId'] // method the model calls
+        );
     }
 
     /** Current quote (we need getId + setIsActive) */

@@ -26,9 +26,11 @@ use Magento\Payment\Model\MethodInterface;
 use Magento\Quote\Api\CartRepositoryInterface;
 use Magento\Quote\Model\Quote;
 use Magento\Quote\Model\MaskedQuoteIdToQuoteIdInterface;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\MockObject\Exception;
 use PHPUnit\Framework\MockObject\MockObject;
 
+#[\PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations]
 class AdyenInitPaymentsTest extends AbstractAdyenTestCase
 {
     private AdyenInitPayments $adyenInitPayments;
@@ -403,9 +405,7 @@ class AdyenInitPaymentsTest extends AbstractAdyenTestCase
         $this->assertStringContainsString('ok-with-lines', $resp);
     }
 
-    /**
-     * @dataProvider additionalInformationProvider
-     */
+    #[DataProvider('additionalInformationProvider')]
     public function testExecuteSetsAdditionalInformationFromPaymentsResponse(
         array $paymentsResponse,
         array $expectedAdditionalInformationCalls,

@@ -23,6 +23,7 @@ use Magento\Store\Model\StoreManagerInterface;
 use PHPUnit\Framework\MockObject\MockObject;
 use Magento\Checkout\Model\Session;
 
+#[\PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations]
 class AdyenExpressConfigProviderTest extends AbstractAdyenTestCase
 {
     protected AdyenExpressConfigProvider $adyenExpressConfigProvider;

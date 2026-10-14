@@ -10,6 +10,7 @@ use Magento\Framework\Event\Observer;
 use Magento\Sales\Model\Order;
 use Magento\Sales\Model\Order\Payment;
 
+#[\PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations]
 class DisableOrderEmailForPaypalExpressTest extends AbstractAdyenTestCase
 {
     private DisableOrderEmailForPaypalExpress $observerInstance;
