@@ -18,6 +18,7 @@ use Magento\Framework\Exception\NoSuchEntityException;
 use PHPUnit\Framework\Attributes\CoversClass;
 
 #[CoversClass(PaypalUpdateOrder::class)]
+#[\PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations]
 class PaypalUpdateOrderTest extends AbstractAdyenTestCase
 {
     private Data $adyenHelper;

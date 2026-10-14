@@ -18,8 +18,10 @@ use Exception;
 use Magento\Framework\Exception\LocalizedException;
 use Magento\Framework\GraphQl\Exception\GraphQlInputException;
 use Magento\Quote\Model\MaskedQuoteIdToQuoteIdInterface;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\MockObject\MockObject;
 
+#[\PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations]
 class ExpressInitResolverTest extends AbstractAdyenResolverTestCase
 {
     const SUCCESSFUL_CART_PARAMS = "{\"product\":1562,\"qty\":\"5\",\"super_attribute\":{\"93\":56,\"144\":166}}";
@@ -63,6 +65,7 @@ class ExpressInitResolverTest extends AbstractAdyenResolverTestCase
      * @return void
      * @throws GraphQlInputException|LocalizedException|Exception
      */
+    #[DataProvider('invalidProductCartParamsDataProvider')]
     public function testProductCartParamsShouldThrowException($productCartParams)
     {
         $this->expectException(GraphQlInputException::class);
@@ -84,6 +87,7 @@ class ExpressInitResolverTest extends AbstractAdyenResolverTestCase
      * This test case extends the abstract testSuccessfulResolving() test case
      * @dataProvider successfulResolverDataProvider
      */
+    #[DataProvider('successfulResolverDataProvider')]
     public function testSuccessfulResolving($args)
     {
         parent::testSuccessfulResolving($args);
@@ -98,6 +102,7 @@ class ExpressInitResolverTest extends AbstractAdyenResolverTestCase
      * @return void
      * @throws Exception|\PHPUnit\Framework\MockObject\Exception
      */
+    #[DataProvider('missingQuoteAssertionDataProvider')]
     public function testMissingQuoteShouldThrowException($args)
     {
         parent::testSuccessfulResolving($args);

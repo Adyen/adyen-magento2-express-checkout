@@ -10,6 +10,7 @@ use Magento\Quote\Model\Quote;
 use Magento\Quote\Model\Quote\Item;
 use Adyen\Payment\Model\AdyenAmountCurrency;
 
+#[\PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations]
 class LineItemsDataBuilderTest extends AbstractAdyenTestCase
 {
     /** @var LineItemsDataBuilder&\PHPUnit\Framework\MockObject\MockObject */
@@ -29,7 +30,6 @@ class LineItemsDataBuilderTest extends AbstractAdyenTestCase
         $refClass = new \ReflectionClass($this->builder);
         $parent = $refClass->getParentClass(); // OpenInvoice
         $prop = $parent->getProperty('chargedCurrency');
-        $prop->setAccessible(true);
         $prop->setValue($this->builder, $this->chargedCurrency);
     }
 
@@ -100,6 +100,6 @@ class LineItemsDataBuilderTest extends AbstractAdyenTestCase
         $this->assertSame([0, 1], array_keys($result['lineItems']));
 
         // each item is an array (don’t care about the keys/values)
-        $this->assertContainsOnly('array', $result['lineItems']);
+        $this->assertContainsOnlyArray($result['lineItems']);
     }
 }

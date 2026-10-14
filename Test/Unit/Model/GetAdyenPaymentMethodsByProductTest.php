@@ -18,6 +18,7 @@ use Magento\Quote\Model\Quote;
 use PHPUnit\Framework\MockObject\MockObject;
 use Magento\Catalog\Model\Product;
 
+#[\PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations]
 class GetAdyenPaymentMethodsByProductTest extends AbstractAdyenTestCase
 {
     /** @var AdyenAmountCurrencyFactory|MockObject */
