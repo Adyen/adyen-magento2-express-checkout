@@ -3,7 +3,7 @@ type Mutation {
         productCartParams: String! @doc(description: "JSON encoded product cart parameters (See `ProductCartParamsInterface`)")
         adyenMaskedQuoteId: String @doc(description: "Adyen express quote ID for PDP")
         adyenCartId: String @doc(description: "Original quote ID of the cart")
-    ): ExpressData @resolver(class: "Adyen\\ExpressCheckout\\Model\\Resolver\\ExpressInitResolver")
+    ): ExpressData @resolver(class: "Adyen\\ExpressCheckout\\Model\\Resolver\\ExpressInitResolver") @deprecated(reason: "Use `adyenExpressInit` instead.")
 
     expressActivate (
         adyenMaskedQuoteId: String! @doc(description: "Adyen express quote ID for PDP")
@@ -26,6 +26,19 @@ type Mutation {
         adyenCartId: String @doc(description: "Original quote ID of the cart")
         adyenMaskedQuoteId: String @doc(description: "Adyen express quote ID for PDP")
     ): AdyenExpressPaypalUpdateOrderStatus @resolver(class: "Adyen\\ExpressCheckout\\Model\\Resolver\\AdyenExpressPaypalUpdateOrderResolver")
+
+    adyenExpressInit (
+        input: AdyenExpressInitInput! @doc(description: "The product to add to the new Adyen express quote")
+    ): AdyenExpressInitOutput @resolver(class: "Adyen\\ExpressCheckout\\Model\\Resolver\\AdyenExpressInitResolver") @doc(description: "Creates a new Adyen express quote for PDP and adds a single product to it. The quote must be activated with `expressActivate` before placing the order.")
+}
+
+input AdyenExpressInitInput {
+    cartItem: CartItemInput! @doc(description: "The product to add to the Adyen express quote (SKU, quantity, selected and entered options)")
+}
+
+type AdyenExpressInitOutput {
+    cart: Cart! @doc(description: "The Adyen express quote with the requested product added")
+    user_errors: [CartUserInputError!]! @doc(description: "Errors encountered while adding the product to the quote (e.g. out of stock product, invalid options)")
 }
 
 type ExpressData {

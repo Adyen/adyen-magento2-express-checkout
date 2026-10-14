@@ -14,6 +14,7 @@
     <module name="Adyen_ExpressCheckout">
         <sequence>
             <module name="Adyen_Payment"/>
+            <module name="Magento_QuoteGraphQl"/>
         </sequence>
     </module>
 </config>

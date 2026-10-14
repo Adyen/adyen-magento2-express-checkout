@@ -88,6 +88,101 @@ QUERY;
     }
 
     /**
+     * Test case for adyenExpressInit mutation with a valid cartItem
+     * should generate a quote containing the product which can be activated with expressActivate.
+     *
+     * @return void
+     * @throws Exception
+     */
+    public function testSuccessfulQuoteInitiationWithCartItemInput(): void
+    {
+        $query = <<<QUERY
+mutation {
+    adyenExpressInit(
+        input: {
+            cartItem: {
+                sku: "24-MB01"
+                quantity: 2
+            }
+        }
+    ) {
+        cart {
+            id
+            total_quantity
+            items {
+                quantity
+                product {
+                    sku
+                }
+            }
+        }
+        user_errors {
+            code
+            message
+        }
+    }
+}
+QUERY;
+
+        $response = $this->graphQlMutation($query);
+
+        $this->assertArrayHasKey('adyenExpressInit', $response);
+        $this->assertEmpty($response['adyenExpressInit']['user_errors']);
+        $this->assertNotEmpty($response['adyenExpressInit']['cart']['id']);
+        $this->assertEquals(2, $response['adyenExpressInit']['cart']['total_quantity']);
+        $this->assertEquals('24-MB01', $response['adyenExpressInit']['cart']['items'][0]['product']['sku']);
+
+        $maskedQuoteId = $response['adyenExpressInit']['cart']['id'];
+
+        $query = <<<QUERY
+mutation {
+    expressActivate(
+        adyenMaskedQuoteId: "$maskedQuoteId"
+    )
+}
+QUERY;
+
+        $response = $this->graphQlMutation($query);
+
+        $this->assertTrue($response['expressActivate']);
+    }
+
+    /**
+     * Test case for adyenExpressInit mutation with an unknown product
+     * should return the error in `user_errors`.
+     *
+     * @return void
+     * @throws Exception
+     */
+    public function testQuoteInitiationWithUnknownProductReturnsUserErrors(): void
+    {
+        $query = <<<QUERY
+mutation {
+    adyenExpressInit(
+        input: {
+            cartItem: {
+                sku: "unknown-sku"
+                quantity: 1
+            }
+        }
+    ) {
+        cart {
+            total_quantity
+        }
+        user_errors {
+            code
+        }
+    }
+}
+QUERY;
+
+        $response = $this->graphQlMutation($query);
+
+        $this->assertEquals(0, $response['adyenExpressInit']['cart']['total_quantity']);
+        $this->assertEquals('PRODUCT_NOT_FOUND', $response['adyenExpressInit']['user_errors'][0]['code']);
+    }
+
+    /**
      * Test case for expressInit mutation with valid productCartParams
      * should update the quote and return the updated quote with the same masked_quote_id.
      *
