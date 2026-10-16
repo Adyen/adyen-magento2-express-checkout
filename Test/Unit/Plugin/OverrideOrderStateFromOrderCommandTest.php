@@ -13,6 +13,7 @@ use Magento\Sales\Model\Order;
 use Magento\Sales\Model\Order\Payment\State\OrderCommand;
 use PHPUnit\Framework\MockObject\MockObject;
 
+#[\PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations]
 class OverrideOrderStateFromOrderCommandTest extends AbstractAdyenTestCase
 {
     private const AMOUNT = 10.00;
@@ -27,10 +28,12 @@ class OverrideOrderStateFromOrderCommandTest extends AbstractAdyenTestCase
     protected function setUp(): void
     {
         $this->plugin = new OverrideOrderStateFromOrderCommand();
-        $this->payment = $this->getMockBuilder(OrderPaymentInterface::class)
-            ->onlyMethods(['getMethod', 'setMethod'])
-            ->addMethods(['getIsTransactionPending', 'getIsFraudDetected'])
-            ->getMockForAbstractClass();
+        $this->payment = $this->createMock(
+            $this->createClassWithMagicMethods(
+                OrderPaymentInterface::class,
+                ['getIsTransactionPending', 'getIsFraudDetected']
+            )
+        );
         $this->order = $this->getMockBuilder(Order::class)
             ->disableOriginalConstructor()
             ->getMock();

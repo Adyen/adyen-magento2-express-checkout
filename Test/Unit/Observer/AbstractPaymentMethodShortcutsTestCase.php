@@ -21,6 +21,7 @@ use Magento\Framework\View\Element\AbstractBlock;
 use Magento\Framework\View\Layout;
 use Magento\Framework\View\Layout\ProcessorInterface;
 use Magento\Store\Model\StoreManagerInterface;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\MockObject\Exception;
 use PHPUnit\Framework\MockObject\MockObject;
 
@@ -36,7 +37,7 @@ abstract class AbstractPaymentMethodShortcutsTestCase extends AbstractAdyenTestC
         $this->addShortcuts = null;
     }
 
-    private static function executeDataProvider(): array
+    public static function executeDataProvider(): array
     {
         return [
             [
@@ -73,6 +74,7 @@ abstract class AbstractPaymentMethodShortcutsTestCase extends AbstractAdyenTestC
      * @return void
      * @throws Exception
      */
+    #[DataProvider('executeDataProvider')]
     public function testExecute(
         $expressEnabledResult,
         array $identifierHandles = [],
@@ -82,10 +84,11 @@ abstract class AbstractPaymentMethodShortcutsTestCase extends AbstractAdyenTestC
         $processorMock = $this->createMock(ProcessorInterface::class);
         $processorMock->method('getHandles')->willReturn($identifierHandles);
 
-        $shortcutButtonMock = $this->getMockBuilder(AbstractBlock::class)
-            ->addMethods(['setIsProductView', 'setIsCart', 'getAlias'])
-            ->disableOriginalConstructor()
-            ->getMock();
+        $shortcutButtonMock = $this->createGeneratedMock(
+            AbstractBlock::class,
+            [],
+            ['setIsProductView', 'setIsCart', 'getAlias']
+        );
 
         $shortcutButtonMock->method('getAlias')->willReturn('mockAlias');
 
@@ -94,21 +97,18 @@ abstract class AbstractPaymentMethodShortcutsTestCase extends AbstractAdyenTestC
         $layoutMock->method('getUpdate')->willReturn($processorMock);
         $layoutMock->method('createBlock')->willReturn($shortcutButtonMock);
 
-        $blockMock = $this->getMockBuilder(AbstractBlock::class)
-            ->onlyMethods(['getData', 'getLayout'])
-            ->addMethods(['getAlias', 'addShortcut'])
-            ->disableOriginalConstructor()
-            ->getMock();
+        $blockMock = $this->createGeneratedMock(
+            AbstractBlock::class,
+            ['getData', 'getLayout'],
+            ['getAlias', 'addShortcut']
+        );
 
         $blockMock->method('getData')->willReturn($isMinicart);
         $blockMock->method('getLayout')->willReturn($layoutMock);
         $blockMock->method('getAlias')->willReturn('mock-alias');
 
 
-        $eventMock = $this->getMockBuilder(AbstractBlock::class)
-            ->addMethods(['getContainer'])
-            ->disableOriginalConstructor()
-            ->getMock();
+        $eventMock = $this->createGeneratedMock(AbstractBlock::class, [], ['getContainer']);
 
         $eventMock->method('getContainer')->willReturn($blockMock);
 
