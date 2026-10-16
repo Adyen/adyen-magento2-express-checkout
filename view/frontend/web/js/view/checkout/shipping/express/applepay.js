@@ -14,6 +14,9 @@ define(
         'uiComponent',
         'mage/translate',
         'Magento_Customer/js/customer-data',
+        'Magento_Checkout/js/model/quote',
+        'Magento_Checkout/js/action/get-totals',
+        'Magento_SalesRule/js/model/coupon',
         'Adyen_Payment/js/adyen',
         'Adyen_Payment/js/model/adyen-configuration',
         'Adyen_ExpressCheckout/js/model/adyen-express-configuration',
@@ -22,6 +25,10 @@ define(
         'Adyen_ExpressCheckout/js/actions/setShippingInformation',
         'Adyen_ExpressCheckout/js/actions/setBillingAddress',
         'Adyen_ExpressCheckout/js/actions/setTotalsInfo',
+        'Adyen_ExpressCheckout/js/actions/applyCoupon',
+        'Adyen_ExpressCheckout/js/actions/removeCoupon',
+        'Adyen_ExpressCheckout/js/actions/getTotals',
+        'Adyen_ExpressCheckout/js/helpers/getApplePayCouponError',
         'Adyen_ExpressCheckout/js/helpers/getExtensionAttributes',
         'Adyen_ExpressCheckout/js/actions/createPayment',
         'Adyen_ExpressCheckout/js/model/adyen-loader',
@@ -35,6 +42,9 @@ define(
         Component,
         $t,
         customerData,
+        quote,
+        getTotalsAction,
+        coupon,
         AdyenWeb,
         adyenConfiguration,
         adyenExpressConfiguration,
@@ -43,6 +53,10 @@ define(
         setShippingInformation,
         setBillingAddress,
         setTotalsInfo,
+        applyCoupon,
+        removeCoupon,
+        getTotals,
+        getApplePayCouponError,
         getExtensionAttributes,
         createPayment,
         loader,
@@ -63,7 +77,9 @@ define(
                 shippingAddress: null,
                 shippingMethod: null,
                 _applePayPostData: null,
-                applePayMerchantName: null
+                applePayMerchantName: null,
+                isCouponChanged: false,
+                lastTotal: null
             },
 
             initObservable: function () {
@@ -168,9 +184,12 @@ define(
                         requiredShippingContactFields: isVirtual ? [] : ['postalAddress', 'name', 'email', 'phone'],
                         requiredBillingContactFields: ['postalAddress', 'name'],
                         shippingMethods: [],
+                        supportsCouponCode: true,
+                        onCouponCodeChanged: this.handleOnCouponCodeChanged.bind(this),
                         onAuthorized: this.handleOnAuthorized.bind(this),
                         onSubmit: (state, component, actions) => this.handleOnSubmit(state, component, actions),
-                        onClick: function (resolve /*, reject */) {
+                        onClick: (resolve /*, reject */) => {
+                            this.resetSessionState();
                             resolve();
                         },
                         onError: this.handleOnError.bind(this)
@@ -364,6 +383,7 @@ define(
                 const subtotal   = this.toAmountString(response && response.subtotal);
                 // Shipping tax is already included in the shipping line
                 const tax        = this.toAmountString(response && response.tax_amount - (response.shipping_tax_amount || 0));
+                const discount   = this.toAmountString(response && response.discount_amount);
 
                 const update = {
                     newTotal: {
@@ -380,18 +400,29 @@ define(
                     ]
                 };
 
+                this.lastTotal = grandTotal;
+
+                if (Number(discount) !== 0) {
+                    update.newLineItems.push({
+                        type: 'final',
+                        label: $t('Discount'),
+                        amount: discount
+                    });
+                }
+
                 // Array → list of shipping methods
                 if (Array.isArray(shippingMethod)) {
                     update.newShippingMethods = shippingMethod;
                     shippingMethod = shippingMethod[0];
                 }
 
-                const shippingAmount = this.toAmountString(shippingMethod && shippingMethod.amount);
-                update.newLineItems.push({
-                    type: 'final',
-                    label: $t('Shipping'),
-                    amount: shippingAmount
-                });
+                if (shippingMethod) {
+                    update.newLineItems.push({
+                        type: 'final',
+                        label: $t('Shipping'),
+                        amount: this.toAmountString(shippingMethod.amount)
+                    });
+                }
 
                 if (Number(tax) > 0) {
                     update.newLineItems.push({
@@ -406,6 +437,153 @@ define(
                 }
 
                 resolve(update);
+            },
+
+            resetSessionState: function () {
+                this.isCouponChanged = false;
+                this.lastTotal = null;
+                this.shippingAddress = null;
+            },
+
+            handleOnCouponCodeChanged: async function (resolve, reject, event) {
+                const couponCode = ((event && event.couponCode) || '').trim();
+                let couponError = null;
+
+                this.isCouponChanged = true;
+
+                try {
+                    if (couponCode) {
+                        await applyCoupon(couponCode, false);
+                    } else {
+                        await removeCoupon(false);
+                    }
+                } catch (e) {
+                    couponError = e;
+                }
+
+                // A rejected coupon also clears the previously applied one, so totals are always re-read.
+                try {
+                    const update = await this._getCouponCodeUpdate();
+
+                    if (couponError) {
+                        update.errors = [getApplePayCouponError(couponError)];
+                        reject(update);
+                        return;
+                    }
+
+                    resolve(update);
+                } catch (e) {
+                    this._onCouponCodeUpdateError(e, reject, couponError);
+                }
+            },
+
+            _getCouponCodeUpdate: async function () {
+                if (adyenExpressConfiguration.getIsVirtual() || !this.shippingAddress) {
+                    const totals = await getTotals(false);
+
+                    return new Promise((resolve) => {
+                        this.afterSetTotalsInfo(totals, null, resolve);
+                    });
+                }
+
+                const result = (await getShippingMethods({ address: this.shippingAddress }, false) || [])
+                    .filter(function (method) {
+                        return typeof method.method_code === 'string' && method.available !== false;
+                    });
+
+                if (result.length === 0) {
+                    throw new Error('No shipping methods available after coupon code change.');
+                }
+
+                const appleShippingMethods = [];
+
+                this.shippingMethods = {};
+
+                result.forEach((method) => {
+                    const appleMethod = {
+                        identifier: method.method_code,
+                        label: method.method_title,
+                        detail: method.carrier_title ? method.carrier_title : '',
+                        amount: this.toAmountString(method.price_incl_tax ?? method.amount)
+                    };
+
+                    // Apple Pay treats the first method as selected, so keep the shopper's choice first.
+                    if (method.method_code === this.shippingMethod) {
+                        appleShippingMethods.unshift(appleMethod);
+                    } else {
+                        appleShippingMethods.push(appleMethod);
+                    }
+
+                    this.shippingMethods[method.method_code] = method;
+                });
+
+                const selectedMethod = this.shippingMethods[appleShippingMethods[0].identifier];
+                const address = {
+                    countryId: this.shippingAddress.country_id,
+                    region: this.shippingAddress.region,
+                    regionId: getRegionId(this.shippingAddress.country_id, this.shippingAddress.region),
+                    regionCode: null,
+                    postcode: this.shippingAddress.postcode
+                };
+
+                await setShippingInformation({
+                    addressInformation: {
+                        shipping_address: address,
+                        shipping_method_code: selectedMethod.method_code,
+                        shipping_carrier_code: selectedMethod.carrier_code
+                    }
+                }, false);
+
+                const totals = await setTotalsInfo({
+                    addressInformation: {
+                        address: address,
+                        shipping_method_code: selectedMethod.method_code,
+                        shipping_carrier_code: selectedMethod.carrier_code
+                    }
+                }, false);
+
+                return new Promise((resolve) => {
+                    this.afterSetTotalsInfo(totals, appleShippingMethods, resolve);
+                });
+            },
+
+            _onCouponCodeUpdateError: function (error, reject, couponError) {
+                const fallbackTotal = this.lastTotal !== null
+                    ? this.lastTotal
+                    : this.toAmountString(adyenExpressConfiguration.getAmountValue());
+
+                console.error('Adyen ApplePay: Unable to update the coupon code', error);
+
+                reject({
+                    newTotal: {
+                        type: 'final',
+                        label: this.applePayMerchantName,
+                        amount: fallbackTotal
+                    },
+                    errors: [
+                        couponError
+                            ? getApplePayCouponError(couponError)
+                            : new ApplePayError(
+                                'unknown',
+                                undefined,
+                                $t('We\'re unable to fetch the cart totals for you. Please try an alternative payment method.')
+                            )
+                    ]
+                });
+            },
+
+            _refreshCheckoutTotals: function () {
+                const deferred = $.Deferred();
+
+                deferred.done(function () {
+                    const totals = quote.getTotals()();
+                    const couponCode = (totals && totals.coupon_code) || '';
+
+                    coupon.setCouponCode(couponCode);
+                    coupon.setIsApplied(couponCode.length > 0);
+                });
+
+                getTotalsAction([], deferred);
             },
 
             /**
@@ -546,6 +724,11 @@ define(
             },
 
             handleOnError: function (error /*, component */) {
+                if (this.isCouponChanged) {
+                    this.isCouponChanged = false;
+                    this._refreshCheckoutTotals();
+                }
+
                 console.error('Adyen ApplePay error on shipping page', error);
                 this._displayError(
                     $t('Your Apple Pay payment failed. Please try again or use a different payment method.')
