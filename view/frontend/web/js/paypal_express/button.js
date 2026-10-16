@@ -110,7 +110,7 @@ define([
 
             // Set the config and countries model
             configModel().setConfig(config);
-            countriesModel();
+            countriesModel().setCountries(config.countries);
 
             // Determine if this is a product view page
             this.isProductView = config.isProductView;

@@ -13,6 +13,7 @@ declare(strict_types=1);
 
 namespace Adyen\ExpressCheckout\Block\Buttons;
 
+use Adyen\ExpressCheckout\Helper\Countries;
 use Adyen\ExpressCheckout\Model\ConfigurationInterface;
 use Adyen\Payment\Helper\Data as AdyenHelper;
 use Adyen\Payment\Helper\Locale;
@@ -95,6 +96,11 @@ abstract class AbstractButton extends Template
     private ConfigurationInterface $expressConfig;
 
     /**
+     * @var Countries
+     */
+    private Countries $countries;
+
+    /**
      * Button constructor.
      * @param Context $context
      * @param Session $checkoutSession
@@ -108,6 +114,7 @@ abstract class AbstractButton extends Template
      * @param Config $configHelper
      * @param DefaultConfigProvider $defaultConfigProvider
      * @param ConfigurationInterface $expressConfig
+     * @param Countries $countries
      * @param array $data
      * @paramm Config $configHelper
      */
@@ -124,6 +131,7 @@ abstract class AbstractButton extends Template
         Config $configHelper,
         DefaultConfigProvider $defaultConfigProvider,
         ConfigurationInterface $expressConfig,
+        Countries $countries,
         array $data = []
     ) {
         parent::__construct($context, $data);
@@ -138,6 +146,7 @@ abstract class AbstractButton extends Template
         $this->configHelper = $configHelper;
         $this->expressConfig = $expressConfig;
         $this->defaultConfigProvider = $defaultConfigProvider;
+        $this->countries = $countries;
     }
 
     /**
@@ -360,7 +369,8 @@ abstract class AbstractButton extends Template
                 'buttonColor' => $this->expressConfig->getApplePayButtonColor(
                     ScopeInterface::SCOPE_STORE,
                     $this->storeManager->getStore()->getId()
-                )
+                ),
+                'countries' => $this->countries->getCountries()
             ]
         ];
     }

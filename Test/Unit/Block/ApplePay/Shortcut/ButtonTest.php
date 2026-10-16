@@ -4,6 +4,7 @@ declare(strict_types=1);
 namespace Adyen\ExpressCheckout\Test\Unit\Block\ApplePay\Shortcut;
 
 use Adyen\ExpressCheckout\Block\ApplePay\Shortcut\Button;
+use Adyen\ExpressCheckout\Helper\Countries;
 use Adyen\ExpressCheckout\Model\ConfigurationInterface;
 use Adyen\Payment\Helper\Config;
 use Adyen\Payment\Helper\Data as AdyenHelper;
@@ -26,6 +27,7 @@ use PHPUnit\Framework\Attributes\Test;
 class ButtonTest extends AbstractAdyenTestCase
 {
     private Button $subject;
+    private array $countries = [['id' => 'NL', 'full_name_locale' => 'Netherlands']];
 
     protected function setUp(): void
     {
@@ -62,6 +64,9 @@ class ButtonTest extends AbstractAdyenTestCase
         $adyenHelperMock->method('getCheckoutEnvironment')->willReturn('test');
         $expressConfigMock->method('getApplePayButtonColor')->willReturn('black');
 
+        $countriesMock = $this->createMock(Countries::class);
+        $countriesMock->method('getCountries')->willReturn($this->countries);
+
         $this->subject = new Button(
             $this->createMock(Context::class),
             $checkoutSessionMock,
@@ -74,7 +79,8 @@ class ButtonTest extends AbstractAdyenTestCase
             $localeHelperMock,
             $configHelperMock,
             $this->createMock(DefaultConfigProvider::class),
-            $expressConfigMock
+            $expressConfigMock,
+            $countriesMock
         );
     }
 
@@ -98,5 +104,6 @@ class ButtonTest extends AbstractAdyenTestCase
         $this->assertSame('test', $config['checkoutenv']);
         $this->assertFalse($config['isProductView']);
         $this->assertSame('black', $config['buttonColor']);
+        $this->assertSame($this->countries, $config['countries']);
     }
 }

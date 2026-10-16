@@ -109,7 +109,7 @@ define([
                     ]);
 
                 configModel().setConfig(config);
-                countriesModel();
+                countriesModel().setCountries(config.countries);
 
                 this.isProductView = config.isProductView;
 
@@ -318,6 +318,10 @@ define([
                     configuration.paymentDataCallbacks = {
                         onPaymentDataChanged: this.onPaymentDataChanged.bind(this)
                     };
+                    configuration.shippingAddressParameters = {
+                        allowedCountryCodes: Object.keys(countriesModel().getCountries()),
+                        ...configuration.shippingAddressParameters
+                    }
                 }
 
                 return configuration;
@@ -348,16 +352,22 @@ define([
                             }
                         }
 
-                        // Stop if no shipping methods.
                         if (response.length === 0) {
-                            reject($t('There are no shipping methods available for you right now. Please try again or use an alternative payment method.'));
+                            this.shippingMethods = [];
+                            resolve({
+                                error: {
+                                    reason: 'SHIPPING_ADDRESS_UNSERVICEABLE',
+                                    message: $t('There are no shipping methods available for you right now. Please try again or use an alternative payment method.'),
+                                    intent: 'SHIPPING_ADDRESS'
+                                }
+                            });
                             return;
                         }
 
                         this.shippingMethods = response;
                         const selectedShipping = data.shippingOptionData.id === 'shipping_option_unselected'
                             ? response[0]
-                            : response.find(({ method_code: id }) => id === data.shippingOptionData.id);
+                            : response.find(({ method_code: id }) => id === data.shippingOptionData.id) || response[0];
                         const regionId = getRegionId(data.shippingAddress.countryCode,
                             data.shippingAddress.administrativeArea || data.shippingAddress.locality,
                             true
