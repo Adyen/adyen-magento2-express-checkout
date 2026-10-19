@@ -16,6 +16,7 @@ define(
         'Adyen_Payment/js/adyen',
         'Adyen_Payment/js/model/adyen-configuration',
         'Adyen_ExpressCheckout/js/model/adyen-express-configuration',
+        'Adyen_ExpressCheckout/js/model/countries',
         'Adyen_ExpressCheckout/js/helpers/getGooglePayStyles',
         'Adyen_ExpressCheckout/js/actions/getShippingMethods',
         'Adyen_ExpressCheckout/js/helpers/getRegionId',
@@ -41,6 +42,7 @@ define(
         AdyenWeb,
         adyenConfiguration,
         adyenExpressConfiguration,
+        countriesModel,
         getGooglePayStyles,
         getShippingMethods,
         getRegionId,
@@ -83,6 +85,7 @@ define(
             initialize: function () {
                 this._super();
                 this.isAvailable(adyenExpressConfiguration.getIsGooglePayEnabledOnShipping());
+                countriesModel().setCountries(adyenExpressConfiguration.getCountries());
             },
 
             buildPaymentMethodComponent: async function() {
@@ -159,6 +162,10 @@ define(
                     configuration.paymentDataCallbacks = {
                         onPaymentDataChanged: this.handleOnPaymentDataChanged.bind(this)
                     };
+                    configuration.shippingAddressParameters = {
+                        allowedCountryCodes: Object.keys(countriesModel().getCountries()),
+                        ...configuration.shippingAddressParameters
+                    }
                 }
 
                 this.googlePayComponent = await window.AdyenWeb.createComponent(
@@ -272,14 +279,21 @@ define(
 
                         // Stop if no shipping methods.
                         if (response.length === 0) {
-                            reject($t('There are no shipping methods available for you right now. Please try again or use an alternative payment method.'));
+                            this.shippingMethods = [];
+                            resolve({
+                                error: {
+                                    reason: 'SHIPPING_ADDRESS_UNSERVICEABLE',
+                                    message: $t('There are no shipping methods available for you right now. Please try again or use an alternative payment method.'),
+                                    intent: 'SHIPPING_ADDRESS'
+                                }
+                            });
                             return;
                         }
 
                         this.shippingMethods = response;
                         const selectedShipping = data.shippingOptionData.id === 'shipping_option_unselected'
                             ? response[0]
-                            : response.find(({ method_code: id }) => id === data.shippingOptionData.id);
+                            : response.find(({ method_code: id }) => id === data.shippingOptionData.id) || response[0];;
                         const regionId = getRegionId(data.shippingAddress.countryCode,
                             data.shippingAddress.administrativeArea || data.shippingAddress.locality,
                             true

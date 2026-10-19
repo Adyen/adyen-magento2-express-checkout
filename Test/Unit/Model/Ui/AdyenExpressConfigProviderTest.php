@@ -7,6 +7,7 @@ namespace Adyen\ExpressCheckout\Test\Unit\Model;
 use Adyen\ExpressCheckout\Block\ApplePay\Shortcut\Button as ApplePayButton;
 use Adyen\ExpressCheckout\Block\GooglePay\Shortcut\Button as GooglePayButton;
 use Adyen\ExpressCheckout\Block\Paypal\Shortcut\Button as PayPalButton;
+use Adyen\ExpressCheckout\Helper\Countries;
 use Adyen\ExpressCheckout\Model\ConfigurationInterface;
 use Adyen\ExpressCheckout\Model\Ui\AdyenExpressConfigProvider;
 use Adyen\Payment\Api\AdyenPaymentMethodManagementInterface;
@@ -35,6 +36,7 @@ class AdyenExpressConfigProviderTest extends AbstractAdyenTestCase
     protected Data|MockObject $adyenHelperMock;
     protected ScopeConfigInterface|MockObject $scopeConfigMock;
     protected UrlInterface|MockObject $urlMock;
+    protected Countries|MockObject $countriesMock;
 
 
     public function setUp(): void
@@ -48,6 +50,7 @@ class AdyenExpressConfigProviderTest extends AbstractAdyenTestCase
         $this->adyenHelperMock = $this->createPartialMock(Data::class, []);
         $this->scopeConfigMock = $this->createMock(ScopeConfigInterface::class);
         $this->urlMock = $this->createMock(UrlInterface::class);
+        $this->countriesMock = $this->createMock(Countries::class);
 
         $this->adyenExpressConfigProvider = new AdyenExpressConfigProvider(
             $this->configHelperMock,
@@ -57,7 +60,8 @@ class AdyenExpressConfigProviderTest extends AbstractAdyenTestCase
             $this->chargeCurrencyHelperMock,
             $this->adyenHelperMock,
             $this->scopeConfigMock,
-            $this->urlMock
+            $this->urlMock,
+            $this->countriesMock
         );
     }
 
@@ -121,6 +125,11 @@ class AdyenExpressConfigProviderTest extends AbstractAdyenTestCase
             ->with(ScopeInterface::SCOPE_STORE, $storeId)
             ->willReturn($applepayButtonColor);
 
+        $countries = [['id' => 'NL', 'full_name_locale' => 'Netherlands']];
+        $this->countriesMock->expects($this->once())
+            ->method('getCountries')
+            ->willReturn($countries);
+
         // Call the method
         $result = $this->adyenExpressConfigProvider->getConfig();
 
@@ -154,5 +163,7 @@ class AdyenExpressConfigProviderTest extends AbstractAdyenTestCase
         $this->assertEquals($currency, $adyenExpressConfig['quote']['amount']['currency']);
         $this->assertEquals($storeCode, $adyenExpressConfig['storeCode']);
         $this->assertEquals($expectedUrl, $adyenExpressConfig['actionSuccess']);
+        $this->assertArrayHasKey('countries', $adyenExpressConfig);
+        $this->assertEquals($countries, $adyenExpressConfig['countries']);
     }
 }
