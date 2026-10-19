@@ -33,6 +33,7 @@ define(
         'Adyen_Payment/js/model/adyen-payment-modal',
         'Adyen_ExpressCheckout/js/helpers/getMaskedIdFromCart',
         'Adyen_ExpressCheckout/js/model/adyen-payment-service',
+        'Adyen_ExpressCheckout/js/model/countries',
         'Magento_Checkout/js/model/error-processor',
         'Adyen_ExpressCheckout/js/actions/cancelCart'
     ],
@@ -59,6 +60,7 @@ define(
         adyenPaymentModal,
         getMaskedIdFromCart,
         adyenPaymentService,
+        countriesModel,
         errorProcessor,
         cancelCart
     ) {
@@ -105,6 +107,7 @@ define(
                 this._super();
 
                 this.isAvailable(adyenExpressConfiguration.getIsPayPalEnabledOnShipping());
+                countriesModel().setCountries(adyenExpressConfiguration.getCountries());
                 this.isPlaceOrderActionAllowed(true);
             },
 
