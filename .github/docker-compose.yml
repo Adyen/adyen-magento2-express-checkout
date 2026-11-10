@@ -5,10 +5,10 @@ services:
     networks:
       - backend
     environment:
-      MARIADB_ROOT_PASSWORD: root_password
+      MARIADB_ROOT_PASSWORD: ${MARIADB_ROOT_PASSWORD}
       MARIADB_DATABASE: magento
       MARIADB_USER: magento
-      MARIADB_PASSWORD: magento
+      MARIADB_PASSWORD: ${MARIADB_PASSWORD}
   opensearch:
     image: opensearchproject/opensearch:2
     container_name: opensearch-container
@@ -38,6 +38,9 @@ services:
       COMPOSER_HOME: /var/www/html/var/composer
       COMPOSER_DISABLE_ASYNC_ARCHIVE_EXTRACT: 1
       DB_SERVER: mariadb
+      DB_NAME: magento
+      DB_USER: magento
+      DB_PASSWORD: ${MARIADB_PASSWORD}
       OPENSEARCH_SERVER: opensearch-container
       MAGENTO_HOST: magento2.test.com
       VIRTUAL_HOST: magento2.test.com

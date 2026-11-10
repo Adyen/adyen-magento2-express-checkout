@@ -27,6 +27,8 @@ jobs:
       ADYEN_MERCHANT: ${{secrets.ADYEN_MERCHANT}}
       ADMIN_USERNAME: ${{secrets.MAGENTO_ADMIN_USERNAME}}
       ADMIN_PASSWORD: ${{secrets.MAGENTO_ADMIN_PASSWORD}}
+      MARIADB_ROOT_PASSWORD: ${{secrets.MARIADB_ROOT_PASSWORD}}
+      MARIADB_PASSWORD: ${{secrets.MARIADB_PASSWORD}}
       DEPLOY_SAMPLEDATA: 1
     steps:
       - uses: actions/checkout@v4
