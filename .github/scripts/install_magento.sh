@@ -80,7 +80,7 @@ else
 	chmod u+x bin/magento
 
 	bin/magento setup:install \
-		--base-url="http://$MAGENTO_HOST" \
+		--base-url="https://$MAGENTO_HOST" \
 		--db-host="$DB_SERVER:$DB_PORT" \
 		--db-name="$DB_NAME" \
 		--db-user="$DB_USER" \
