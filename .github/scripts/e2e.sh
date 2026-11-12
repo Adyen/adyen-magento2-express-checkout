@@ -7,8 +7,8 @@ git clone https://github.com/Adyen/adyen-integration-tools-tests.git
 cd adyen-integration-tools-tests
 git checkout $INTEGRATION_TESTS_BRANCH
 rm -rf package-lock.json
-npm i
-npx playwright install
+npm i --ignore-scripts
+npx --ignore-scripts playwright install
 
 option="$1"
 

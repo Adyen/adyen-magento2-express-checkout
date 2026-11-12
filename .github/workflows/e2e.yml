@@ -27,9 +27,11 @@ jobs:
       ADYEN_MERCHANT: ${{secrets.ADYEN_MERCHANT}}
       ADMIN_USERNAME: ${{secrets.MAGENTO_ADMIN_USERNAME}}
       ADMIN_PASSWORD: ${{secrets.MAGENTO_ADMIN_PASSWORD}}
+      MARIADB_ROOT_PASSWORD: ${{secrets.MARIADB_ROOT_PASSWORD}}
+      MARIADB_PASSWORD: ${{secrets.MARIADB_PASSWORD}}
       DEPLOY_SAMPLEDATA: 1
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
 
       - name: Install Magento
         run: docker compose -f .github/docker-compose.yml run --rm web make magento
@@ -72,7 +74,7 @@ jobs:
 
       - name: Archive test result artifacts
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
           name: html-report
           path: test-report

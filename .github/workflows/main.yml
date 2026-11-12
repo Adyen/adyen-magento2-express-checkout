@@ -30,10 +30,12 @@ jobs:
       ADMIN_USERNAME: ${{ secrets.MAGENTO_ADMIN_USERNAME }}
       ADMIN_PASSWORD: ${{ secrets.MAGENTO_ADMIN_PASSWORD }}
       DONATION_ACCOUNT: ${{ secrets.DONATION_ACCOUNT }}
+      MARIADB_ROOT_PASSWORD: ${{ secrets.MARIADB_ROOT_PASSWORD }}
+      MARIADB_PASSWORD: ${{ secrets.MARIADB_PASSWORD }}
       DEPLOY_SAMPLEDATA: 1
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
         with:
           ref: ${{ github.event.pull_request.head.sha || github.ref }}
           fetch-depth: 0
@@ -67,7 +69,7 @@ jobs:
 
       - name: SonarCloud Scan
         if: ${{ env.SONAR_TOKEN }}
-        uses: SonarSource/sonarqube-scan-action@master
+        uses: SonarSource/sonarqube-scan-action@d209202bc7d53ff1cc128f7f907dac145c9d6ae9
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
