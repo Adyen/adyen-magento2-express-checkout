@@ -14,6 +14,7 @@ define([
     'Adyen_ExpressCheckout/js/actions/getShippingMethods',
     'Adyen_ExpressCheckout/js/actions/getExpressMethods',
     'Adyen_ExpressCheckout/js/actions/getPaymentStatus',
+    'Adyen_ExpressCheckout/js/actions/getQuoteShippingMethod',
     'Adyen_ExpressCheckout/js/actions/setShippingInformation',
     'Adyen_ExpressCheckout/js/actions/setBillingAddress',
     'Adyen_ExpressCheckout/js/actions/setTotalsInfo',
@@ -25,6 +26,7 @@ define([
     'Adyen_ExpressCheckout/js/helpers/getPaymentMethod',
     'Adyen_ExpressCheckout/js/helpers/getPdpForm',
     'Adyen_ExpressCheckout/js/helpers/getPdpPriceBox',
+    'Adyen_ExpressCheckout/js/helpers/getPreferredShippingMethod',
     'Adyen_ExpressCheckout/js/helpers/getRegionId',
     'Adyen_ExpressCheckout/js/helpers/isConfigSet',
     'Adyen_ExpressCheckout/js/helpers/redirectToSuccess',
@@ -57,6 +59,7 @@ define([
         getShippingMethods,
         getExpressMethods,
         getPaymentStatus,
+        getQuoteShippingMethod,
         setShippingInformation,
         setBillingAddress,
         setTotalsInfo,
@@ -68,6 +71,7 @@ define([
         getPaymentMethod,
         getPdpForm,
         getPdpPriceBox,
+        getPreferredShippingMethod,
         getRegionId,
         isConfigSet,
         redirectToSuccess,
@@ -92,6 +96,7 @@ define([
 
             defaults: {
                 shippingMethods: {},
+                quoteShippingMethod: null,
                 googlePayToken: null,
                 googlePayAllowed: null,
                 isProductView: false,
@@ -303,7 +308,10 @@ define([
                         merchantId: googlePaymentMethod.configuration.merchantId,
                         merchantName: googlePaymentMethod.configuration.gatewayMerchantId
                     },
-                    onClick: function (resolve, reject) {validatePdpForm(resolve, reject, pdpForm);},
+                    onClick: (resolve, reject) => {
+                        this.quoteShippingMethod = null;
+                        validatePdpForm(resolve, reject, pdpForm);
+                    },
                     onSubmit: this.handleOnSubmit.bind(this),
                     onError: () => cancelCart(this.isProductView),
                     ...googlePayStyles
@@ -341,7 +349,15 @@ define([
                         }
                     };
 
-                    activateCart(this.isProductView)
+                    let quoteShippingMethod = null;
+
+                    // Read the shopper's cart before activateCart swaps in the product page quote.
+                    this._getQuoteShippingMethod()
+                        .then((method) => {
+                            quoteShippingMethod = method;
+
+                            return activateCart(this.isProductView);
+                        })
                         .then(() => getShippingMethods(payload, this.isProductView))
                         .then(function (response) {
 
@@ -365,9 +381,11 @@ define([
                         }
 
                         this.shippingMethods = response;
-                        const selectedShipping = data.shippingOptionData.id === 'shipping_option_unselected'
-                            ? response[0]
-                            : response.find(({ method_code: id }) => id === data.shippingOptionData.id) || response[0];
+                        const selectedShipping = getPreferredShippingMethod(
+                            response,
+                            data.shippingOptionData.id,
+                            quoteShippingMethod
+                        );
                         const regionId = getRegionId(data.shippingAddress.countryCode,
                             data.shippingAddress.administrativeArea || data.shippingAddress.locality,
                             true
@@ -445,6 +463,20 @@ define([
                             .fail(reject);
                     }.bind(this));
                 });
+            },
+
+            /**
+             * Read once per session, before activateCart swaps in the product page quote.
+             *
+             * @returns {Promise<?string>}
+             * @private
+             */
+            _getQuoteShippingMethod: function () {
+                if (!this.quoteShippingMethod) {
+                    this.quoteShippingMethod = getQuoteShippingMethod();
+                }
+
+                return this.quoteShippingMethod;
             },
 
             handleOnSubmit: async function (state, component, actions) {

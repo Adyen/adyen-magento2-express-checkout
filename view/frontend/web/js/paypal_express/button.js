@@ -8,6 +8,7 @@ define([
     'Adyen_ExpressCheckout/js/actions/createOrder',
     'Adyen_ExpressCheckout/js/actions/getShippingMethods',
     'Adyen_ExpressCheckout/js/actions/getExpressMethods',
+    'Adyen_ExpressCheckout/js/actions/getQuoteShippingMethod',
     'Adyen_ExpressCheckout/js/actions/setShippingInformation',
     'Adyen_ExpressCheckout/js/actions/setTotalsInfo',
     'Adyen_ExpressCheckout/js/helpers/formatAmount',
@@ -20,6 +21,7 @@ define([
     'Adyen_ExpressCheckout/js/helpers/getRegionId',
     'Adyen_ExpressCheckout/js/helpers/redirectToSuccess',
     'Adyen_ExpressCheckout/js/helpers/setExpressMethods',
+    'Adyen_ExpressCheckout/js/helpers/sortShippingMethods',
     'Adyen_ExpressCheckout/js/helpers/validatePdpForm',
     'Adyen_ExpressCheckout/js/model/config',
     'Adyen_ExpressCheckout/js/model/countries',
@@ -51,6 +53,7 @@ define([
     createOrder,
     getShippingMethods,
     getExpressMethods,
+    getQuoteShippingMethod,
     setShippingInformation,
     setTotalsInfo,
     formatAmount,
@@ -63,6 +66,7 @@ define([
     getRegionId,
     redirectToSuccess,
     setExpressMethods,
+    sortShippingMethods,
     validatePdpForm,
     configModel,
     countriesModel,
@@ -98,6 +102,7 @@ define([
             paypalComponent: null,
             shippingAddress: {},
             shippingMethod: null,
+            quoteShippingMethod: null,
             shopperEmail: null,
             billingAddress : {},
             orderId: null,
@@ -378,6 +383,9 @@ define([
                 onSubmit: (state, component) => {
                     const paymentData = state.data;
 
+                    this.shippingMethod = null;
+                    this.quoteShippingMethod = null;
+
                     paymentData.merchantAccount = config.merchantAccount;
                     initPayments(paymentData, this.isProductView).then((responseJSON) => {
                         let response = JSON.parse(responseJSON);
@@ -394,6 +402,9 @@ define([
                     const isVirtual = virtualQuoteModel().getIsVirtual();
 
                     try {
+                        // Read the shopper's cart before activateCart swaps in the product page quote.
+                        const quoteShippingMethod = isVirtual ? null : await this._getQuoteShippingMethod();
+
                         if (this.isProductView) {
                             await activateCart(this.isProductView);
                         }
@@ -405,7 +416,7 @@ define([
                             this.setBillingAndTotals(data.shippingAddress);
                         } else {
                             this.shippingAddress = data.shippingAddress;
-                            shippingMethods = await this.getShippingMethods(data.shippingAddress);
+                            shippingMethods = await this.getShippingMethods(data.shippingAddress, quoteShippingMethod);
                             let shippingMethod = shippingMethods.find(method => method.identifier === this.shippingMethod);
                             await this.setShippingAndTotals(shippingMethod, data.shippingAddress);
                         }
@@ -577,8 +588,22 @@ define([
             };
         },
 
+        /**
+         * Read once per session, before activateCart swaps in the product page quote.
+         *
+         * @returns {Promise<?string>}
+         * @private
+         */
+        _getQuoteShippingMethod: function () {
+            if (!this.quoteShippingMethod) {
+                this.quoteShippingMethod = getQuoteShippingMethod();
+            }
+
+            return this.quoteShippingMethod;
+        },
+
         // Extracted method to get shipping methods
-        getShippingMethods: function (shippingAddress) {
+        getShippingMethods: function (shippingAddress, quoteShippingMethod) {
             const payload = {
                 address: {
                     country_id: shippingAddress.countryCode,
@@ -596,9 +621,12 @@ define([
                     }
 
                     let shippingMethods = [];
+                    const sheetMethodCode = this.shippingMethod;
+
                     this.shippingMethod = null;
 
-                    for (let method of result) {
+                    // PayPal selects the first shipping method.
+                    for (let method of sortShippingMethods(result, sheetMethodCode, quoteShippingMethod)) {
                         if (typeof method.method_code !== 'string') {
                             continue;
                         }

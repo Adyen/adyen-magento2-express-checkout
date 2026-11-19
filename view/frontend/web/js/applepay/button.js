@@ -11,6 +11,7 @@ define([
         'Adyen_ExpressCheckout/js/actions/createPayment',
         'Adyen_ExpressCheckout/js/actions/getShippingMethods',
         'Adyen_ExpressCheckout/js/actions/getExpressMethods',
+        'Adyen_ExpressCheckout/js/actions/getQuoteShippingMethod',
         'Adyen_ExpressCheckout/js/actions/getTotals',
         'Adyen_ExpressCheckout/js/actions/removeCoupon',
         'Adyen_ExpressCheckout/js/actions/setShippingInformation',
@@ -29,6 +30,7 @@ define([
         'Adyen_ExpressCheckout/js/helpers/getRegionId',
         'Adyen_ExpressCheckout/js/helpers/redirectToSuccess',
         'Adyen_ExpressCheckout/js/helpers/setExpressMethods',
+        'Adyen_ExpressCheckout/js/helpers/sortShippingMethods',
         'Adyen_ExpressCheckout/js/helpers/validatePdpForm',
         'Adyen_ExpressCheckout/js/model/config',
         'Adyen_ExpressCheckout/js/model/countries',
@@ -51,6 +53,7 @@ define([
         createPayment,
         getShippingMethods,
         getExpressMethods,
+        getQuoteShippingMethod,
         getTotals,
         removeCoupon,
         setShippingInformation,
@@ -69,6 +72,7 @@ define([
         getRegionId,
         redirectToSuccess,
         setExpressMethods,
+        sortShippingMethods,
         validatePdpForm,
         configModel,
         countriesModel,
@@ -83,6 +87,8 @@ define([
         return Component.extend({
             defaults: {
                 shippingMethods: {},
+                shippingMethod: null,
+                quoteShippingMethod: null,
                 isProductView: false,
                 maskedId: null,
                 applePayComponent: null,
@@ -343,7 +349,15 @@ define([
 
                 self.shippingAddress = payload.address;
 
-                activateCart(this.isProductView)
+                let quoteShippingMethod = null;
+
+                // Read the shopper's cart before activateCart swaps in the product page quote.
+                this._getQuoteShippingMethod()
+                    .then((method) => {
+                        quoteShippingMethod = method;
+
+                        return activateCart(this.isProductView);
+                    })
                     .then(() => getShippingMethods(payload, this.isProductView))
                     .then((result) => {
                         // Stop if no shipping methods.
@@ -357,9 +371,12 @@ define([
                                         : formatAmount(getCartSubtotal() * 100),
                                 },
                                 errors: [new ApplePayError('addressUnserviceable')],
-                            });                        }
+                            });
+                            return;
+                        }
                         let shippingMethods = [];
 
+                        result = sortShippingMethods(result, self.shippingMethod, quoteShippingMethod);
                         self.shippingMethods = {};
                         // Format shipping methods array.
                         for (let i = 0; i < result.length; i++) {
@@ -376,9 +393,6 @@ define([
                             // Add method object to array.
                             shippingMethods.push(method);
                             self.shippingMethods[result[i].method_code] = result[i];
-                            if (!self.shippingMethod) {
-                                self.shippingMethod = result[i].method_code;
-                            }
                         }
 
                         let address = {
@@ -529,6 +543,22 @@ define([
                 this.isCouponChanged = false;
                 this.lastTotal = null;
                 this.shippingAddress = null;
+                this.shippingMethod = null;
+                this.quoteShippingMethod = null;
+            },
+
+            /**
+             * Read once per session, before activateCart swaps in the product page quote.
+             *
+             * @returns {Promise<?string>}
+             * @private
+             */
+            _getQuoteShippingMethod: function () {
+                if (!this.quoteShippingMethod) {
+                    this.quoteShippingMethod = getQuoteShippingMethod();
+                }
+
+                return this.quoteShippingMethod;
             },
 
             onCouponCodeChanged: async function (resolve, reject, event) {
@@ -538,6 +568,10 @@ define([
                 this.isCouponChanged = true;
 
                 try {
+                    if (this.isProductView && !virtualQuoteModel().getIsVirtual()) {
+                        await this._getQuoteShippingMethod();
+                    }
+
                     await activateCart(this.isProductView);
                 } catch (e) {
                     this._onCouponCodeUpdateError(e, reject);
@@ -580,28 +614,22 @@ define([
                 }
 
                 const result = await getShippingMethods({ address: this.shippingAddress }, this.isProductView);
+                const quoteShippingMethod = await this._getQuoteShippingMethod();
                 const shippingMethods = [];
 
                 this.shippingMethods = {};
 
-                (result || []).forEach((method) => {
+                sortShippingMethods(result || [], this.shippingMethod, quoteShippingMethod).forEach((method) => {
                     if (typeof method.method_code !== 'string') {
                         return;
                     }
 
-                    const appleMethod = {
+                    shippingMethods.push({
                         identifier: method.method_code,
                         label: method.method_title,
                         detail: method.carrier_title ? method.carrier_title : '',
                         amount: this.toAmountString(method.price_incl_tax ?? method.amount)
-                    };
-
-                    // Apple Pay treats the first method as selected, so keep the shopper's choice first.
-                    if (method.method_code === this.shippingMethod) {
-                        shippingMethods.unshift(appleMethod);
-                    } else {
-                        shippingMethods.push(appleMethod);
-                    }
+                    });
 
                     this.shippingMethods[method.method_code] = method;
                 });

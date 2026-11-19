@@ -21,7 +21,9 @@ define(
         'Adyen_Payment/js/model/adyen-configuration',
         'Adyen_ExpressCheckout/js/model/adyen-express-configuration',
         'Adyen_ExpressCheckout/js/actions/getShippingMethods',
+        'Adyen_ExpressCheckout/js/actions/getQuoteShippingMethod',
         'Adyen_ExpressCheckout/js/helpers/getRegionId',
+        'Adyen_ExpressCheckout/js/helpers/sortShippingMethods',
         'Adyen_ExpressCheckout/js/actions/setShippingInformation',
         'Adyen_ExpressCheckout/js/actions/setBillingAddress',
         'Adyen_ExpressCheckout/js/actions/setTotalsInfo',
@@ -50,7 +52,9 @@ define(
         adyenConfiguration,
         adyenExpressConfiguration,
         getShippingMethods,
+        getQuoteShippingMethod,
         getRegionId,
+        sortShippingMethods,
         setShippingInformation,
         setBillingAddress,
         setTotalsInfo,
@@ -260,11 +264,13 @@ define(
                         return;
                     }
 
+                    result = sortShippingMethods(result, this.shippingMethod, await getQuoteShippingMethod());
+
                     const appleShippingMethods = [];
                     this.shippingMethods = {};
                     this.shippingMethodsList = [];
 
-                    result.forEach((method, index) => {
+                    result.forEach((method) => {
                         const appleMethod = {
                             identifier: method.method_code,
                             label: method.method_title,
@@ -275,10 +281,6 @@ define(
                         appleShippingMethods.push(appleMethod);
                         this.shippingMethods[method.method_code] = method;
                         this.shippingMethodsList.push(appleMethod);
-
-                        if (!this.shippingMethod && index === 0) {
-                            this.shippingMethod = method.method_code;
-                        }
                     });
 
                     const regionId = getRegionId(
@@ -446,6 +448,7 @@ define(
                 this.isCouponChanged = false;
                 this.lastTotal = null;
                 this.shippingAddress = null;
+                this.shippingMethod = null;
             },
 
             handleOnCouponCodeChanged: async function (resolve, reject, event) {
@@ -498,24 +501,18 @@ define(
                     throw new Error('No shipping methods available after coupon code change.');
                 }
 
+                const quoteShippingMethod = await getQuoteShippingMethod();
                 const appleShippingMethods = [];
 
                 this.shippingMethods = {};
 
-                result.forEach((method) => {
-                    const appleMethod = {
+                sortShippingMethods(result, this.shippingMethod, quoteShippingMethod).forEach((method) => {
+                    appleShippingMethods.push({
                         identifier: method.method_code,
                         label: method.method_title,
                         detail: method.carrier_title ? method.carrier_title : '',
                         amount: this.toAmountString(method.price_incl_tax ?? method.amount)
-                    };
-
-                    // Apple Pay treats the first method as selected, so keep the shopper's choice first.
-                    if (method.method_code === this.shippingMethod) {
-                        appleShippingMethods.unshift(appleMethod);
-                    } else {
-                        appleShippingMethods.push(appleMethod);
-                    }
+                    });
 
                     this.shippingMethods[method.method_code] = method;
                 });
