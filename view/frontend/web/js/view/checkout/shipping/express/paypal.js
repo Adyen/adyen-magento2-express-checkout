@@ -20,7 +20,9 @@ define(
         'Adyen_ExpressCheckout/js/model/adyen-express-configuration',
         'Adyen_ExpressCheckout/js/helpers/getPaypalStyles',
         'Adyen_ExpressCheckout/js/actions/getShippingMethods',
+        'Adyen_ExpressCheckout/js/actions/getQuoteShippingMethod',
         'Adyen_ExpressCheckout/js/helpers/getRegionId',
+        'Adyen_ExpressCheckout/js/helpers/sortShippingMethods',
         'Adyen_ExpressCheckout/js/actions/setShippingInformation',
         'Adyen_ExpressCheckout/js/actions/setBillingAddress',
         'Adyen_ExpressCheckout/js/actions/setTotalsInfo',
@@ -47,7 +49,9 @@ define(
         adyenExpressConfiguration,
         getPaypalStyles,
         getShippingMethods,
+        getQuoteShippingMethod,
         getRegionId,
+        sortShippingMethods,
         setShippingInformation,
         setBillingAddress,
         setTotalsInfo,
@@ -253,6 +257,7 @@ define(
             handleOnSubmit: async function (state, component, actions) {
                 const paymentData = state.data;
 
+                this.shippingMethod = null;
                 paymentData.merchantAccount = adyenConfiguration.getMerchantAccount();
                 loader.startLoader();
                 this.isLoading(true);
@@ -323,11 +328,15 @@ define(
                         return;
                     }
 
+                    const sheetMethodCode = this.shippingMethod;
+                    const quoteShippingMethod = await getQuoteShippingMethod();
+
                     this.shippingMethods = {};
                     this.shippingMethod = null;
                     const shippingMethods = [];
 
-                    result.forEach(function (method) {
+                    // PayPal selects the first shipping method.
+                    sortShippingMethods(result, sheetMethodCode, quoteShippingMethod).forEach(function (method) {
                         if (typeof method.method_code !== 'string') {
                             return;
                         }

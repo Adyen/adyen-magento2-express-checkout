@@ -20,8 +20,10 @@ define([
 
         const storeCode = configModel().getConfig().storeCode ?? adyenExpressConfiguration.getStoreCode();
 
-        return isLoggedIn()
-            ? 'rest/' + storeCode + '/V1/carts/mine/' + uri
-            : 'rest/' + storeCode + '/V1/guest-carts/' + maskedId + '/' + uri;
+        const cartPath = isLoggedIn()
+            ? 'rest/' + storeCode + '/V1/carts/mine'
+            : 'rest/' + storeCode + '/V1/guest-carts/' + maskedId;
+
+        return uri ? cartPath + '/' + uri : cartPath;
     };
 });

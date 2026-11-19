@@ -19,6 +19,8 @@ define(
         'Adyen_ExpressCheckout/js/model/countries',
         'Adyen_ExpressCheckout/js/helpers/getGooglePayStyles',
         'Adyen_ExpressCheckout/js/actions/getShippingMethods',
+        'Adyen_ExpressCheckout/js/actions/getQuoteShippingMethod',
+        'Adyen_ExpressCheckout/js/helpers/getPreferredShippingMethod',
         'Adyen_ExpressCheckout/js/helpers/getRegionId',
         'Adyen_ExpressCheckout/js/actions/setShippingInformation',
         'Adyen_ExpressCheckout/js/actions/setBillingAddress',
@@ -45,6 +47,8 @@ define(
         countriesModel,
         getGooglePayStyles,
         getShippingMethods,
+        getQuoteShippingMethod,
+        getPreferredShippingMethod,
         getRegionId,
         setShippingInformation,
         setBillingAddress,
@@ -269,7 +273,10 @@ define(
                         }
                     };
 
-                    getShippingMethods(payload, false).then(function (response) {
+                    Promise.all([
+                        getShippingMethods(payload, false),
+                        getQuoteShippingMethod()
+                    ]).then(function ([response, quoteShippingMethod]) {
                         // If the shipping_method is not available, remove it from the response array.
                         for (let key in response) {
                             if (response[key].available === false) {
@@ -291,9 +298,11 @@ define(
                         }
 
                         this.shippingMethods = response;
-                        const selectedShipping = data.shippingOptionData.id === 'shipping_option_unselected'
-                            ? response[0]
-                            : response.find(({ method_code: id }) => id === data.shippingOptionData.id) || response[0];;
+                        const selectedShipping = getPreferredShippingMethod(
+                            response,
+                            data.shippingOptionData.id,
+                            quoteShippingMethod
+                        );
                         const regionId = getRegionId(data.shippingAddress.countryCode,
                             data.shippingAddress.administrativeArea || data.shippingAddress.locality,
                             true
